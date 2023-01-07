@@ -1,0 +1,67 @@
+/* Gambit gives us the following by default
+    construct Game {
+        static list<Player> players
+    }
+
+    construct Player(player_number) {
+        static int player_number
+    }
+*/
+
+enum Mark { NAUGHT, CROSS }
+
+extend Game {
+    state list<Sqaure 9> board
+    state Player current_player
+    state bool is_over = false
+}
+
+extend Player {
+    property Mark mark = match player_number {
+        1: NAUGHT
+        2: CROSS
+    } // Because this property is derived entirely from static fields, it's technically a static field (a.k.a a 'static property')
+}
+
+construct Sqare(index) {
+    static int index
+    static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index] // Use of an expression here is valid, as the expression can be resolved at compile time
+    state Mark? mark // Defaults to `none`
+}
+
+main() {
+    game.current_player = game.players[1]
+    until game.is_over {
+        make_move()
+        detect_winner()
+        if game.current_player == game.players[1]: game.current_player = game.players[2]
+        else: game.current_player = game.players[1]
+    }
+}
+
+make_move() {
+    options = game.board filter (square: square.mark == none) // Infer type of 'options' as 'list<Sqaure>`
+    choice = game.current_player choose options ("Which sqaure do you want to play?") // Infer type of 'choice' as 'Square'
+    choice.mark = game.current_player.mark
+}
+
+detect_winner() {
+    lines = [ // infer type as `list<int 8*3>`
+        [1, 2, 3], [4, 5, 6], [7, 8, 9],
+        [1, 4, 7], [2, 5, 8], [3, 6, 9],
+        [1, 5, 9], [3, 5, 7],
+    ]
+
+    for line in lines { // Infer type of `line` as `list<int 3>`
+        marks = line transform (index: game.board[index].mark) // Infer type of `marks` as `list<Mark? 3>`
+        mark = marks[1]
+        if mark and marks[1] == marks[2] and marks[2] == marks[3] { // Subtle type promotion. After the lhs of the and has been evalutated, mark is promoted from `Mark?` to `Mark`
+            Player[mark: mark] wins
+            game.is_over = true
+            break
+        }
+    }
+
+    for sqaure in game.board: if not square.mark: return
+    game.is_over = true // Indicates a draw
+}
