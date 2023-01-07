@@ -34,6 +34,27 @@ enum class TokenKind
     TrigL,
     TrigR,
 
+    KeyEnum,
+    KeyExtend,
+    KeyConstruct,
+    KeyStatic,
+    KeyState,
+    KeyProperty,
+    KeyUntil,
+    KeyFor,
+    KeyIn,
+    KeyIf,
+    KeyElse,
+    KeyBreak,
+    KeyContinue,
+    KeyReturn,
+    KeyFilter,
+    KeyTransform,
+    KeyAnd,
+    KeyOr,
+    KeyNot,
+    KeyChoose,
+
     Number,
     String,
     Identity,
@@ -63,6 +84,27 @@ const map<TokenKind, string> token_name = {
     {TokenKind::SquareR, "SquareR"},
     {TokenKind::TrigL, "TrigL"},
     {TokenKind::TrigR, "TrigR"},
+
+    {TokenKind::KeyEnum, "KeyEnum"},
+    {TokenKind::KeyExtend, "KeyExtend"},
+    {TokenKind::KeyConstruct, "KeyConstruct"},
+    {TokenKind::KeyStatic, "KeyStatic"},
+    {TokenKind::KeyState, "KeyState"},
+    {TokenKind::KeyProperty, "KeyProperty"},
+    {TokenKind::KeyUntil, "KeyUntil"},
+    {TokenKind::KeyFor, "KeyFor"},
+    {TokenKind::KeyIn, "KeyIn"},
+    {TokenKind::KeyIf, "KeyIf"},
+    {TokenKind::KeyElse, "KeyElse"},
+    {TokenKind::KeyBreak, "KeyBreak"},
+    {TokenKind::KeyContinue, "KeyContinue"},
+    {TokenKind::KeyReturn, "KeyReturn"},
+    {TokenKind::KeyFilter, "KeyFilter"},
+    {TokenKind::KeyTransform, "KeyTransform"},
+    {TokenKind::KeyAnd, "KeyAnd"},
+    {TokenKind::KeyOr, "KeyOr"},
+    {TokenKind::KeyNot, "KeyNot"},
+    {TokenKind::KeyChoose, "KeyChoose"},
 
     {TokenKind::Number, "Number"},
     {TokenKind::String, "String"},
@@ -95,8 +137,36 @@ const map<TokenKind, regex> token_match_rules = {
     {TokenKind::TrigR, regex("\\>")},
 
     {TokenKind::Number, regex("[0-9]+(\\.[0-9]+)?")},
-    {TokenKind::String, regex("\"(\\.|.)*?\"")},           // FIXME: This regular expression matches "\", which is incorrect
-    {TokenKind::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")}, // FIXME: Parse keywords as seperate tokens
+    {TokenKind::String, regex("\"(\\.|.)*?\"")}, // FIXME: This regular expression matches "\", which is incorrect
+    {TokenKind::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")},
+};
+
+const map<string, TokenKind> keyword_match_rules = {
+    {"enum", TokenKind::KeyEnum},
+    {"extend", TokenKind::KeyExtend},
+    {"construct", TokenKind::KeyConstruct},
+
+    {"static", TokenKind::KeyStatic},
+    {"state", TokenKind::KeyState},
+    {"property", TokenKind::KeyProperty},
+
+    {"until", TokenKind::KeyUntil},
+    {"for", TokenKind::KeyFor},
+    {"in", TokenKind::KeyIn},
+    {"if", TokenKind::KeyIf},
+    {"else", TokenKind::KeyElse},
+    {"break", TokenKind::KeyBreak},
+    {"continue", TokenKind::KeyContinue},
+    {"return", TokenKind::KeyReturn},
+
+    {"filter", TokenKind::KeyFilter},
+    {"transform", TokenKind::KeyTransform},
+
+    {"and", TokenKind ::KeyAnd},
+    {"or", TokenKind::KeyOr},
+    {"not", TokenKind::KeyNot},
+
+    {"choose", TokenKind::KeyChoose},
 };
 
 struct Token
@@ -249,6 +319,19 @@ vector<Token> generate_tokens(string src)
                 {
                     TokenKind kind = rule.first;
                     string str = info.str();
+
+                    if (kind == TokenKind::Identity)
+                    {
+                        for (auto key_rule : keyword_match_rules)
+                        {
+                            if (str == key_rule.first)
+                            {
+                                kind = key_rule.second;
+                                break;
+                            }
+                        }
+                    }
+
                     tokens.emplace_back(kind, str, line, column);
                     advance(info.length());
                     character_parsed = true;
@@ -304,12 +387,16 @@ int main(int argc, char *argv[])
 
     auto tokens = generate_tokens(src);
 
-    for (auto err : errors)
-        cout << err << "\n\n";
+    for (auto t : tokens)
+        cout << to_string(t) << endl;
     cout << endl;
 
-    for (auto t : tokens)
-        cout << t.str << " ";
+    // for (auto t : tokens)
+    //     cout << t.str << " ";
+    // cout << endl;
+
+    for (auto err : errors)
+        cout << err << "\n\n";
     cout << endl;
 
     return 0;
