@@ -55,6 +55,7 @@ enum class TokenKind
     KeyNot,
     KeyChoose,
 
+    Boolean,
     Number,
     String,
     Identity,
@@ -106,6 +107,7 @@ const map<TokenKind, string> token_name = {
     {TokenKind::KeyNot, "KeyNot"},
     {TokenKind::KeyChoose, "KeyChoose"},
 
+    {TokenKind::Boolean, "Boolean"},
     {TokenKind::Number, "Number"},
     {TokenKind::String, "String"},
     {TokenKind::Identity, "Identity"},
@@ -167,6 +169,9 @@ const map<string, TokenKind> keyword_match_rules = {
     {"not", TokenKind::KeyNot},
 
     {"choose", TokenKind::KeyChoose},
+
+    {"true", TokenKind::Boolean},
+    {"false", TokenKind::Boolean},
 };
 
 struct Token
