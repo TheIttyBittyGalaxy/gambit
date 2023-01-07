@@ -101,8 +101,8 @@ const tuple<TokenKind, regex> token_match_rules[] = {
     {TokenKind::TrigR, regex("\\>")},
 
     {TokenKind::Number, regex("[0-9]+(\\.[0-9]+)?")},
-    {TokenKind::String, regex("\"(\\.|.)*?\"")},
-    {TokenKind::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")},
+    {TokenKind::String, regex("\"(\\.|.)*?\"")},           // FIXME: This regular expression matches "\", which is incorrect
+    {TokenKind::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")}, // FIXME: Parse keywords as seperate tokens
 };
 
 struct Token
