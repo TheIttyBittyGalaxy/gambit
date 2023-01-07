@@ -3,14 +3,8 @@
 #include <map>
 #include <regex>
 #include <string>
-#include <tuple>
 #include <vector>
 using namespace std;
-
-// MACROS //
-
-#define first(x) get<0>(x)
-#define second(x) get<1>(x)
 
 // TOKENS //
 
@@ -75,7 +69,7 @@ const map<TokenKind, string> token_name = {
     {TokenKind::Identity, "Identity"},
 };
 
-const tuple<TokenKind, regex> token_match_rules[] = {
+const map<TokenKind, regex> token_match_rules = {
     {TokenKind::Line, regex("\n")},
 
     {TokenKind::Equal, regex("==")},
@@ -251,9 +245,11 @@ vector<Token> generate_tokens(string src)
             for (auto rule : token_match_rules)
             {
                 smatch info;
-                if (regex_search(sub, info, second(rule), regex_constants::match_continuous))
+                if (regex_search(sub, info, rule.second, regex_constants::match_continuous))
                 {
-                    tokens.emplace_back(first(rule), info.str(), line, column);
+                    TokenKind kind = rule.first;
+                    string str = info.str();
+                    tokens.emplace_back(kind, str, line, column);
                     advance(info.length());
                     character_parsed = true;
                     break;
