@@ -120,6 +120,10 @@ struct Token
 
 string to_string(Token t)
 {
+    if (t.kind == TokenKind::Line)
+    {
+        return "[/]";
+    }
     return "[" + token_name.at(t.kind) + " " + t.str + "]";
 }
 
