@@ -1,0 +1,25 @@
+{
+  "name": "gambit-tools",
+  "displayName": "Gambit Tools",
+  "description": "Syntax highlighting and tooling for Gambit. More info at: https://github.com/TheIttyBittyGalaxy/gambit",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "gambit",
+      "aliases": ["Gambit", "gambit"],
+      "extensions": [".gambit"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "gambit",
+      "scopeName": "source.gambit",
+      "path": "./syntaxes/gambit.tmLanguage.json"
+    }]
+  }
+}
