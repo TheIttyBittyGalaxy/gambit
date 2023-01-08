@@ -3,27 +3,93 @@
 	"name": "Gambit",
 	"patterns": [
 		{
+			"include": "#comments"
+		},
+		{
 			"include": "#keywords"
 		},
 		{
-			"include": "#strings"
+			"include": "#literals"
+		},
+		{
+			"include": "#identities"
 		}
 	],
 	"repository": {
-		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.gambit",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
-		},
-		"strings": {
-			"name": "string.quoted.double.gambit",
-			"begin": "\"",
-			"end": "\"",
+		"comments": {
 			"patterns": [
 				{
-					"name": "constant.character.escape.gambit",
-					"match": "\\\\."
+					"name": "comment.line.double-slash",
+					"begin": "//",
+					"end": "\n"
+				},
+				{
+					"name": "comment.block",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "storage.type",
+					"match": "\\b(enum|extend|construct)\\b"
+				},
+				{
+					"name": "keyword.control.gambit",
+					"match": "\\b(break|continue|else|for|if|in|match|return|until)\\b"
+				},
+				{
+					"name": "storage.modifier",
+					"match": "\\b(static|state|property)\\b"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "\\b(and|or|not)\\b"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "\\b(filter|transform|choose)\\b"
+				}
+			]
+		},
+		"literals": {
+			"patterns": [
+				{
+					"match": "\\b(true|false)\\b",
+					"name": "constant.language"
+				},
+				{
+					"match": "[0-9]+(\\.[0-9]+)?",
+					"name": "constant.numeric"
+				},
+				{
+					"name": "string.quoted.double.gambit",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"name": "constant.character.escape.gambit",
+							"match": "\\\\."
+						}
+					]
+				}
+			]
+		},
+		"identities": {
+			"patterns": [
+				{
+					"match": "\\b[A-Z][A-Z0-9_]*\\b",
+					"name": "entity.name.tag"
+				},
+				{
+					"match": "\\b[A-Z][a-zA-Z0-9_]*\\b",
+					"name": "entity.name.type"
+				},
+				{
+					"match": "\\b[a-zA-Z][a-zA-Z0-9_]*\\b",
+					"name": "variable.name"
 				}
 			]
 		}
