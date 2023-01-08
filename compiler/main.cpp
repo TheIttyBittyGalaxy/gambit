@@ -47,6 +47,7 @@ enum class TokenKind
     KeyElse,
     KeyBreak,
     KeyContinue,
+    KeyMatch,
     KeyReturn,
     KeyFilter,
     KeyTransform,
@@ -99,6 +100,7 @@ const map<TokenKind, string> token_name = {
     {TokenKind::KeyElse, "KeyElse"},
     {TokenKind::KeyBreak, "KeyBreak"},
     {TokenKind::KeyContinue, "KeyContinue"},
+    {TokenKind::KeyMatch, "KeyMatch"},
     {TokenKind::KeyReturn, "KeyReturn"},
     {TokenKind::KeyFilter, "KeyFilter"},
     {TokenKind::KeyTransform, "KeyTransform"},
@@ -159,6 +161,7 @@ const map<string, TokenKind> keyword_match_rules = {
     {"else", TokenKind::KeyElse},
     {"break", TokenKind::KeyBreak},
     {"continue", TokenKind::KeyContinue},
+    {"match", TokenKind::KeyMatch},
     {"return", TokenKind::KeyReturn},
 
     {"filter", TokenKind::KeyFilter},
