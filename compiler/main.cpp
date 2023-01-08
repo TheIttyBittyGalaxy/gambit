@@ -201,24 +201,15 @@ string to_string(Token t)
 // ERRORS //
 
 vector<string> errors;
-bool panic_mode = false;
 
 void emit_error(string msg)
 {
-    if (panic_mode)
-        return;
-
     errors.emplace_back("[Error] " + msg);
-    panic_mode = true;
 }
 
 void emit_error(string msg, size_t line, size_t column)
 {
-    if (panic_mode)
-        return;
-
     errors.emplace_back("[Error at " + to_string(line) + ":" + to_string(column) + "] " + msg);
-    panic_mode = true;
 }
 
 void emit_error(string msg, Token t)
@@ -235,9 +226,6 @@ vector<Token> generate_tokens(string src)
     size_t column = 1;
     size_t position = 0;
     string sub = src;
-
-    bool char_error = false;
-    bool previous_char_error = false;
 
     auto advance = [&](int amt)
     {
@@ -256,9 +244,11 @@ vector<Token> generate_tokens(string src)
 
     size_t multi_line_comment_nesting = 0;
     bool is_line_comment = false;
+    bool panic_mode = false;
 
     while (position < src.length())
     {
+        bool error_occurred = false;
         string next = sub.substr(0, 1);
         string next_two = sub.substr(0, 2);
 
@@ -348,18 +338,15 @@ vector<Token> generate_tokens(string src)
 
             if (!character_parsed)
             {
-                emit_error("Unrecognised character " + next, line, column); // FIXME: Make this a proper error message.}
+                if (!panic_mode)
+                    emit_error("Unrecognised character " + next, line, column); // FIXME: Make this a proper error message.}
                 advance(1);
-                char_error = true;
+                panic_mode = true;
+                error_occurred = true;
             }
         }
 
-        if (previous_char_error && !char_error)
-        {
-            panic_mode = false;
-        }
-        previous_char_error = char_error;
-        char_error = false;
+        panic_mode = error_occurred;
     }
 
     return tokens;
