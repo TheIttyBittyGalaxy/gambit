@@ -4,7 +4,7 @@ A construct is 'a thing that can exist' in your game. For example, if your game 
 
 Once a construct has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
 
-Constructs are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a construct, but you wouldn't have a 'GamePeiceManager' like you might in conventional object-oritented lanaguges.
+Constructs are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a construct, but you wouldn't have a 'GamePieceManager' like you might in conventional object-oriented languages.
 
 ## 1.1 Construct definitions
 
@@ -24,7 +24,7 @@ define construct Card[suit, face] {
 
 ### 1.1.2 Additive definitions
 
-Once a construct has been defined, you may also define additional fields in seperate declarations. This is particually useful in situations where you want to program extensions to the game in a seperate file, without having to make significant edits to the 'core' game.
+Once a construct has been defined, you may also define additional fields in separate declarations. This is particularly useful in situations where you want to program extensions to the game in a separate file, without having to make significant edits to the 'core' game.
 
 Additive definitions are the same as base definitions, but without the `define` keyword. Additive definition may not define the construct's signature.
 
@@ -68,7 +68,7 @@ construct Card[ACE, SPADE] {
 
 ### 1.1.4 Scoped definitions
 
-Additive definitions of a construct are scoped, meaning the additional fields can only be accessed elsewhere in the same scope. Different scopes may specify differents fields that still have the same name.
+Additive definitions of a construct are scoped, meaning the additional fields can only be accessed elsewhere in the same scope. Different scopes may specify different fields that still have the same name.
 
 ```gambit
 scope sapphire_expansion {
@@ -105,32 +105,32 @@ define construct Card[suit, face] {
 }
 ```
 
-...the Ace of Spades can now be written as `Card[SPADES, ACE]`. If the value of the value literal can be inffered, it can be shortened even further to just `[SPADES, ACE]`.
+...the Ace of Spades can now be written as `Card[SPADES, ACE]`. If the value of the value literal can be inferred, it can be shortened even further to just `[SPADES, ACE]`.
 
 ### 1.2.1 Partial signatures
 
-Partial signatures can also be provided in the case where it is umabigious what is meant by them.
+Partial signatures can also be provided in the case where it is unambiguous what is meant by them.
 
 ```gambit
 Card[CLUB] // Matches any clubs
 Card[ACE] // Matches any aces
 ```
 
-In the case of playing cards, if you only provide a single value to the signature, it is totally unambigous as if to the `suit` or the `face` has been provided, because those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
+In the case of playing cards, if you only provide a single value to the signature, it is totally unambiguous as if to the `suit` or the `face` has been provided, because those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
 
 ## 1.3 Construct fields
 
 There are three kinds of field a construct can have, each with different behaviours.
 
-### 1.3.1 Static feilds
+### 1.3.1 Static fields
 
-Static feilds constant values that are known at compile time. An example might be the suit of a card.
+Static fields constant values that are known at compile time. An example might be the suit of a card.
 
 ```gambit
 static Suit suit
 ```
 
-### 1.3.2 State feilds
+### 1.3.2 State fields
 
 State fields are fields that can change during the game. State fields must be defined with a default value. An example might be how many coin tokens the player has.
 
@@ -140,9 +140,9 @@ All state fields across all construct instances comprise the 'game state'.
 int tokens = 0
 ```
 
-### 1.3.3 Property feilds
+### 1.3.3 Property fields
 
-A property of a construct is a feild that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the construct it is a member of.
+A property of a construct is a field that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the construct it is a member of.
 
 ```gambit
 static int max_health: 20 // Static field
@@ -175,7 +175,7 @@ Which in Gambit can be reduced to
 List<Card> deck = for suit, face in Suit, Face => [suit, face]
 ```
 
-> TODO: This isn't the best looking code I've ever seen. Perhaps study some functional langauges to see how they might to something like this?
+> TODO: This isn't the best looking code I've ever seen. Perhaps study some functional languages to see how they might to something like this?
 
 # 2. Selectors
 
@@ -198,7 +198,7 @@ You can also select constructs using their signature.
 Card[ACE, SPADE]
 ```
 
-A selector is said to be a 'static selector' if it selects instances based only on their static fields. A selector is said to be a 'dynamic selector' if it selsects instances using one or more state or property fields\*.
+A selector is said to be a 'static selector' if it selects instances based only on their static fields. A selector is said to be a 'dynamic selector' if it selects instances using one or more state or property fields\*.
 
 > \* Technically, a property is considered to be a 'static property' if the expression used to define it is also static. Static properties do not cause a selector to become a dynamic one, and can be used in a static one.
 
@@ -243,7 +243,7 @@ main() {
 }
 ```
 
-If, however, no ambigous calls are identified at compile-time, both overloads may co-exist.
+If, however, no ambiguous calls are identified at compile-time, both overloads may co-exist.
 
 ```gambit
 fn point_value(Card card) => 2
@@ -280,7 +280,7 @@ main() {
 ## 4.3 List types
 
 > TODO: Write up
-> Almost definately need some notion of ordered and unordered lists?
+> Almost definitely need some notion of ordered and unordered lists?
 
 ## 4.4 Optional types
 
@@ -310,9 +310,9 @@ In this case, cards can only be of one specific kind. If however we defined `sui
 
 Note that multi-types are not lists. You could not have the 'Ace of Spades and Spades again'. The `suit` may be multiple values, but each value in the domain can appear only once, and are in no particular order.
 
-Values of type `Type!` must be of at least one value in that domain. e.g., with the card definition above, there could be no 'Ace of nothing'. However, all mulitypes also have a corresponding optional multitype, denoted as `Type!?`. Values of an optional multitype may be of zero, one, or multiple values.
+Values of type `Type!` must be of at least one value in that domain. e.g., with the card definition above, there could be no 'Ace of nothing'. However, all multi-type also have a corresponding optional multi-type, denoted as `Type!?`. Values of an optional multi-type may be of zero, one, or multiple values.
 
-To create a multitype value, you can combine multiple values with the `&` operator, e.g. `Spade&Heart`. A distiction between the `==` and `IS` operators is that the `==` seeks to make an exact match between multitype values, and the `IS` operator only checks that every value on the righthand side is also on the lefthand side. e.g.
+To create a multi-type value, you can combine multiple values with the `&` operator, e.g. `Spade&Heart`. A distinction between the `==` and `IS` operators is that the `==` seeks to make an exact match between multi-type values, and the `IS` operator only checks that every value on the right hand side is also on the left hand side. e.g.
 
 ```
 Heart == Heart // true
@@ -363,11 +363,11 @@ jackpot = construct Card {
 
 # 5. Notation
 
-Often, it can be useful to specify a notion for certian kinds of values that may appear in your game. For example, in [Magic the Gathering](https://mtg.fandom.com/wiki/Magic:_The_Gathering), cards have a 'mana cost'. There are 5 different 'colours' of mana, and in even the most basic cases, a card may specifiy a cost of any amount of each specific kind of mana, and/or a certian amount of mana of any colour. e.g. the card 'Abundance' require you may 2 green mana and then also 2 mana of any colour. A notation such as `GG2` would be more convient that having to type out all the names and fields of a struct by hand, while remaining more readable than a nameless constructor.
+Often, it can be useful to specify a notion for certain kinds of values that may appear in your game. For example, in [Magic the Gathering](https://mtg.fandom.com/wiki/Magic:_The_Gathering), cards have a 'mana cost'. There are 5 different 'colours' of mana, and in even the most basic cases, a card may specify a cost of any amount of each specific kind of mana, and/or a certain amount of mana of any colour. e.g. the card 'Abundance' require you may 2 green mana and then also 2 mana of any colour. A notation such as `GG2` would be more convenient that having to type out all the names and fields of a struct by hand, while remaining more readable than a nameless constructor.
 
-Gambit allows you to define a notations for certian kinds of values. You provide Gambit with a regular expression and a function. Then, if in an expression Gambit matches a `'` followed by a match to your regular expression, it will run your function with the matched notation as it's parameter.
+Gambit allows you to define a notations for certain kinds of values. You provide Gambit with a regular expression and a function. Then, if in an expression Gambit matches a `'` followed by a match to your regular expression, it will run your function with the matched notation as it's parameter.
 
-To parse our simpile MTG mana cost notation, we could do something like this
+To parse our simple MTG mana cost notation, we could do something like this
 
 ```gambit
 structure ManaCost {
@@ -399,6 +399,6 @@ procedure do_thing(ManaCost cost) {
 }
 ```
 
-## 5.1 Ambigutity
+## 5.1 Ambiguity
 
-When a notated value matches multiple possible notations, usually this ambigutity is resolved using type inference. e.g. maybe `%2` could annotate a mama cost, or it could annotate a power and thoughness. Usually, Gambit can tell from context. In cases where it can't however, this will throw an error.
+When a notated value matches multiple possible notations, usually this ambiguity is resolved using type inference. e.g. maybe `%2` could annotate a mama cost, or it could annotate a power and toughness. Usually, Gambit can tell from context. In cases where it can't however, this will throw an error.
