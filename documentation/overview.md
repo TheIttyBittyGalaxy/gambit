@@ -1,6 +1,8 @@
 # 1. Constructs
 
-A construct is 'a thing that can exist' in your game. For example, if your game is played with a regular deck of cards, a `Card` is a construct in your game. Constructs must be defined, where they are defined with a list of fields. Each field must have a name, a data type, and a sort (either `static`, `state`, or `property`). Once a construct has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
+A construct is 'a thing that can exist' in your game. For example, if your game is played with a regular deck of cards, a `Card` is a construct in your game. Constructs must be defined, where they are defined with a list of fields. Each field must have a name and a data type, will be either a static field, a property, or a state.
+
+Once a construct has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
 
 Constructs are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a construct, but you wouldn't have a 'GamePeiceManager' like you might in conventional object-oritented lanaguges.
 
@@ -37,9 +39,11 @@ construct Card {
 }
 ```
 
+You may also use additive definitions to define the values of fields that were defined without values in other definitions. This is most useful when using selective definitions.
+
 ### 1.1.3 Selective definitions
 
-You can create additive definitions that only apply to a particular subsection of instances. Static fields are ones whose value are known at compile-time. You can select instances that have specific values of static field, and define additional fields for them.
+You can create additive definitions that only apply to instances that match a given static selector. These selectors may define additional fields, or define the values of fields that were already defined elsewhere.
 
 Let's say that in our game, played with a regular set of playing cards, the player has the ability to add tokens to picture cards. We could define that as follows.
 
@@ -51,6 +55,14 @@ construct Card {
 
 construct Card[face: ACE|JACK|QUEEN|KING] {
 	state Integer tokens: 0
+}
+```
+
+We could even add an additional rule that states that the Ace of Spades has a default value of 2 tokens.
+
+```gambit
+construct Card[ACE, SPADE] {
+	tokens: 2
 }
 ```
 
@@ -106,15 +118,37 @@ Card[ACE] // Matches any aces
 
 In the case of playing cards, if you only provide a single value to the signature, it is totally unambigous as if to the `suit` or the `face` has been provided, because those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
 
-## 1.3 Construct field sorts
+## 1.3 Construct fields
 
-As well as having a data type each field has a 'sort'. This indicates what kind of property of the construct the field is.
+There are three kinds of field a construct can have, each with different behaviours.
 
-| Sort         | Description                                      | e.g.                                 |
-| ------------ | ------------------------------------------------ | ------------------------------------ |
-| **static**   | A constant value that is known at compile time.  | the suit of a card.                  |
-| **state**    | A value that can change during the game.         | how many coin tokens the player has. |
-| **property** | A value that is calculated using the game state. | if a king is in check in chess.      |
+### 1.3.1 Static feilds
+
+Static feilds constant values that are known at compile time. An example might be the suit of a card.
+
+```gambit
+static Suit suit
+```
+
+### 1.3.2 State feilds
+
+State fields are fields that can change during the game. State fields must be defined with a default value. An example might be how many coin tokens the player has.
+
+All state fields across all construct instances comprise the 'game state'.
+
+```gambit
+int tokens = 0
+```
+
+### 1.3.3 Property feilds
+
+A property of a construct is a feild that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the construct it is a member of.
+
+```gambit
+static int max_health: 20 // Static field
+int health: 1 // State field
+num health_percentage => health / max_health // Property field
+```
 
 ## 1.4 Creating instances
 
@@ -145,75 +179,86 @@ List<Card> deck = for suit, face in Suit, Face => [suit, face]
 
 # 2. Selectors
 
-Property fields of constructs can be set using 'selectors'. A selector will match all instances that match a given pattern, and then specify it's properties accordingly. More selectors with more specific patterns override selectors with less specific ones (similar to other declarative languages such as CSS).
-
-For example, let's say that in your game cards can accumulate tokens. A card becomes 'activated' either when it has at least 3 tokens, or just 1 token if it happens to be an ace. That could be implemented like this.
+During your game, you can select all construct instances that have specific values. e.g. all of the hearts in a deck of cards, all players with 10 or more coin tokens, etc.
 
 ```gambit
-define construct Card {
-	static Suit suit
-	static Face face
-	state int tokens = 0
-	property bool activated = false // The default value for the property if no selectors are matched
-}
-
-select Card[tokens >= 3] {
-	activated = true
-}
-
-select Card[face: ACE, tokens >= 1] {
-	activated = true
-}
+Card[suit: HEART]
+Player[tokens >= 10]
 ```
 
-This this case the `Card[face: ACE, tokens >= 1]` selector overrides the `Card[tokens >= 3]` selector, which in turn overrides the base case specified in the `Card` definition.
-
-> TODO: What should happen in the situation where there are multiple selectors that are both a) equal in specificity and b) have overlap in the values they can select? In CSS, the selector further down in the document takes precedence, but I don't think that is sufficient for our purposes, particually as the programmer has no control over the order in which files load.
-
-## 2.1 Side note
-
-It's worth noting that the example above can actually be written much simpler. Because properties can be set to pure expressions (expressions that do not affect the game state), you could rewrite the code as the following.
-
-```
-define construct Card {
-	static Suit suit
-	static Face face
-	state int tokens = 0
-	property bool activated = tokens >= 3 or (tokens >= 1 and face == ACE)
-}
-```
-
-## 2.2 Example use case
-
-The selector system is most advantageous in situations where different instances of a construct may behave in very specific and different ways. e.g. in [Disney© Villainous](https://disney-villainous.fandom.com), a card's 'kind' is _almost_ always a single static value, but in some cases can be changed by the abilities of other cards. e.g. Jafar can 'hypnotise' 'Hero' cards, at which point they become 'Ally' cards. That could look something like this.
+You can add as many selectors as you like to select constructs under specific circumstances.
 
 ```gambit
-// In 'main.gambit'
-enum CardKind { HERO, ALLY, ... }
-define construct Card {
-	property CardKind kind
-	...
-}
-
-// In 'jaffar.gambit'
-
-construct Card {
-	state bool hypnotised = false
-}
-
-aladin = construct Card {
-	kind = HERO
-	....
-}
-
-select Card[hyponotised: true] {
-	kind = ALLY
-}
+Card[in_play][face: ACE][tokens >= 3]
 ```
+
+You can also select constructs using their signature.
+
+```gambit
+Card[ACE, SPADE]
+```
+
+A selector is said to be a 'static selector' if it selects instances based only on their static fields. A selector is said to be a 'dynamic selector' if it selsects instances using one or more state or property fields\*.
+
+> \* Technically, a property is considered to be a 'static property' if the expression used to define it is also static. Static properties do not cause a selector to become a dynamic one, and can be used in a static one.
 
 # 3. Functions & Procedures
 
-Functions and procedures in Gambit are two different things. The only difference between them is that functions must be 'mathematically pure', or in other words, cannot change the game state. Functions are 'read-only' procedures.
+Functions and procedures in Gambit are two different things. The only difference between them is that functions must be 'mathematically pure', or in other words, cannot change the game state. Functions are considered to be a subtype of Procedures, and so all functions are also procedures. You can imagined functions as 'read-only' procedures.
+
+## 3.1 Method call syntax
+
+If a function or procedure may be called the typical way.
+
+```gambit
+f(a, b, c)
+```
+
+However may also be called using the 'method syntax', where the first argument proceeds the function name.
+
+a:f(b, c)
+
+## 3.2 Selectors as parameters
+
+When defining a function or procedure (henceforth 'procedures') parameter, you may specify it's type, but you may also specify a static selector. Procedures can be overloaded. If multiple overloads match the same set of parameter types, the overloads will be ranked by the specificity of their selectors, and the first to match the given parameter will be executed.
+
+```gambit
+fn point_value(Card card)                 => 2
+fn point_value(Card[ACE] card)            => 2 + card.tokens
+fn point_value(Card[ACE, SPADES] card)    => 11
+fn point_value(Card[HEARTS][face != ACE]) => 3
+```
+
+It is a compile-time error to have call to a procedure where the parameters match multiple overloads of the same specificity
+
+```gambit
+fn point_value(Card card) => 2
+
+// These two functions have the same specificity
+fn point_value(Card[SPADE] card) => 1
+fn point_value(Card[ACE] card) => 4
+
+main() {
+	score = point_value([ACE, SPADE]) // ERROR: It is ambiguous which overload of `point_value` should be called.
+}
+```
+
+If, however, no ambigous calls are identified at compile-time, both overloads may co-exist.
+
+```gambit
+fn point_value(Card card) => 2
+
+// These two functions have the same specificity
+fn point_value(Card[SPADE] card) => 1
+fn point_value(Card[ACE] card) => 4
+
+main() {
+	score = point_value([ACE, HEART])
+	      + point_value([  3, SPADE])
+}
+```
+
+> TODO: Is only allowing static selectors the right choice? On one hand, it allows us to do comprehensive static analysis. This is most useful for preventing situations where two overloads with the same specificity match a given set of arguments, as we will be able to detect if this occurs at compile time. On the other hand, in some games, differing behaviours may be purely the result of non-static fields. In this case, currently the programmer is forced to place any logic that interacts with these dynamic fields in the function itself. This code is non expandable, _unless_ they use dynamic procedure fields to allow constructs to specify their own logic. Maybe that's the right call, but maybe it comes with it's own issues?
 
 # 4. Types
 
