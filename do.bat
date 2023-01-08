@@ -1,0 +1,1 @@
+local/script/%1.bat
