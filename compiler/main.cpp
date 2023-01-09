@@ -422,6 +422,114 @@ struct Literal
     variant<double, int, bool, string> value;
 };
 
+// SERIALISE PROGRAM MODEL //
+
+// FIXME: Implement versions of these to_json functions that instead of outputing `string`,
+//        output a `json` data structure, and then implement `to_string(json)`. This way
+//        `to_string(json)` can handle pretty printing a JSON output, and the `to_json`
+//        functions can just crudely convert to the correct data structure.
+
+string to_json(ptr<Program> program);
+string to_json(ptr<Scope> scope);
+string to_json(ptr<NativeType> native_type);
+string to_json(ptr<Construct> construct);
+string to_json(ptr<ConstructField> field);
+string to_json(Entity entity);
+string to_json(ptr<Literal> literal);
+string to_json(Expression expression);
+
+string to_json(ptr<Program> program)
+{
+    string json = "{\"node\": \"Program\", ";
+    json += "\"global_scope\": " + to_json(program->global_scope);
+    json += "}";
+    return json;
+}
+
+string to_json(ptr<Scope> scope)
+{
+    string json = "{\"node\": \"Scope\", ";
+
+    json += "\"lookup\": {";
+    for (auto entry : scope->lookup)
+        json += "\"" + entry.first + "\": " + to_json(entry.second) + ", ";
+    json += "}";
+
+    json += "}";
+    return json;
+}
+
+string to_json(ptr<NativeType> native_type)
+{
+    string json = "{\"node\": \"NativeType\", ";
+    json += "\"identity\": \"" + native_type->identity + "\", ";
+    json += "\"cpp_identity\": \"" + native_type->cpp_identity + "\", ";
+    json += "}";
+    return json;
+}
+
+string to_json(ptr<Construct> construct)
+{
+    string json = "{\"node\": \"Construct\", ";
+    json += "\"identity\": \"" + construct->identity + "\", ";
+
+    json += "\"fields\": {";
+    for (auto entry : construct->fields)
+        json += "\"" + entry.first + "\": " + to_json(entry.second) + ", ";
+    json += "}";
+
+    json += "}";
+    return json;
+}
+
+string to_json(ptr<ConstructField> field)
+{
+    string json = "{\"node\": \"ConstructField\", ";
+    json += "\"identity\": \"" + field->identity + "\", ";
+    json += "\"type\": \"" + field->type + "\", ";
+    json += "\"is_static\": " + (string)(field->is_static ? "true, " : "false, ");
+    json += "\"is_property\": " + (string)(field->is_property ? "true" : "false");
+    json += "}";
+    return json;
+}
+
+string to_json(Entity entity)
+{
+    if (IS(entity, NativeType))
+    {
+        return to_json(AS(entity, NativeType));
+    }
+    else if (IS(entity, Construct))
+    {
+        return to_json(AS(entity, Construct));
+    }
+    throw "Unable to serialise Entity node";
+}
+
+string to_json(ptr<Literal> literal)
+{
+    string json = "{\"node\": \"Literal\", \"value\": ";
+    if (holds_alternative<double>(literal->value))
+        json += to_string(get<double>(literal->value));
+    else if (holds_alternative<int>(literal->value))
+        json += to_string(get<int>(literal->value));
+    else if (holds_alternative<bool>(literal->value))
+        json += get<bool>(literal->value) ? "true" : "false";
+    else if (holds_alternative<string>(literal->value))
+        json += "\"" + get<string>(literal->value) + "\""; // FIXME: Does not properly escape the string
+    json += "}";
+    return json;
+}
+
+string to_json(Expression expression)
+{
+    if (IS(expression, Literal))
+    {
+        return to_json(AS(expression, Literal));
+    }
+    throw "Unable to serialise Expression node";
+}
+
 // PARSER //
 
 class Parser
@@ -636,6 +744,11 @@ int main(int argc, char *argv[])
     cout << "\nPARSING" << endl;
     Parser parser;
     auto program = parser.parse(tokens);
+
+    std::ofstream parser_output;
+    parser_output.open("local/parser_output.json");
+    parser_output << to_json(program);
+    cout << "Saved parser output to local/parser_output.json" << endl;
 
     cout << "\nERRORS" << endl;
     for (auto err : errors)
