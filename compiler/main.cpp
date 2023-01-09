@@ -1,10 +1,20 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <regex>
 #include <string>
+#include <variant>
 #include <vector>
 using namespace std;
+
+// POINTERS //
+
+template <class T>
+using ptr = shared_ptr<T>;
+
+template <class T>
+using wptr = weak_ptr<T>;
 
 // TOKENS //
 
@@ -352,6 +362,239 @@ vector<Token> generate_tokens(string src)
     return tokens;
 }
 
+// PROGRAM MODEL //
+
+struct Program;
+struct Scope;
+
+struct NativeType;
+struct Construct;
+struct ConstructField;
+using Entity = std::variant<ptr<NativeType>, ptr<Construct>>;
+
+struct Literal;
+using Expression = std::variant<ptr<Literal>>;
+
+// Macros
+
+#define IS(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
+#define AS(variant_value, T) (get<ptr<T>>(variant_value))
+
+// Program
+
+struct Program
+{
+    ptr<Scope> global_scope;
+};
+
+struct Scope
+{
+    wptr<Scope> parent;
+    map<string, Entity> lookup;
+};
+
+// Entities
+
+struct NativeType
+{
+    string identity;
+    string cpp_identity;
+};
+
+struct Construct
+{
+    string identity;
+    map<string, ptr<ConstructField>> fields;
+};
+
+struct ConstructField
+{
+    string identity;
+    string type;
+    bool is_static = false;
+    bool is_property = false;
+};
+
+// Expressions
+
+struct Literal
+{
+    variant<double, int, bool, string> value;
+};
+
+// PARSER //
+
+class Parser
+{
+public:
+    ptr<Program> parse(vector<Token> new_tokens)
+    {
+        tokens = new_tokens;
+        current_token = 0;
+        panic_mode = false;
+
+        parse_program();
+        return program;
+    };
+
+private:
+    vector<Token> tokens;
+    ptr<Program> program = nullptr;
+    size_t current_token;
+    bool panic_mode;
+
+    class Error : public std::exception
+    {
+    public:
+        string msg;
+        Token token;
+
+        Error(string msg, Token token) : msg(msg), token(token){};
+
+        string what()
+        {
+            return msg;
+        }
+    };
+
+    bool end_of_file()
+    {
+        return current_token >= tokens.size();
+    }
+
+    bool peek(TokenKind kind)
+    {
+        if (end_of_file())
+            return false;
+
+        if (kind == TokenKind::Line)
+            return tokens.at(current_token).kind == kind;
+
+        size_t i = current_token;
+        while (tokens.at(i).kind == TokenKind::Line)
+            i++;
+        return tokens.at(i).kind == kind;
+    };
+
+    Token eat(TokenKind kind)
+    {
+        if (end_of_file())
+        {
+            Token token = tokens.at(tokens.size() - 1);
+            throw Error("Expected " + token_name.at(kind) + ", got end of file", token);
+        }
+
+        Token token = tokens.at(current_token);
+
+        if (!peek(kind))
+        {
+            TokenKind other = token.kind;
+            throw Error("Expected " + token_name.at(kind) + ", got " + token_name.at(other), token);
+        }
+
+        if (kind != TokenKind::Line)
+        {
+            while (token.kind == TokenKind::Line)
+            {
+                current_token++;
+                token = tokens.at(current_token);
+            }
+        }
+
+        current_token++;
+        return token;
+    };
+
+    bool match(TokenKind kind)
+    {
+        if (peek(kind))
+        {
+            eat(kind);
+            return true;
+        }
+        return false;
+    };
+
+    void parse_program()
+    {
+        program = ptr<Program>(new Program);
+        program->global_scope = ptr<Scope>(new Scope);
+
+        while (current_token < tokens.size())
+        {
+            try
+            {
+                while (match(TokenKind::Line))
+                    if (end_of_file())
+                        break;
+
+                if (peek_construct_definition())
+                {
+                    panic_mode = false;
+                    parse_construct_definition(program->global_scope);
+                }
+                else
+                {
+                    throw Error("Expected Construct definition", tokens.at(current_token));
+                }
+            }
+            catch (Error err)
+            {
+                if (!panic_mode)
+                    emit_error(err.msg, err.token);
+                panic_mode = true;
+
+                while (!match(TokenKind::Line))
+                    eat(tokens.at(current_token).kind);
+            }
+        }
+    };
+
+    bool peek_construct_definition()
+    {
+        return peek(TokenKind::KeyExtend);
+    }
+
+    void parse_construct_definition(ptr<Scope> scope)
+    {
+        auto construct = ptr<Construct>(new Construct);
+
+        eat(TokenKind::KeyExtend);
+        construct->identity = eat(TokenKind::Identity).str;
+
+        // FIXME: Use some form of "declare" function, rather than adding to the map directly
+        scope->lookup.insert({construct->identity, construct});
+
+        eat(TokenKind::CurlyL);
+        while (peek_construct_field())
+        {
+            parse_construct_field(scope, construct);
+        }
+        eat(TokenKind::CurlyR);
+    };
+
+    bool peek_construct_field()
+    {
+        return peek(TokenKind::KeyStatic) || peek(TokenKind::KeyState) || peek(TokenKind::KeyProperty);
+    }
+
+    void parse_construct_field(ptr<Scope> scope, ptr<Construct> construct)
+    {
+        auto field = ptr<ConstructField>(new ConstructField);
+        if (match(TokenKind::KeyStatic))
+            field->is_static = true;
+        else if (match(TokenKind::KeyProperty))
+            field->is_property = true;
+        else
+            eat(TokenKind::KeyState);
+
+        field->type = eat(TokenKind::Identity).str;
+        field->identity = eat(TokenKind::Identity).str;
+
+        construct->fields.insert({field->identity, field});
+    }
+};
+
 // MAIN //
 
 int main(int argc, char *argv[])
@@ -379,18 +622,24 @@ int main(int argc, char *argv[])
 
     // Compile
 
+    cout << "\nLEXING" << endl;
     auto tokens = generate_tokens(src);
 
-    for (auto t : tokens)
-        cout << to_string(t) << endl;
-    cout << endl;
+    // for (auto t : tokens)
+    //     cout << to_string(t) << endl;
+    // cout << endl;
 
     // for (auto t : tokens)
     //     cout << t.str << " ";
     // cout << endl;
 
+    cout << "\nPARSING" << endl;
+    Parser parser;
+    auto program = parser.parse(tokens);
+
+    cout << "\nERRORS" << endl;
     for (auto err : errors)
-        cout << err << "\n\n";
+        cout << err << endl;
     cout << endl;
 
     return 0;

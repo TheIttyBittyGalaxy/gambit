@@ -11,9 +11,9 @@
 enum Mark { NAUGHT, CROSS }
 
 extend Game {
-    state list<Sqaure 9> board
     state Player current_player
     state bool is_over = false
+    state list<Sqaure 9> board
 }
 
 extend Player {
