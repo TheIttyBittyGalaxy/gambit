@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <regex>
 #include <string>
 #include <variant>
@@ -416,6 +417,7 @@ struct ConstructField
     string type;
     bool is_static = false;
     bool is_property = false;
+    optional<Expression> default_value;
 };
 
 // Expressions
@@ -491,7 +493,12 @@ string to_json(ptr<ConstructField> field)
     json += "\"identity\": \"" + field->identity + "\", ";
     json += "\"type\": \"" + field->type + "\", ";
     json += "\"is_static\": " + (string)(field->is_static ? "true, " : "false, ");
-    json += "\"is_property\": " + (string)(field->is_property ? "true" : "false");
+    json += "\"is_property\": " + (string)(field->is_property ? "true, " : "false, ");
+
+    json += "\"default_value\": " + (field->default_value.has_value()
+                                         ? to_json(field->default_value.value())
+                                         : "null");
+
     json += "}";
     return json;
 }
@@ -701,6 +708,11 @@ private:
 
         field->type = eat(Token::Identity).str;
         field->identity = eat(Token::Identity).str;
+
+        if (match(Token::Assign))
+        {
+            field->default_value = parse_expression();
+        }
 
         construct->fields.insert({field->identity, field});
     }
