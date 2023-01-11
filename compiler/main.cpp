@@ -18,190 +18,190 @@ using wptr = weak_ptr<T>;
 
 // TOKENS //
 
-enum class TokenKind
-{
-    Line,
-
-    Equal,
-    LessThanEqual,
-    GreaterThanEqual,
-
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Dot,
-    Comma,
-    Colon,
-    Question,
-    Assign,
-    ParenL,
-    ParenR,
-    CurlyL,
-    CurlyR,
-    SquareL,
-    SquareR,
-    TrigL,
-    TrigR,
-
-    KeyEnum,
-    KeyExtend,
-    KeyConstruct,
-    KeyStatic,
-    KeyState,
-    KeyProperty,
-    KeyBreak,
-    KeyContinue,
-    KeyElse,
-    KeyFor,
-    KeyIf,
-    KeyIn,
-    KeyMatch,
-    KeyReturn,
-    KeyUntil,
-    KeyChoose,
-    KeyFilter,
-    KeyTransform,
-    KeyAnd,
-    KeyOr,
-    KeyNot,
-
-    Boolean,
-    Number,
-    String,
-    Identity,
-};
-
-const map<TokenKind, string> token_name = {
-    {TokenKind::Line, "Line"},
-
-    {TokenKind::Equal, "Equal"},
-    {TokenKind::LessThanEqual, "LessThanEqual"},
-    {TokenKind::GreaterThanEqual, "GreaterThanEqual"},
-
-    {TokenKind::Add, "Add"},
-    {TokenKind::Sub, "Sub"},
-    {TokenKind::Mul, "Mul"},
-    {TokenKind::Div, "Div"},
-    {TokenKind::Dot, "Dot"},
-    {TokenKind::Comma, "Comma"},
-    {TokenKind::Colon, "Colon"},
-    {TokenKind::Question, "Question"},
-    {TokenKind::Assign, "Assign"},
-    {TokenKind::ParenL, "ParenL"},
-    {TokenKind::ParenR, "ParenR"},
-    {TokenKind::CurlyL, "CurlyL"},
-    {TokenKind::CurlyR, "CurlyR"},
-    {TokenKind::SquareL, "SquareL"},
-    {TokenKind::SquareR, "SquareR"},
-    {TokenKind::TrigL, "TrigL"},
-    {TokenKind::TrigR, "TrigR"},
-
-    {TokenKind::KeyEnum, "KeyEnum"},
-    {TokenKind::KeyExtend, "KeyExtend"},
-    {TokenKind::KeyConstruct, "KeyConstruct"},
-    {TokenKind::KeyStatic, "KeyStatic"},
-    {TokenKind::KeyState, "KeyState"},
-    {TokenKind::KeyProperty, "KeyProperty"},
-    {TokenKind::KeyBreak, "KeyBreak"},
-    {TokenKind::KeyContinue, "KeyContinue"},
-    {TokenKind::KeyElse, "KeyElse"},
-    {TokenKind::KeyFor, "KeyFor"},
-    {TokenKind::KeyIf, "KeyIf"},
-    {TokenKind::KeyIn, "KeyIn"},
-    {TokenKind::KeyMatch, "KeyMatch"},
-    {TokenKind::KeyReturn, "KeyReturn"},
-    {TokenKind::KeyUntil, "KeyUntil"},
-    {TokenKind::KeyChoose, "KeyChoose"},
-    {TokenKind::KeyFilter, "KeyFilter"},
-    {TokenKind::KeyTransform, "KeyTransform"},
-    {TokenKind::KeyAnd, "KeyAnd"},
-    {TokenKind::KeyOr, "KeyOr"},
-    {TokenKind::KeyNot, "KeyNot"},
-
-    {TokenKind::Boolean, "Boolean"},
-    {TokenKind::Number, "Number"},
-    {TokenKind::String, "String"},
-    {TokenKind::Identity, "Identity"},
-};
-
-const map<TokenKind, regex> token_match_rules = {
-    {TokenKind::Line, regex("\n")},
-
-    {TokenKind::Equal, regex("==")},
-    {TokenKind::LessThanEqual, regex("<=")},
-    {TokenKind::GreaterThanEqual, regex(">=")},
-
-    {TokenKind::Add, regex("\\+")},
-    {TokenKind::Sub, regex("\\-")},
-    {TokenKind::Mul, regex("\\*")},
-    {TokenKind::Div, regex("\\\\")},
-    {TokenKind::Dot, regex("\\.")},
-    {TokenKind::Comma, regex("\\,")},
-    {TokenKind::Colon, regex("\\:")},
-    {TokenKind::Question, regex("\\?")},
-    {TokenKind::Assign, regex("\\=")},
-    {TokenKind::ParenL, regex("\\(")},
-    {TokenKind::ParenR, regex("\\)")},
-    {TokenKind::CurlyL, regex("\\{")},
-    {TokenKind::CurlyR, regex("\\}")},
-    {TokenKind::SquareL, regex("\\[")},
-    {TokenKind::SquareR, regex("\\]")},
-    {TokenKind::TrigL, regex("\\<")},
-    {TokenKind::TrigR, regex("\\>")},
-
-    {TokenKind::Number, regex("[0-9]+(\\.[0-9]+)?")},
-    {TokenKind::String, regex("\"(\\.|.)*?\"")}, // FIXME: This regular expression matches "\", which is incorrect
-    {TokenKind::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")},
-};
-
-const map<string, TokenKind> keyword_match_rules = {
-    {"enum", TokenKind::KeyEnum},
-    {"extend", TokenKind::KeyExtend},
-    {"construct", TokenKind::KeyConstruct},
-
-    {"static", TokenKind::KeyStatic},
-    {"state", TokenKind::KeyState},
-    {"property", TokenKind::KeyProperty},
-
-    {"break", TokenKind::KeyBreak},
-    {"continue", TokenKind::KeyContinue},
-    {"else", TokenKind::KeyElse},
-    {"for", TokenKind::KeyFor},
-    {"if", TokenKind::KeyIf},
-    {"in", TokenKind::KeyIn},
-    {"match", TokenKind::KeyMatch},
-    {"return", TokenKind::KeyReturn},
-    {"until", TokenKind::KeyUntil},
-
-    {"choose", TokenKind::KeyChoose},
-    {"filter", TokenKind::KeyFilter},
-    {"transform", TokenKind::KeyTransform},
-
-    {"and", TokenKind ::KeyAnd},
-    {"or", TokenKind::KeyOr},
-    {"not", TokenKind::KeyNot},
-
-    {"true", TokenKind::Boolean},
-    {"false", TokenKind::Boolean},
-};
-
 struct Token
 {
-    TokenKind kind;
+    enum Kind
+    {
+        Line,
+
+        Equal,
+        LessThanEqual,
+        GreaterThanEqual,
+
+        Add,
+        Sub,
+        Mul,
+        Div,
+        Dot,
+        Comma,
+        Colon,
+        Question,
+        Assign,
+        ParenL,
+        ParenR,
+        CurlyL,
+        CurlyR,
+        SquareL,
+        SquareR,
+        TrigL,
+        TrigR,
+
+        KeyEnum,
+        KeyExtend,
+        KeyConstruct,
+        KeyStatic,
+        KeyState,
+        KeyProperty,
+        KeyBreak,
+        KeyContinue,
+        KeyElse,
+        KeyFor,
+        KeyIf,
+        KeyIn,
+        KeyMatch,
+        KeyReturn,
+        KeyUntil,
+        KeyChoose,
+        KeyFilter,
+        KeyTransform,
+        KeyAnd,
+        KeyOr,
+        KeyNot,
+
+        Boolean,
+        Number,
+        String,
+        Identity,
+    };
+
+    Kind kind;
     string str;
     size_t line;
     size_t column;
 
-    Token(TokenKind kind, string str, size_t line, size_t column) : kind(kind),
-                                                                    str(str),
-                                                                    line(line),
-                                                                    column(column) {}
+    Token(Kind kind, string str, size_t line, size_t column) : kind(kind),
+                                                               str(str),
+                                                               line(line),
+                                                               column(column) {}
+};
+
+const map<Token::Kind, string> token_name = {
+    {Token::Line, "Line"},
+
+    {Token::Equal, "Equal"},
+    {Token::LessThanEqual, "LessThanEqual"},
+    {Token::GreaterThanEqual, "GreaterThanEqual"},
+
+    {Token::Add, "Add"},
+    {Token::Sub, "Sub"},
+    {Token::Mul, "Mul"},
+    {Token::Div, "Div"},
+    {Token::Dot, "Dot"},
+    {Token::Comma, "Comma"},
+    {Token::Colon, "Colon"},
+    {Token::Question, "Question"},
+    {Token::Assign, "Assign"},
+    {Token::ParenL, "ParenL"},
+    {Token::ParenR, "ParenR"},
+    {Token::CurlyL, "CurlyL"},
+    {Token::CurlyR, "CurlyR"},
+    {Token::SquareL, "SquareL"},
+    {Token::SquareR, "SquareR"},
+    {Token::TrigL, "TrigL"},
+    {Token::TrigR, "TrigR"},
+
+    {Token::KeyEnum, "KeyEnum"},
+    {Token::KeyExtend, "KeyExtend"},
+    {Token::KeyConstruct, "KeyConstruct"},
+    {Token::KeyStatic, "KeyStatic"},
+    {Token::KeyState, "KeyState"},
+    {Token::KeyProperty, "KeyProperty"},
+    {Token::KeyBreak, "KeyBreak"},
+    {Token::KeyContinue, "KeyContinue"},
+    {Token::KeyElse, "KeyElse"},
+    {Token::KeyFor, "KeyFor"},
+    {Token::KeyIf, "KeyIf"},
+    {Token::KeyIn, "KeyIn"},
+    {Token::KeyMatch, "KeyMatch"},
+    {Token::KeyReturn, "KeyReturn"},
+    {Token::KeyUntil, "KeyUntil"},
+    {Token::KeyChoose, "KeyChoose"},
+    {Token::KeyFilter, "KeyFilter"},
+    {Token::KeyTransform, "KeyTransform"},
+    {Token::KeyAnd, "KeyAnd"},
+    {Token::KeyOr, "KeyOr"},
+    {Token::KeyNot, "KeyNot"},
+
+    {Token::Boolean, "Boolean"},
+    {Token::Number, "Number"},
+    {Token::String, "String"},
+    {Token::Identity, "Identity"},
+};
+
+const map<Token::Kind, regex> token_match_rules = {
+    {Token::Line, regex("\n")},
+
+    {Token::Equal, regex("==")},
+    {Token::LessThanEqual, regex("<=")},
+    {Token::GreaterThanEqual, regex(">=")},
+
+    {Token::Add, regex("\\+")},
+    {Token::Sub, regex("\\-")},
+    {Token::Mul, regex("\\*")},
+    {Token::Div, regex("\\\\")},
+    {Token::Dot, regex("\\.")},
+    {Token::Comma, regex("\\,")},
+    {Token::Colon, regex("\\:")},
+    {Token::Question, regex("\\?")},
+    {Token::Assign, regex("\\=")},
+    {Token::ParenL, regex("\\(")},
+    {Token::ParenR, regex("\\)")},
+    {Token::CurlyL, regex("\\{")},
+    {Token::CurlyR, regex("\\}")},
+    {Token::SquareL, regex("\\[")},
+    {Token::SquareR, regex("\\]")},
+    {Token::TrigL, regex("\\<")},
+    {Token::TrigR, regex("\\>")},
+
+    {Token::Number, regex("[0-9]+(\\.[0-9]+)?")},
+    {Token::String, regex("\"(\\.|.)*?\"")}, // FIXME: This regular expression matches "\", which is incorrect
+    {Token::Identity, regex("[a-zA-Z][a-zA-Z0-9_]*")},
+};
+
+const map<string, Token::Kind> keyword_match_rules = {
+    {"enum", Token::KeyEnum},
+    {"extend", Token::KeyExtend},
+    {"construct", Token::KeyConstruct},
+
+    {"static", Token::KeyStatic},
+    {"state", Token::KeyState},
+    {"property", Token::KeyProperty},
+
+    {"break", Token::KeyBreak},
+    {"continue", Token::KeyContinue},
+    {"else", Token::KeyElse},
+    {"for", Token::KeyFor},
+    {"if", Token::KeyIf},
+    {"in", Token::KeyIn},
+    {"match", Token::KeyMatch},
+    {"return", Token::KeyReturn},
+    {"until", Token::KeyUntil},
+
+    {"choose", Token::KeyChoose},
+    {"filter", Token::KeyFilter},
+    {"transform", Token::KeyTransform},
+
+    {"and", Token::Kind ::KeyAnd},
+    {"or", Token::KeyOr},
+    {"not", Token::KeyNot},
+
+    {"true", Token::Boolean},
+    {"false", Token::Boolean},
 };
 
 string to_string(Token t)
 {
-    if (t.kind == TokenKind::Line)
+    if (t.kind == Token::Line)
     {
         return "[/]";
     }
@@ -266,7 +266,7 @@ vector<Token> generate_tokens(string src)
         {
             if (next == "\n")
             {
-                tokens.emplace_back(TokenKind::Line, "\n", line, column);
+                tokens.emplace_back(Token::Line, "\n", line, column);
                 advance_line();
                 is_line_comment = false;
             }
@@ -307,7 +307,7 @@ vector<Token> generate_tokens(string src)
 
         else if (next == "\n")
         {
-            tokens.emplace_back(TokenKind::Line, "\n", line, column);
+            tokens.emplace_back(Token::Line, "\n", line, column);
             advance_line();
         }
 
@@ -324,10 +324,10 @@ vector<Token> generate_tokens(string src)
                 smatch info;
                 if (regex_search(sub, info, rule.second, regex_constants::match_continuous))
                 {
-                    TokenKind kind = rule.first;
+                    Token::Kind kind = rule.first;
                     string str = info.str();
 
-                    if (kind == TokenKind::Identity)
+                    if (kind == Token::Identity)
                     {
                         for (auto key_rule : keyword_match_rules)
                         {
@@ -570,21 +570,21 @@ private:
         return current_token >= tokens.size();
     }
 
-    bool peek(TokenKind kind)
+    bool peek(Token::Kind kind)
     {
         if (end_of_file())
             return false;
 
-        if (kind == TokenKind::Line)
+        if (kind == Token::Line)
             return tokens.at(current_token).kind == kind;
 
         size_t i = current_token;
-        while (tokens.at(i).kind == TokenKind::Line)
+        while (tokens.at(i).kind == Token::Line)
             i++;
         return tokens.at(i).kind == kind;
     };
 
-    Token eat(TokenKind kind)
+    Token eat(Token::Kind kind)
     {
         if (end_of_file())
         {
@@ -596,13 +596,13 @@ private:
 
         if (!peek(kind))
         {
-            TokenKind other = token.kind;
+            Token::Kind other = token.kind;
             throw Error("Expected " + token_name.at(kind) + ", got " + token_name.at(other), token);
         }
 
-        if (kind != TokenKind::Line)
+        if (kind != Token::Line)
         {
-            while (token.kind == TokenKind::Line)
+            while (token.kind == Token::Line)
             {
                 current_token++;
                 token = tokens.at(current_token);
@@ -613,7 +613,7 @@ private:
         return token;
     };
 
-    bool match(TokenKind kind)
+    bool match(Token::Kind kind)
     {
         if (peek(kind))
         {
@@ -632,7 +632,7 @@ private:
         {
             try
             {
-                while (match(TokenKind::Line))
+                while (match(Token::Line))
                     if (end_of_file())
                         break;
 
@@ -652,7 +652,7 @@ private:
                     emit_error(err.msg, err.token);
                 panic_mode = true;
 
-                while (!match(TokenKind::Line))
+                while (!match(Token::Line))
                     eat(tokens.at(current_token).kind);
             }
         }
@@ -660,44 +660,44 @@ private:
 
     bool peek_construct_definition()
     {
-        return peek(TokenKind::KeyExtend);
+        return peek(Token::KeyExtend);
     }
 
     void parse_construct_definition(ptr<Scope> scope)
     {
         auto construct = ptr<Construct>(new Construct);
 
-        eat(TokenKind::KeyExtend);
-        construct->identity = eat(TokenKind::Identity).str;
+        eat(Token::KeyExtend);
+        construct->identity = eat(Token::Identity).str;
 
         // FIXME: Use some form of "declare" function, rather than adding to the map directly
         scope->lookup.insert({construct->identity, construct});
 
-        eat(TokenKind::CurlyL);
+        eat(Token::CurlyL);
         while (peek_construct_field())
         {
             parse_construct_field(scope, construct);
         }
-        eat(TokenKind::CurlyR);
+        eat(Token::CurlyR);
     };
 
     bool peek_construct_field()
     {
-        return peek(TokenKind::KeyStatic) || peek(TokenKind::KeyState) || peek(TokenKind::KeyProperty);
+        return peek(Token::KeyStatic) || peek(Token::KeyState) || peek(Token::KeyProperty);
     }
 
     void parse_construct_field(ptr<Scope> scope, ptr<Construct> construct)
     {
         auto field = ptr<ConstructField>(new ConstructField);
-        if (match(TokenKind::KeyStatic))
+        if (match(Token::KeyStatic))
             field->is_static = true;
-        else if (match(TokenKind::KeyProperty))
+        else if (match(Token::KeyProperty))
             field->is_property = true;
         else
-            eat(TokenKind::KeyState);
+            eat(Token::KeyState);
 
-        field->type = eat(TokenKind::Identity).str;
-        field->identity = eat(TokenKind::Identity).str;
+        field->type = eat(Token::Identity).str;
+        field->identity = eat(Token::Identity).str;
 
         construct->fields.insert({field->identity, field});
     }
