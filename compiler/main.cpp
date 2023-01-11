@@ -377,8 +377,11 @@ using Expression = std::variant<ptr<Literal>>;
 
 // Macros
 
-#define IS(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
-#define AS(variant_value, T) (get<ptr<T>>(variant_value))
+#define IS(variant_value, T) (holds_alternative<T>(variant_value))
+#define AS(variant_value, T) (get<T>(variant_value))
+
+#define IS_PTR(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
+#define AS_PTR(variant_value, T) (get<ptr<T>>(variant_value))
 
 // Program
 
@@ -495,13 +498,13 @@ string to_json(ptr<ConstructField> field)
 
 string to_json(Entity entity)
 {
-    if (IS(entity, NativeType))
+    if (IS_PTR(entity, NativeType))
     {
-        return to_json(AS(entity, NativeType));
+        return to_json(AS_PTR(entity, NativeType));
     }
-    else if (IS(entity, Construct))
+    else if (IS_PTR(entity, Construct))
     {
-        return to_json(AS(entity, Construct));
+        return to_json(AS_PTR(entity, Construct));
     }
     throw "Unable to serialise Entity node";
 }
@@ -523,9 +526,9 @@ string to_json(ptr<Literal> literal)
 
 string to_json(Expression expression)
 {
-    if (IS(expression, Literal))
+    if (IS_PTR(expression, Literal))
     {
-        return to_json(AS(expression, Literal));
+        return to_json(AS_PTR(expression, Literal));
     }
     throw "Unable to serialise Expression node";
 }
