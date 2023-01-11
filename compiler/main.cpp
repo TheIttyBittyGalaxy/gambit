@@ -704,6 +704,53 @@ private:
 
         construct->fields.insert({field->identity, field});
     }
+
+    bool peek_expression()
+    {
+        return peek_literal();
+    }
+
+    Expression parse_expression()
+    {
+        if (peek_literal())
+        {
+            return parse_literal();
+        }
+
+        throw Error("Expected expression", tokens.at(current_token));
+    }
+
+    bool peek_literal()
+    {
+        return peek(Token::Number) || peek(Token::String) || peek(Token::Boolean);
+    }
+
+    ptr<Literal> parse_literal()
+    {
+        auto literal = ptr<Literal>(new Literal);
+        if (peek(Token::Number))
+        {
+            // FIXME: Treat num and int literals differently
+            Token t = eat(Token::Number);
+            literal->value = stod(t.str);
+        }
+        else if (peek(Token::String))
+        {
+            Token t = eat(Token::String);
+            literal->value = t.str;
+        }
+        else if (peek(Token::Boolean))
+        {
+            Token t = eat(Token::Boolean);
+            literal->value = t.str == "true";
+        }
+        else
+        {
+            throw Error("Expected literal", tokens.at(current_token));
+        }
+
+        return literal;
+    }
 };
 
 // MAIN //
