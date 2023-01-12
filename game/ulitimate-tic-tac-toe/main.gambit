@@ -1,9 +1,9 @@
 /* Gambit gives us the following by default
-    construct Game {
+    entity Game {
         static list<Player> players
     }
 
-    construct Player(player_number) {
+    entity Player(player_number) {
         static int player_number
     }
 */
@@ -23,19 +23,19 @@ extend Player {
     }
 }
 
-construct Board {
+entity Board {
     state list<SubBoard 9> squares
     state Mark? mark
 }
 
-construct SubBoard {
+entity SubBoard {
     static int index
     static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
     state list<Sqaure 9> squares
     state Mark? mark
 }
 
-construct Square(index) {
+entity Square(index) {
     static int index
     static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
     state Mark? mark

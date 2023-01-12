@@ -34,7 +34,7 @@
 			"patterns": [
 				{
 					"name": "storage.type",
-					"match": "\\b(enum|extend|construct)\\b"
+					"match": "\\b(enum|extend|entity)\\b"
 				},
 				{
 					"name": "keyword.control.gambit",

@@ -186,7 +186,7 @@ struct Token
 
         KeyEnum,
         KeyExtend,
-        KeyConstruct,
+        KeyEntity,
         KeyStatic,
         KeyState,
         KeyProperty,
@@ -250,7 +250,7 @@ const map<Token::Kind, string> token_name = {
 
     {Token::KeyEnum, "KeyEnum"},
     {Token::KeyExtend, "KeyExtend"},
-    {Token::KeyConstruct, "KeyConstruct"},
+    {Token::KeyEntity, "KeyEntity"},
     {Token::KeyStatic, "KeyStatic"},
     {Token::KeyState, "KeyState"},
     {Token::KeyProperty, "KeyProperty"},
@@ -309,7 +309,7 @@ const map<Token::Kind, regex> token_match_rules = {
 const map<string, Token::Kind> keyword_match_rules = {
     {"enum", Token::KeyEnum},
     {"extend", Token::KeyExtend},
-    {"construct", Token::KeyConstruct},
+    {"entity", Token::KeyEntity},
 
     {"static", Token::KeyStatic},
     {"state", Token::KeyState},
@@ -506,9 +506,8 @@ struct Program;
 struct Scope;
 
 struct NativeType;
-struct Construct;
-struct ConstructField;
-using Entity = std::variant<ptr<NativeType>, ptr<Construct>>;
+struct Entity;
+struct EntityField;
 
 struct Literal;
 using Expression = std::variant<ptr<Literal>>;
@@ -522,8 +521,9 @@ struct Program
 
 struct Scope
 {
+    using LookupValue = variant<ptr<NativeType>, ptr<Entity>>;
     wptr<Scope> parent;
-    map<string, Entity> lookup;
+    map<string, LookupValue> lookup;
 };
 
 // Entities
@@ -534,13 +534,13 @@ struct NativeType
     string cpp_identity;
 };
 
-struct Construct
+struct Entity
 {
     string identity;
-    map<string, ptr<ConstructField>> fields;
+    map<string, ptr<EntityField>> fields;
 };
 
-struct ConstructField
+struct EntityField
 {
     string identity;
     string type;
@@ -566,8 +566,8 @@ struct Literal
 Json to_json(ptr<Program> program);
 Json to_json(ptr<Scope> scope);
 Json to_json(ptr<NativeType> native_type);
-Json to_json(ptr<Construct> construct);
-Json to_json(ptr<ConstructField> field);
+Json to_json(ptr<Entity> entity);
+Json to_json(ptr<EntityField> field);
 Json to_json(Entity entity);
 Json to_json(ptr<Literal> literal);
 Json to_json(Expression expression);
@@ -584,7 +584,7 @@ Json to_json(ptr<Scope> scope)
 {
     return JsonObject({
         {"node", string("Scope")},
-        {"lookup", to_json<Entity>(scope->lookup)},
+        {"lookup", to_json<Scope::LookupValue>(scope->lookup)},
     });
 }
 
@@ -597,19 +597,19 @@ Json to_json(ptr<NativeType> native_type)
     });
 }
 
-Json to_json(ptr<Construct> construct)
+Json to_json(ptr<Entity> entity)
 {
     return JsonObject({
-        {"node", string("Construct")},
-        {"identity", construct->identity},
-        {"fields", to_json<ptr<ConstructField>>(construct->fields)},
+        {"node", string("Entity")},
+        {"identity", entity->identity},
+        {"fields", to_json<ptr<EntityField>>(entity->fields)},
     });
 }
 
-Json to_json(ptr<ConstructField> field)
+Json to_json(ptr<EntityField> field)
 {
     return JsonObject({
-        {"node", string("ConstructField")},
+        {"node", string("EntityField")},
         {"identity", field->identity},
         {"type", field->type},
         {"is_static", field->is_static},
@@ -618,14 +618,14 @@ Json to_json(ptr<ConstructField> field)
     });
 }
 
-Json to_json(Entity entity)
+Json to_json(Scope::LookupValue value)
 {
-    if (IS_PTR(entity, NativeType))
-        return to_json(AS_PTR(entity, NativeType));
-    else if (IS_PTR(entity, Construct))
-        return to_json(AS_PTR(entity, Construct));
+    if (IS_PTR(value, NativeType))
+        return to_json(AS_PTR(value, NativeType));
+    else if (IS_PTR(value, Entity))
+        return to_json(AS_PTR(value, Entity));
 
-    throw "Unable to serialise Entity node";
+    throw "Unable to serialise Scope::LookupValue";
 }
 
 Json to_json(ptr<Literal> literal)
@@ -773,14 +773,14 @@ private:
                     if (end_of_file())
                         break;
 
-                if (peek_construct_definition())
+                if (peek_entity_definition())
                 {
                     panic_mode = false;
-                    parse_construct_definition(program->global_scope);
+                    parse_entity_definition(program->global_scope);
                 }
                 else
                 {
-                    throw Error("Expected Construct definition", tokens.at(current_token));
+                    throw Error("Expected Entity definition", tokens.at(current_token));
                 }
             }
             catch (Error err)
@@ -795,37 +795,37 @@ private:
         }
     };
 
-    bool peek_construct_definition()
+    bool peek_entity_definition()
     {
         return peek(Token::KeyExtend);
     }
 
-    void parse_construct_definition(ptr<Scope> scope)
+    void parse_entity_definition(ptr<Scope> scope)
     {
-        auto construct = ptr<Construct>(new Construct);
+        auto entity = ptr<Entity>(new Entity);
 
         eat(Token::KeyExtend);
-        construct->identity = eat(Token::Identity).str;
+        entity->identity = eat(Token::Identity).str;
 
         // FIXME: Use some form of "declare" function, rather than adding to the map directly
-        scope->lookup.insert({construct->identity, construct});
+        scope->lookup.insert({entity->identity, entity});
 
         eat(Token::CurlyL);
-        while (peek_construct_field())
+        while (peek_entity_field())
         {
-            parse_construct_field(scope, construct);
+            parse_entity_field(scope, entity);
         }
         eat(Token::CurlyR);
     };
 
-    bool peek_construct_field()
+    bool peek_entity_field()
     {
         return peek(Token::KeyStatic) || peek(Token::KeyState) || peek(Token::KeyProperty);
     }
 
-    void parse_construct_field(ptr<Scope> scope, ptr<Construct> construct)
+    void parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
     {
-        auto field = ptr<ConstructField>(new ConstructField);
+        auto field = ptr<EntityField>(new EntityField);
         if (match(Token::KeyStatic))
             field->is_static = true;
         else if (match(Token::KeyProperty))
@@ -841,7 +841,7 @@ private:
             field->default_value = parse_expression();
         }
 
-        construct->fields.insert({field->identity, field});
+        entity->fields.insert({field->identity, field});
     }
 
     bool peek_expression()

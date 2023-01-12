@@ -1,12 +1,12 @@
-# 1. Constructs
+# 1. Entities
 
-A construct is 'a thing that can exist' in your game. For example, if your game is played with a regular deck of cards, a `Card` is a construct in your game. Constructs must be defined, where they are defined with a list of fields. Each field must have a name and a data type, will be either a static field, a property, or a state.
+A entity is 'a thing that can exist' in your game. For example, if your game is played with a regular deck of cards, a `Card` is a entity in your game. Entities must be defined, where they are defined with a list of fields. Each field must have a name and a data type, will be either a static field, a property, or a state.
 
-Once a construct has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
+Once a entity has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
 
-Constructs are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a construct, but you wouldn't have a 'GamePieceManager' like you might in conventional object-oriented languages.
+Entities are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a entity, but you wouldn't have a 'GamePieceManager' like you might in conventional object-oriented languages.
 
-## 1.1 Construct definitions
+## 1.1 Entity definitions
 
 ### 1.1.1 Base definitions
 
@@ -16,7 +16,7 @@ Let's set we wanted to define a regular set of playing cards. We could do that s
 enum Face { ACE, 2, 3, 4, 5, 6, 7, 8, 9, JACK, QUEEN, KING } // `Suit` and `Face` are both enums (see more in the 'types' section of this document)
 enum Suit { HEART, DIAMOND, CLUB, SPADE }
 
-define construct Card[suit, face] {
+define entity Card[suit, face] {
 	static Suit suit
 	static Face face
 }
@@ -24,17 +24,17 @@ define construct Card[suit, face] {
 
 ### 1.1.2 Additive definitions
 
-Once a construct has been defined, you may also define additional fields in separate declarations. This is particularly useful in situations where you want to program extensions to the game in a separate file, without having to make significant edits to the 'core' game.
+Once a entity has been defined, you may also define additional fields in separate declarations. This is particularly useful in situations where you want to program extensions to the game in a separate file, without having to make significant edits to the 'core' game.
 
-Additive definitions are the same as base definitions, but without the `define` keyword. Additive definition may not define the construct's signature.
+Additive definitions are the same as base definitions, but without the `define` keyword. Additive definition may not define the entity's signature.
 
 ```gambit
-define construct Card[suit, face] {
+define entity Card[suit, face] {
 	static Suit suit
 	static Face face
 }
 
-construct Card {
+entity Card {
 	state Boolean activated
 }
 ```
@@ -48,12 +48,12 @@ You can create additive definitions that only apply to instances that match a gi
 Let's say that in our game, played with a regular set of playing cards, the player has the ability to add tokens to picture cards. We could define that as follows.
 
 ```gambit
-construct Card {
+entity Card {
 	static Suit suit
 	static Face face
 }
 
-construct Card[face: ACE|JACK|QUEEN|KING] {
+entity Card[face: ACE|JACK|QUEEN|KING] {
 	state Integer tokens: 0
 }
 ```
@@ -61,45 +61,45 @@ construct Card[face: ACE|JACK|QUEEN|KING] {
 We could even add an additional rule that states that the Ace of Spades has a default value of 2 tokens.
 
 ```gambit
-construct Card[ACE, SPADE] {
+entity Card[ACE, SPADE] {
 	tokens: 2
 }
 ```
 
 ### 1.1.4 Scoped definitions
 
-Additive definitions of a construct are scoped, meaning the additional fields can only be accessed elsewhere in the same scope. Different scopes may specify different fields that still have the same name.
+Additive definitions of a entity are scoped, meaning the additional fields can only be accessed elsewhere in the same scope. Different scopes may specify different fields that still have the same name.
 
 ```gambit
 scope sapphire_expansion {
-	construct Card {
+	entity Card {
 		state Boolean super_shiny
 		state Integer tokens // Can only be accessed in the 'sapphire_expansion' scope
 	}
 }
 
 scope ruby_expansion {
-	construct Card {
+	entity Card {
 		state Integer tokens // Can only be access in the 'ruby_expansion' scope
 	}
 }
 ```
 
-## 1.2 Construct signatures
+## 1.2 Entity signatures
 
 Given the definition below, instances of a class would have to specified with the long-hand named syntax `Card[suit: SPADES, face: ACE]`.
 
 ```gambit
-define construct Card {
+define entity Card {
 	static Suit suit
 	static Face face
 }
 ```
 
-This can be a bit cumbersome. However, in the base definition of a construct you can specify a 'signature' for the construct. This provides a syntax for supplying specific fields without having to name them. Given the following definition...
+This can be a bit cumbersome. However, in the base definition of a entity you can specify a 'signature' for the entity. This provides a syntax for supplying specific fields without having to name them. Given the following definition...
 
 ```gambit
-define construct Card[suit, face] {
+define entity Card[suit, face] {
 	static Suit suit
 	static Face face
 }
@@ -118,9 +118,9 @@ Card[ACE] // Matches any aces
 
 In the case of playing cards, if you only provide a single value to the signature, it is totally unambiguous as if to the `suit` or the `face` has been provided, because those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
 
-## 1.3 Construct fields
+## 1.3 Entity fields
 
-There are three kinds of field a construct can have, each with different behaviours.
+There are three kinds of field a entity can have, each with different behaviours.
 
 ### 1.3.1 Static fields
 
@@ -134,7 +134,7 @@ static Suit suit
 
 State fields are fields that can change during the game. State fields must be defined with a default value. An example might be how many coin tokens the player has.
 
-All state fields across all construct instances comprise the 'game state'.
+All state fields across all entity instances comprise the 'game state'.
 
 ```gambit
 int tokens = 0
@@ -142,7 +142,7 @@ int tokens = 0
 
 ### 1.3.3 Property fields
 
-A property of a construct is a field that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the construct it is a member of.
+A property of a entity is a field that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the entity it is a member of.
 
 ```gambit
 static int max_health: 20 // Static field
@@ -179,20 +179,20 @@ List<Card> deck = for suit, face in Suit, Face => [suit, face]
 
 # 2. Selectors
 
-During your game, you can select all construct instances that have specific values. e.g. all of the hearts in a deck of cards, all players with 10 or more coin tokens, etc.
+During your game, you can select all entity instances that have specific values. e.g. all of the hearts in a deck of cards, all players with 10 or more coin tokens, etc.
 
 ```gambit
 Card[suit: HEART]
 Player[tokens >= 10]
 ```
 
-You can add as many selectors as you like to select constructs under specific circumstances.
+You can add as many selectors as you like to select entities under specific circumstances.
 
 ```gambit
 Card[in_play][face: ACE][tokens >= 3]
 ```
 
-You can also select constructs using their signature.
+You can also select entities using their signature.
 
 ```gambit
 Card[ACE, SPADE]
@@ -258,7 +258,7 @@ main() {
 }
 ```
 
-> TODO: Is only allowing static selectors the right choice? On one hand, it allows us to do comprehensive static analysis. This is most useful for preventing situations where two overloads with the same specificity match a given set of arguments, as we will be able to detect if this occurs at compile time. On the other hand, in some games, differing behaviours may be purely the result of non-static fields. In this case, currently the programmer is forced to place any logic that interacts with these dynamic fields in the function itself. This code is non expandable, _unless_ they use dynamic procedure fields to allow constructs to specify their own logic. Maybe that's the right call, but maybe it comes with it's own issues?
+> TODO: Is only allowing static selectors the right choice? On one hand, it allows us to do comprehensive static analysis. This is most useful for preventing situations where two overloads with the same specificity match a given set of arguments, as we will be able to detect if this occurs at compile time. On the other hand, in some games, differing behaviours may be purely the result of non-static fields. In this case, currently the programmer is forced to place any logic that interacts with these dynamic fields in the function itself. This code is non expandable, _unless_ they use dynamic procedure fields to allow entities to specify their own logic. Maybe that's the right call, but maybe it comes with it's own issues?
 
 # 4. Types
 
@@ -330,10 +330,10 @@ Heart&Spade is Club&Spade // false
 
 ## 4.7 First class functions and procedures
 
-Functions and procedures can be first class. This also means they can be the fields of constructs. For example, say that some cards in your game have an 'activate' ability, that could be implemented something like this.
+Functions and procedures can be first class. This also means they can be the fields of entities. For example, say that some cards in your game have an 'activate' ability, that could be implemented something like this.
 
 ```gambit
-define construct Card {
+define entity Card {
 	static Procedure(Player user)? activate_ability
 	state bool activated = false
 	...
@@ -350,11 +350,11 @@ procedure gain_two_money(Player player) {
 	player.money += 2
 }
 
-atm = construct Card {
+atm = entity Card {
 	activate_ability = gain_two_money
 }
 
-jackpot = construct Card {
+jackpot = entity Card {
 	procedure activate_ability(user) {
 		card.user.money += roll(6) + roll(6)
 	}
