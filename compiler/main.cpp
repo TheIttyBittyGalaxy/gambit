@@ -53,13 +53,12 @@ struct Json
     Json(JsonObject value) : value(value){};
 };
 
+Json to_json(Json value) { return value; }
 Json to_json(string value) { return Json(value); }
 Json to_json(int value) { return Json(value); }
 Json to_json(double value) { return Json(value); }
 Json to_json(bool value) { return Json(value); }
 Json to_json(monostate value) { return Json(value); }
-Json to_json(JsonArray value) { return Json(value); }
-Json to_json(JsonObject value) { return Json(value); }
 
 template <typename T>
 Json to_json(optional<T> value)
@@ -72,7 +71,7 @@ Json to_json(vector<T> vector)
 {
     JsonArray array;
     for (auto elem : vector)
-        array.emplace(to_json(elem));
+        array.emplace_back(to_json(elem));
     return array;
 }
 
