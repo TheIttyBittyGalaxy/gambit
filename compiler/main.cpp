@@ -163,6 +163,7 @@ struct Token
         Line,
 
         Equal,
+        NotEqual,
         LessThanEqual,
         GreaterThanEqual,
 
@@ -175,6 +176,7 @@ struct Token
         Colon,
         Question,
         Assign,
+        Hash,
         ParenL,
         ParenR,
         CurlyL,
@@ -184,9 +186,10 @@ struct Token
         TrigL,
         TrigR,
 
+        KeyEntity,
         KeyEnum,
         KeyExtend,
-        KeyEntity,
+        KeyFn,
         KeyStatic,
         KeyState,
         KeyProperty,
@@ -196,6 +199,7 @@ struct Token
         KeyFor,
         KeyIf,
         KeyIn,
+        KeyLoop,
         KeyMatch,
         KeyReturn,
         KeyUntil,
@@ -227,6 +231,7 @@ const map<Token::Kind, string> token_name = {
     {Token::Line, "Line"},
 
     {Token::Equal, "Equal"},
+    {Token::NotEqual, "NotEqual"},
     {Token::LessThanEqual, "LessThanEqual"},
     {Token::GreaterThanEqual, "GreaterThanEqual"},
 
@@ -239,6 +244,7 @@ const map<Token::Kind, string> token_name = {
     {Token::Colon, "Colon"},
     {Token::Question, "Question"},
     {Token::Assign, "Assign"},
+    {Token::Hash, "Hash"},
     {Token::ParenL, "ParenL"},
     {Token::ParenR, "ParenR"},
     {Token::CurlyL, "CurlyL"},
@@ -248,9 +254,10 @@ const map<Token::Kind, string> token_name = {
     {Token::TrigL, "TrigL"},
     {Token::TrigR, "TrigR"},
 
+    {Token::KeyEntity, "KeyEntity"},
     {Token::KeyEnum, "KeyEnum"},
     {Token::KeyExtend, "KeyExtend"},
-    {Token::KeyEntity, "KeyEntity"},
+    {Token::KeyFn, "KeyFn"},
     {Token::KeyStatic, "KeyStatic"},
     {Token::KeyState, "KeyState"},
     {Token::KeyProperty, "KeyProperty"},
@@ -260,6 +267,7 @@ const map<Token::Kind, string> token_name = {
     {Token::KeyFor, "KeyFor"},
     {Token::KeyIf, "KeyIf"},
     {Token::KeyIn, "KeyIn"},
+    {Token::KeyLoop, "KeyLoop"},
     {Token::KeyMatch, "KeyMatch"},
     {Token::KeyReturn, "KeyReturn"},
     {Token::KeyUntil, "KeyUntil"},
@@ -280,6 +288,7 @@ const map<Token::Kind, regex> token_match_rules = {
     {Token::Line, regex("\n")},
 
     {Token::Equal, regex("==")},
+    {Token::NotEqual, regex("!=")},
     {Token::LessThanEqual, regex("<=")},
     {Token::GreaterThanEqual, regex(">=")},
 
@@ -292,6 +301,7 @@ const map<Token::Kind, regex> token_match_rules = {
     {Token::Colon, regex("\\:")},
     {Token::Question, regex("\\?")},
     {Token::Assign, regex("\\=")},
+    {Token::Hash, regex("\\#")},
     {Token::ParenL, regex("\\(")},
     {Token::ParenR, regex("\\)")},
     {Token::CurlyL, regex("\\{")},
@@ -307,9 +317,10 @@ const map<Token::Kind, regex> token_match_rules = {
 };
 
 const map<string, Token::Kind> keyword_match_rules = {
+    {"entity", Token::KeyEntity},
     {"enum", Token::KeyEnum},
     {"extend", Token::KeyExtend},
-    {"entity", Token::KeyEntity},
+    {"fn", Token::KeyFn},
 
     {"static", Token::KeyStatic},
     {"state", Token::KeyState},
@@ -321,6 +332,7 @@ const map<string, Token::Kind> keyword_match_rules = {
     {"for", Token::KeyFor},
     {"if", Token::KeyIf},
     {"in", Token::KeyIn},
+    {"loop", Token::KeyLoop},
     {"match", Token::KeyMatch},
     {"return", Token::KeyReturn},
     {"until", Token::KeyUntil},
