@@ -17,6 +17,8 @@ using namespace std;
 #define IS_PTR(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
 #define AS_PTR(variant_value, T) (get<ptr<T>>(variant_value))
 
+#define CREATE(T) (ptr<T>(new T))
+
 // POINTERS //
 
 template <class T>
@@ -810,8 +812,8 @@ private:
 
     void parse_program()
     {
-        program = ptr<Program>(new Program);
-        program->global_scope = ptr<Scope>(new Scope);
+        program = CREATE(Program);
+        program->global_scope = CREATE(Scope);
 
         while (current_token < tokens.size())
         {
@@ -855,7 +857,7 @@ private:
 
     void parse_entity_definition(ptr<Scope> scope)
     {
-        auto entity = ptr<Entity>(new Entity);
+        auto entity = CREATE(Entity);
 
         eat(Token::KeyExtend);
         entity->identity = eat(Token::Identity).str;
@@ -878,7 +880,7 @@ private:
 
     void parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
     {
-        auto field = ptr<EntityField>(new EntityField);
+        auto field = CREATE(EntityField);
         if (match(Token::KeyStatic))
             field->is_static = true;
         else if (match(Token::KeyProperty))
@@ -904,7 +906,7 @@ private:
 
     void parse_enum_definition(ptr<Scope> scope)
     {
-        auto enum_type = ptr<EnumType>(new EnumType);
+        auto enum_type = CREATE(EnumType);
 
         eat(Token::KeyEnum);
         enum_type->identity = eat(Token::Identity).str;
@@ -915,7 +917,7 @@ private:
         eat(Token::CurlyL);
         do
         {
-            auto enum_value = ptr<EnumValue>(new EnumValue);
+            auto enum_value = CREATE(EnumValue);
             enum_value->identity = eat(Token::Identity).str;
             enum_type->values.emplace_back(enum_value);
         } while (match(Token::Comma));
@@ -945,7 +947,7 @@ private:
 
     ptr<Literal> parse_literal()
     {
-        auto literal = ptr<Literal>(new Literal);
+        auto literal = CREATE(Literal);
         if (peek(Token::Number))
         {
             // FIXME: Treat num and int literals differently
