@@ -517,11 +517,15 @@ struct Program;
 struct Scope;
 
 struct NativeType;
+
+struct EnumType;
+struct EnumValue;
+
 struct Entity;
 struct EntityField;
 
 struct Literal;
-using Expression = std::variant<ptr<Literal>>;
+using Expression = std::variant<ptr<Literal>, ptr<EnumValue>>;
 
 // Program
 
@@ -532,9 +536,21 @@ struct Program
 
 struct Scope
 {
-    using LookupValue = variant<ptr<NativeType>, ptr<Entity>>;
+    using LookupValue = variant<ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
     wptr<Scope> parent;
     map<string, LookupValue> lookup;
+};
+
+// Enums
+struct EnumType
+{
+    string identity;
+    vector<ptr<EnumValue>> values;
+};
+
+struct EnumValue
+{
+    string identity;
 };
 
 // Entities
@@ -577,9 +593,11 @@ struct Literal
 Json to_json(ptr<Program> program);
 Json to_json(ptr<Scope> scope);
 Json to_json(ptr<NativeType> native_type);
+Json to_json(ptr<EnumType> enum_type);
+Json to_json(ptr<EnumValue> enum_value);
 Json to_json(ptr<Entity> entity);
 Json to_json(ptr<EntityField> field);
-Json to_json(Entity entity);
+Json to_json(Scope::LookupValue entity);
 Json to_json(ptr<Literal> literal);
 Json to_json(Expression expression);
 
@@ -608,6 +626,23 @@ Json to_json(ptr<NativeType> native_type)
     });
 }
 
+Json to_json(ptr<EnumType> enum_type)
+{
+    return JsonObject({
+        {"node", string("EnumType")},
+        {"identity", enum_type->identity},
+        {"values", to_json<ptr<EnumValue>>(enum_type->values)},
+    });
+}
+
+Json to_json(ptr<EnumValue> enum_value)
+{
+    return JsonObject({
+        {"node", string("EnumValue")},
+        {"identity", enum_value->identity},
+    });
+}
+
 Json to_json(ptr<Entity> entity)
 {
     return JsonObject({
@@ -633,6 +668,8 @@ Json to_json(Scope::LookupValue value)
 {
     if (IS_PTR(value, NativeType))
         return to_json(AS_PTR(value, NativeType));
+    else if (IS_PTR(value, EnumType))
+        return to_json(AS_PTR(value, EnumType));
     else if (IS_PTR(value, Entity))
         return to_json(AS_PTR(value, Entity));
 
@@ -789,6 +826,11 @@ private:
                     panic_mode = false;
                     parse_entity_definition(program->global_scope);
                 }
+                else if (peek_enum_definition())
+                {
+                    panic_mode = false;
+                    parse_enum_definition(program->global_scope);
+                }
                 else
                 {
                     throw Error("Expected Entity definition", tokens.at(current_token));
@@ -853,6 +895,32 @@ private:
         }
 
         entity->fields.insert({field->identity, field});
+    }
+
+    bool peek_enum_definition()
+    {
+        return peek(Token::KeyEnum);
+    }
+
+    void parse_enum_definition(ptr<Scope> scope)
+    {
+        auto enum_type = ptr<EnumType>(new EnumType);
+
+        eat(Token::KeyEnum);
+        enum_type->identity = eat(Token::Identity).str;
+
+        // FIXME: Use some form of "declare" function, rather than adding to the map directly
+        scope->lookup.insert({enum_type->identity, enum_type});
+
+        eat(Token::CurlyL);
+        do
+        {
+            auto enum_value = ptr<EnumValue>(new EnumValue);
+            enum_value->identity = eat(Token::Identity).str;
+            enum_type->values.emplace_back(enum_value);
+        } while (match(Token::Comma));
+
+        eat(Token::CurlyR);
     }
 
     bool peek_expression()
