@@ -38,11 +38,15 @@
 				},
 				{
 					"name": "keyword.control.gambit",
-					"match": "\\b(break|continue|else|for|if|in|match|return|until)\\b"
+					"match": "\\b(break|continue|else|for|if|in|match|return|until|loop)\\b"
 				},
 				{
 					"name": "storage.modifier",
 					"match": "\\b(static|state|property)\\b"
+				},
+				{
+					"name": "storage.modifier",
+					"match": "\\b(fn)\\b"
 				},
 				{
 					"name": "keyword.operator",
