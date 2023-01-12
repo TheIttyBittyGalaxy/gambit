@@ -867,18 +867,47 @@ private:
 
     bool peek_entity_definition()
     {
-        return peek(Token::KeyExtend);
+        return peek(Token::KeyEntity) || peek(Token::KeyExtend);
     }
 
     void parse_entity_definition(ptr<Scope> scope)
     {
-        auto entity = CREATE(Entity);
+        bool is_additive_definition = match(Token::KeyExtend);
+        if (!is_additive_definition)
+            eat(Token::KeyEntity);
 
-        eat(Token::KeyExtend);
-        entity->identity = eat(Token::Identity).str;
+        Token identity = eat(Token::Identity);
 
-        // FIXME: Use some form of "declare" function, rather than adding to the map directly
-        scope->lookup.insert({entity->identity, entity});
+        ptr<Entity> entity;
+
+        // FIXME: Use some form of "is defined" function, rather than addressing the map directly
+        if (scope->lookup.find(identity.str) == scope->lookup.end()) // Identity not found
+        {
+            entity = CREATE(Entity);
+            entity->identity = identity.str;
+
+            // FIXME: Use some form of "declare" function, rather than adding to the map directly
+            scope->lookup.insert({entity->identity, entity});
+        }
+        else
+        {
+            // FIXME: Use some form of "fetch" function, rather than addressing the map directly
+            auto found = scope->lookup.at(identity.str);
+
+            if (!IS_PTR(found, Entity))
+                throw Error("'" + identity.str + "' is not an Entity", identity);
+
+            entity = AS_PTR(found, Entity);
+        }
+
+        cout << to_string(tokens.at(current_token)) << endl;
+
+        if (!is_additive_definition && peek(Token::ParenL))
+        {
+            eat(Token::ParenL);
+            // FIXME: Parse entity signature
+            eat(Token::ParenR);
+        }
 
         eat(Token::CurlyL);
         while (peek_entity_field())
@@ -915,12 +944,10 @@ private:
         field->type = eat(Token::Identity).str;
         field->identity = eat(Token::Identity).str;
 
-        if (match(Token::Assign))
-        {
-            field->default_value = parse_expression();
-        }
-
         entity->fields.insert({field->identity, field});
+
+        if (match(Token::Assign))
+            field->default_value = parse_expression();
     }
 
     bool peek_enum_definition()
