@@ -353,10 +353,8 @@ const map<string, Token::Kind> keyword_match_rules = {
 string to_string(Token t)
 {
     if (t.kind == Token::Line)
-    {
-        return "[/]";
-    }
-    return "[" + token_name.at(t.kind) + " " + t.str + "]";
+        return "[" + to_string(t.line) + ":" + to_string(t.column) + " /]";
+    return "[" + to_string(t.line) + ":" + to_string(t.column) + " " + token_name.at(t.kind) + " " + t.str + "]";
 }
 
 // ERRORS //
