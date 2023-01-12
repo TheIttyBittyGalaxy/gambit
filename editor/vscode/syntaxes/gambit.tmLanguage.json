@@ -50,14 +50,14 @@
 				},
 				{
 					"name": "keyword.operator",
-					"match": "\\b(filter|transform|choose)\\b"
+					"match": "\\b(filter|transform|choose|wins|looses)\\b"
 				}
 			]
 		},
 		"literals": {
 			"patterns": [
 				{
-					"match": "\\b(true|false)\\b",
+					"match": "\\b(true|false|none)\\b",
 					"name": "constant.language"
 				},
 				{
