@@ -892,7 +892,6 @@ private:
             {
                 emit_error(err.msg, err.token);
                 skip_to_end_of_line();
-                cout << to_string(tokens.at(current_token)) << endl;
             }
         }
         eat(Token::CurlyR);
