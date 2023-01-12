@@ -8,6 +8,9 @@
     }
 */
 
+// FIXME: Update this code to make better use of functional features
+//        (more closely reflecting those made in tic-tac-toe/main.gambit)
+
 enum Mark { NAUGHT, CROSS, DRAW }
 
 extend Game {

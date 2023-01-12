@@ -1,6 +1,6 @@
 /* Gambit gives us the following by default
     entity Game {
-        static list<Player> players
+        static List<Player> players
     }
 
     entity Player(player_number) {
@@ -11,9 +11,9 @@
 enum Mark { NAUGHT, CROSS }
 
 extend Game {
+    state Board board
     state Player current_player
     state bool is_over = false
-    state list<Sqaure 9> board
 }
 
 extend Player {
@@ -23,45 +23,50 @@ extend Player {
     } // Because this property is derived entirely from static fields, it's technically a static field (a.k.a a 'static property')
 }
 
+entity Board() {
+    state List<Mark, 9> squares
+    property bool is_full = #(squares filter (square: sqaure.mark != none)) == 0
+}
+
 entity Square(index) {
     static int index
     static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index] // Use of an expression here is valid, as the expression can be resolved at compile time
     state Mark? mark // Defaults to `none`
 }
 
-main() {
-    game.current_player = game.players[1]
-    until game.is_over {
-        make_move()
-        detect_winner()
-        if game.current_player == game.players[1]: game.current_player = game.players[2]
-        else: game.current_player = game.players[1]
-    }
+fn available_squares(Board board) { // Infer return type as `List<Square>`
+    return board.squares filter (square: square.mark == none)
 }
 
-make_move() {
-    options = game.board filter (square: square.mark == none) // Infer type of 'options' as 'list<Sqaure>`
-    choice = game.current_player choose options ("Which sqaure do you want to play?") // Infer type of 'choice' as 'Square'
-    choice.mark = game.current_player.mark
-}
-
-detect_winner() {
-    lines = [ // infer type as `list<int 8*3>`
+fn winner(Board board) -> Mark? {
+    lines = [ // infer type as `List<int 8*3>`
         [1, 2, 3], [4, 5, 6], [7, 8, 9],
         [1, 4, 7], [2, 5, 8], [3, 6, 9],
         [1, 5, 9], [3, 5, 7],
     ]
 
-    for line in lines { // Infer type of `line` as `list<int 3>`
-        marks = line transform (index: game.board[index].mark) // Infer type of `marks` as `list<Mark? 3>`
+    for line in lines { // Infer type of `line` as `List<int 3>`
+        marks = line transform (index: game.board[index].mark) // Infer type of `marks` as `List<Mark? 3>`
         mark = marks[1]
-        if mark and marks[1] == marks[2] and marks[2] == marks[3] { // Subtle type promotion. After the lhs of the and has been evalutated, mark is promoted from `Mark?` to `Mark`
-            Player[mark: mark] wins
-            game.is_over = true
+        if mark and marks[1] == marks[2] and marks[2] == marks[3]: // Subtle type promotion. After the lhs of the and has been evalutated, mark is promoted from `Mark?` to `Mark`
+            return mark
+    }
+}
+
+main() {
+    game.current_player = game.players[1]
+    loop {
+        choice = game.current_player choose game.board:available_squares ("Which sqaure do you want to play?") // Infer type of 'choice' as 'Square'
+        choice.mark = game.current_player.mark
+
+        if game.board:winner { // Type promotion. Within this code block game.board:winner is promoted from `Mark?` to `Mark`
+            Player[mark: game.board:winner] wins
+            break
+        } else if game.board.is_full {
             break
         }
-    }
 
-    for sqaure in game.board: if not square.mark: return
-    game.is_over = true // Indicates a draw
+        if game.current_player == game.players[1]: game.current_player = game.players[2]
+        else: game.current_player = game.players[1]
+    } // This loop is valid as it contains brake statements in the body of the loop
 }
