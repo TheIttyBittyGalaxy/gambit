@@ -9,6 +9,14 @@
 #include <vector>
 using namespace std;
 
+// MACROS //
+
+#define IS(variant_value, T) (holds_alternative<T>(variant_value))
+#define AS(variant_value, T) (get<T>(variant_value))
+
+#define IS_PTR(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
+#define AS_PTR(variant_value, T) (get<ptr<T>>(variant_value))
+
 // POINTERS //
 
 template <class T>
@@ -16,6 +24,135 @@ using ptr = shared_ptr<T>;
 
 template <class T>
 using wptr = weak_ptr<T>;
+
+// JSON //
+
+// FIXME: Only _after_ implementing this system did I realise it would probably be more efficient
+//        (both in memory and time usage) to implement some form of "JsonSeraliser" that has utilty
+//        methods for creating objects and arrays that _directly_ output valid JSON strings. This way
+//        you could implement "JsonSeraliser::to_json" overloads for each of your structs, and then
+//        create JSON seralisations without having to rebuild your whole data structure!
+//
+//        Never mind, work for another day!
+
+struct Json;
+using JsonArray = vector<Json>;
+using JsonObject = map<string, Json>;
+struct Json
+{
+    using Value = variant<string, int, double, bool, monostate, JsonArray, JsonObject>;
+    Value value;
+
+    Json() : value(monostate()){};
+    Json(string value) : value(value){};
+    Json(int value) : value(value){};
+    Json(double value) : value(value){};
+    Json(bool value) : value(value){};
+    Json(monostate value) : value(value){};
+    Json(JsonArray value) : value(value){};
+    Json(JsonObject value) : value(value){};
+};
+
+Json to_json(string value) { return Json(value); }
+Json to_json(int value) { return Json(value); }
+Json to_json(double value) { return Json(value); }
+Json to_json(bool value) { return Json(value); }
+Json to_json(monostate value) { return Json(value); }
+Json to_json(JsonArray value) { return Json(value); }
+Json to_json(JsonObject value) { return Json(value); }
+
+template <typename T>
+Json to_json(optional<T> value)
+{
+    return value.has_value() ? to_json(value.value()) : Json();
+}
+
+template <typename T>
+Json to_json(vector<T> vector)
+{
+    JsonArray array;
+    for (auto elem : vector)
+        array.emplace(to_json(elem));
+    return array;
+}
+
+template <typename T>
+Json to_json(map<string, T> map)
+{
+    JsonObject object;
+    for (auto entry : map)
+        object.emplace(entry.first, to_json(entry.second));
+    return object;
+}
+
+string json_str(Json json, size_t depth = 1)
+{
+    auto value = json.value;
+    if (IS(value, string))
+        return '"' + AS(value, string) + '"'; // FIXME: Does not correctly escape the string
+
+    else if (IS(value, int))
+        return to_string(AS(value, int));
+
+    else if (IS(value, double))
+        return to_string(AS(value, double));
+
+    else if (IS(value, bool))
+        return AS(value, bool) ? "true" : "false";
+
+    else if (IS(value, monostate))
+        return "null";
+
+    else if (IS(value, JsonArray))
+    {
+        auto array = AS(value, JsonArray);
+        if (array.size() == 0)
+            return "[]";
+
+        string str = "[";
+        string sep = "\n" + string(depth, '\t');
+        bool first_value = true;
+
+        depth++;
+        for (auto elem : array)
+        {
+            if (first_value)
+                first_value = false;
+            else
+                str += ",";
+            str += sep + json_str(elem, depth);
+        }
+
+        str += "\n" + string(depth - 2, '\t') + "]";
+        return str;
+    }
+
+    else if (IS(value, JsonObject))
+    {
+        auto object = AS(value, JsonObject);
+        if (object.size() == 0)
+            return "{}";
+
+        string str = "{";
+        string sep = "\n" + string(depth, '\t');
+        bool first_value = true;
+
+        depth++;
+        for (auto entry : object)
+        {
+            if (first_value)
+                first_value = false;
+            else
+                str += ",";
+            str += sep + "\"" + entry.first + "\": " + json_str(entry.second, depth);
+        }
+
+        str += "\n" + string(depth - 2, '\t') + "}";
+        return str;
+    }
+
+    throw "Cannot serialise invalid JSON value.";
+}
 
 // TOKENS //
 
@@ -376,14 +513,6 @@ using Entity = std::variant<ptr<NativeType>, ptr<Construct>>;
 struct Literal;
 using Expression = std::variant<ptr<Literal>>;
 
-// Macros
-
-#define IS(variant_value, T) (holds_alternative<T>(variant_value))
-#define AS(variant_value, T) (get<T>(variant_value))
-
-#define IS_PTR(variant_value, T) (holds_alternative<ptr<T>>(variant_value))
-#define AS_PTR(variant_value, T) (get<ptr<T>>(variant_value))
-
 // Program
 
 struct Program
@@ -434,109 +563,107 @@ struct Literal
 //        `to_string(json)` can handle pretty printing a JSON output, and the `to_json`
 //        functions can just crudely convert to the correct data structure.
 
-string to_json(ptr<Program> program);
-string to_json(ptr<Scope> scope);
-string to_json(ptr<NativeType> native_type);
-string to_json(ptr<Construct> construct);
-string to_json(ptr<ConstructField> field);
-string to_json(Entity entity);
-string to_json(ptr<Literal> literal);
-string to_json(Expression expression);
+Json to_json(ptr<Program> program);
+Json to_json(ptr<Scope> scope);
+Json to_json(ptr<NativeType> native_type);
+Json to_json(ptr<Construct> construct);
+Json to_json(ptr<ConstructField> field);
+Json to_json(Entity entity);
+Json to_json(ptr<Literal> literal);
+Json to_json(Expression expression);
 
-string to_json(ptr<Program> program)
+Json to_json(ptr<Program> program)
 {
-    string json = "{\"node\": \"Program\", ";
-    json += "\"global_scope\": " + to_json(program->global_scope);
-    json += "}";
-    return json;
+    return JsonObject({
+        {"node", string("Program")},
+        {"global_scope", to_json(program->global_scope)},
+    });
 }
 
-string to_json(ptr<Scope> scope)
+Json to_json(ptr<Scope> scope)
 {
-    string json = "{\"node\": \"Scope\", ";
-
-    json += "\"lookup\": {";
-    for (auto entry : scope->lookup)
-        json += "\"" + entry.first + "\": " + to_json(entry.second) + ", ";
-    json += "}";
-
-    json += "}";
-    return json;
+    return JsonObject({
+        {"node", string("Scope")},
+        {"lookup", to_json<Entity>(scope->lookup)},
+    });
 }
 
-string to_json(ptr<NativeType> native_type)
+Json to_json(ptr<NativeType> native_type)
 {
-    string json = "{\"node\": \"NativeType\", ";
-    json += "\"identity\": \"" + native_type->identity + "\", ";
-    json += "\"cpp_identity\": \"" + native_type->cpp_identity + "\", ";
-    json += "}";
-    return json;
+    return JsonObject({
+        {"node", string("NativeType")},
+        {"identity", native_type->identity},
+        {"cpp_identity", native_type->cpp_identity},
+    });
 }
 
-string to_json(ptr<Construct> construct)
+Json to_json(ptr<Construct> construct)
 {
-    string json = "{\"node\": \"Construct\", ";
-    json += "\"identity\": \"" + construct->identity + "\", ";
-
-    json += "\"fields\": {";
-    for (auto entry : construct->fields)
-        json += "\"" + entry.first + "\": " + to_json(entry.second) + ", ";
-    json += "}";
-
-    json += "}";
-    return json;
+    return JsonObject({
+        {"node", string("Construct")},
+        {"identity", construct->identity},
+        {"fields", to_json<ptr<ConstructField>>(construct->fields)},
+    });
 }
 
-string to_json(ptr<ConstructField> field)
+Json to_json(ptr<ConstructField> field)
 {
-    string json = "{\"node\": \"ConstructField\", ";
-    json += "\"identity\": \"" + field->identity + "\", ";
-    json += "\"type\": \"" + field->type + "\", ";
-    json += "\"is_static\": " + (string)(field->is_static ? "true, " : "false, ");
-    json += "\"is_property\": " + (string)(field->is_property ? "true, " : "false, ");
-
-    json += "\"default_value\": " + (field->default_value.has_value()
-                                         ? to_json(field->default_value.value())
-                                         : "null");
-
-    json += "}";
-    return json;
+    return JsonObject({
+        {"node", string("ConstructField")},
+        {"identity", field->identity},
+        {"type", field->type},
+        {"is_static", field->is_static},
+        {"is_property", field->is_property},
+        {"default_value", to_json<Expression>(field->default_value)},
+    });
 }
 
-string to_json(Entity entity)
+Json to_json(Entity entity)
 {
     if (IS_PTR(entity, NativeType))
-    {
         return to_json(AS_PTR(entity, NativeType));
-    }
     else if (IS_PTR(entity, Construct))
-    {
         return to_json(AS_PTR(entity, Construct));
-    }
+
     throw "Unable to serialise Entity node";
 }
 
-string to_json(ptr<Literal> literal)
+Json to_json(ptr<Literal> literal)
 {
-    string json = "{\"node\": \"Literal\", \"value\": ";
-    if (holds_alternative<double>(literal->value))
-        json += to_string(get<double>(literal->value));
-    else if (holds_alternative<int>(literal->value))
-        json += to_string(get<int>(literal->value));
-    else if (holds_alternative<bool>(literal->value))
-        json += get<bool>(literal->value) ? "true" : "false";
-    else if (holds_alternative<string>(literal->value))
-        json += "\"" + get<string>(literal->value) + "\""; // FIXME: Does not properly escape the string
-    json += "}";
-    return json;
+    auto value = literal->value;
+
+    if (IS(value, double))
+        return JsonObject({
+            {"node", string("Literal")},
+            {"value", AS(value, double)},
+        });
+
+    if (IS(value, int))
+        return JsonObject({
+            {"node", string("Literal")},
+            {"value", AS(value, int)},
+        });
+
+    if (IS(value, bool))
+        return JsonObject({
+            {"node", string("Literal")},
+            {"value", AS(value, bool)},
+        });
+
+    if (IS(value, string))
+        return JsonObject({
+            {"node", string("Literal")},
+            {"value", AS(value, string)},
+        });
+
+    throw "Unable to seralise Literal node";
 }
 
-string to_json(Expression expression)
+Json to_json(Expression expression)
 {
     if (IS_PTR(expression, Literal))
-    {
         return to_json(AS_PTR(expression, Literal));
-    }
+
     throw "Unable to serialise Expression node";
 }
 
@@ -809,7 +936,7 @@ int main(int argc, char *argv[])
 
     std::ofstream parser_output;
     parser_output.open("local/parser_output.json");
-    parser_output << to_json(program);
+    parser_output << json_str(to_json(program));
     cout << "Saved parser output to local/parser_output.json" << endl;
 
     cout << "\nERRORS" << endl;
