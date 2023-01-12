@@ -724,7 +724,7 @@ public:
     {
         tokens = new_tokens;
         current_token = 0;
-        panic_mode = false;
+        current_depth = 0;
 
         parse_program();
         return program;
@@ -734,7 +734,7 @@ private:
     vector<Token> tokens;
     ptr<Program> program = nullptr;
     size_t current_token;
-    bool panic_mode;
+    size_t current_depth;
 
     class Error : public std::exception
     {
@@ -794,6 +794,11 @@ private:
             }
         }
 
+        if (kind == Token::CurlyL)
+            current_depth++;
+        else if (kind == Token::CurlyR && current_depth > 0)
+            current_depth--;
+
         current_token++;
         return token;
     };
@@ -808,42 +813,54 @@ private:
         return false;
     };
 
+    void skip_whitespace()
+    {
+        while (match(Token::Line))
+            ;
+    }
+
+    void skip_to_end_of_line()
+    {
+        while (!end_of_file() && !match(Token::Line))
+            eat(tokens.at(current_token).kind);
+    }
+
+    void skip_to_depth(size_t target_depth)
+    {
+        while (!end_of_file() && current_depth != target_depth)
+            eat(tokens.at(current_token).kind);
+    }
+
+    void skip_to_end_of_current_depth()
+    {
+        skip_to_depth(current_depth - 1);
+    }
+
     void parse_program()
     {
         program = CREATE(Program);
         program->global_scope = CREATE(Scope);
 
-        while (current_token < tokens.size())
+        while (!end_of_file())
         {
             try
             {
-                while (match(Token::Line))
-                    if (end_of_file())
-                        break;
+                skip_whitespace();
+                if (end_of_file())
+                    break;
 
                 if (peek_entity_definition())
-                {
-                    panic_mode = false;
                     parse_entity_definition(program->global_scope);
-                }
                 else if (peek_enum_definition())
-                {
-                    panic_mode = false;
                     parse_enum_definition(program->global_scope);
-                }
                 else
-                {
                     throw Error("Expected Entity definition", tokens.at(current_token));
-                }
             }
             catch (Error err)
             {
-                if (!panic_mode)
-                    emit_error(err.msg, err.token);
-                panic_mode = true;
-
-                while (!match(Token::Line))
-                    eat(tokens.at(current_token).kind);
+                emit_error(err.msg, err.token);
+                skip_to_end_of_line();
+                skip_to_depth(0);
             }
         }
     };
@@ -866,7 +883,17 @@ private:
         eat(Token::CurlyL);
         while (peek_entity_field())
         {
-            parse_entity_field(scope, entity);
+            try
+            {
+                parse_entity_field(scope, entity);
+                eat(Token::Line);
+            }
+            catch (Error err)
+            {
+                emit_error(err.msg, err.token);
+                skip_to_end_of_line();
+                cout << to_string(tokens.at(current_token)) << endl;
+            }
         }
         eat(Token::CurlyR);
     };
