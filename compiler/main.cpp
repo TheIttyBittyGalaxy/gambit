@@ -565,6 +565,7 @@ struct Entity
 {
     string identity;
     map<string, ptr<EntityField>> fields;
+    bool base_definition_found = false;
 };
 
 struct EntityField
@@ -649,6 +650,7 @@ Json to_json(ptr<Entity> entity)
         {"node", string("Entity")},
         {"identity", entity->identity},
         {"fields", to_json<ptr<EntityField>>(entity->fields)},
+        {"base_definition_found", entity->base_definition_found},
     });
 }
 
@@ -952,37 +954,28 @@ private:
 
     void parse_entity_definition(ptr<Scope> scope)
     {
-        bool is_additive_definition = match(Token::KeyExtend);
-        if (!is_additive_definition)
+        bool is_base_definition = !match(Token::KeyExtend);
+        if (is_base_definition)
             eat(Token::KeyEntity);
 
         Token identity = eat(Token::Identity);
 
         ptr<Entity> entity;
 
-        // FIXME: Use some form of "is defined" function, rather than addressing the map directly
-        if (scope->lookup.find(identity.str) == scope->lookup.end()) // Identity not found
+        if (is_base_definition || !declared_in_scope(scope, identity.str))
         {
             entity = CREATE(Entity);
             entity->identity = identity.str;
-
-            // FIXME: Use some form of "declare" function, rather than adding to the map directly
-            scope->lookup.insert({entity->identity, entity});
+            declare(scope, entity);
         }
         else
         {
-            // FIXME: Use some form of "fetch" function, rather than addressing the map directly
-            auto found = scope->lookup.at(identity.str);
-
-            if (!IS_PTR(found, Entity))
-                throw Error("'" + identity.str + "' is not an Entity", identity);
-
-            entity = AS_PTR(found, Entity);
+            entity = fetch_entity(scope, identity.str);
         }
 
-        cout << to_string(tokens.at(current_token)) << endl;
+        entity->base_definition_found = is_base_definition;
 
-        if (!is_additive_definition && peek(Token::ParenL))
+        if (is_base_definition && peek(Token::ParenL))
         {
             eat(Token::ParenL);
             // FIXME: Parse entity signature
@@ -1041,9 +1034,7 @@ private:
 
         eat(Token::KeyEnum);
         enum_type->identity = eat(Token::Identity).str;
-
-        // FIXME: Use some form of "declare" function, rather than adding to the map directly
-        scope->lookup.insert({enum_type->identity, enum_type});
+        declare(scope, enum_type);
 
         eat(Token::CurlyL);
         do
