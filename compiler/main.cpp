@@ -9,6 +9,7 @@
 #include <vector>
 #include "token.h"
 #include "utilty.h"
+#include "errors.h"
 using namespace std;
 
 // JSON //
@@ -137,25 +138,6 @@ string json_str(Json json, size_t depth = 1)
     }
 
     throw "Cannot serialise invalid JSON value.";
-}
-
-// ERRORS //
-
-vector<string> errors;
-
-void emit_error(string msg)
-{
-    errors.emplace_back("[Error] " + msg);
-}
-
-void emit_error(string msg, size_t line, size_t column)
-{
-    errors.emplace_back("[Error at " + to_string(line) + ":" + to_string(column) + "] " + msg);
-}
-
-void emit_error(string msg, Token t)
-{
-    emit_error(msg, t.line, t.column);
 }
 
 // LEXING //
