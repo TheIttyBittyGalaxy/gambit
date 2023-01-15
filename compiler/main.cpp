@@ -525,7 +525,7 @@ struct Entity;
 struct EntityField;
 
 struct Literal;
-using Expression = std::variant<ptr<Literal>, ptr<EnumValue>>;
+using Expression = variant<ptr<Literal>, ptr<EnumValue>>;
 
 // Program
 
@@ -541,7 +541,16 @@ struct Scope
     map<string, LookupValue> lookup;
 };
 
+// Native type
+
+struct NativeType
+{
+    string identity;
+    string cpp_identity;
+};
+
 // Enums
+
 struct EnumType
 {
     string identity;
@@ -554,12 +563,6 @@ struct EnumValue
 };
 
 // Entities
-
-struct NativeType
-{
-    string identity;
-    string cpp_identity;
-};
 
 struct Entity
 {
