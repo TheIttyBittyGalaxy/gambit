@@ -11,6 +11,7 @@
 #include "utilty.h"
 #include "lexing.h"
 #include "errors.h"
+#include "apm.h"
 using namespace std;
 
 // JSON //
@@ -140,82 +141,6 @@ string json_str(Json json, size_t depth = 1)
 
     throw "Cannot serialise invalid JSON value.";
 }
-
-// PROGRAM MODEL //
-
-struct Program;
-struct Scope;
-
-struct NativeType;
-
-struct EnumType;
-struct EnumValue;
-
-struct Entity;
-struct EntityField;
-
-struct Literal;
-using Expression = variant<ptr<Literal>, ptr<EnumValue>>;
-
-// Program
-
-struct Program
-{
-    ptr<Scope> global_scope;
-};
-
-struct Scope
-{
-    using LookupValue = variant<ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
-    wptr<Scope> parent;
-    map<string, LookupValue> lookup;
-};
-
-// Native type
-
-struct NativeType
-{
-    string identity;
-    string cpp_identity;
-};
-
-// Enums
-
-struct EnumType
-{
-    string identity;
-    vector<ptr<EnumValue>> values;
-};
-
-struct EnumValue
-{
-    string identity;
-};
-
-// Entities
-
-struct Entity
-{
-    string identity;
-    map<string, ptr<EntityField>> fields;
-    bool base_definition_found = false;
-};
-
-struct EntityField
-{
-    string identity;
-    string type;
-    bool is_static = false;
-    bool is_property = false;
-    optional<Expression> default_value;
-};
-
-// Expressions
-
-struct Literal
-{
-    variant<double, int, bool, string> value;
-};
 
 // SERIALISE PROGRAM MODEL //
 
@@ -348,86 +273,6 @@ Json to_json(Expression expression)
         return to_json(AS_PTR(expression, Literal));
 
     throw "Unable to serialise Expression node";
-}
-
-// PROGRAM MODEL METHODS //
-
-string identity_of(Scope::LookupValue value)
-{
-    if (IS_PTR(value, NativeType))
-        return AS_PTR(value, NativeType)->identity;
-
-    if (IS_PTR(value, EnumType))
-        return AS_PTR(value, EnumType)->identity;
-
-    if (IS_PTR(value, Entity))
-        return AS_PTR(value, Entity)->identity;
-
-    // FIXME: Throw a meaningful error object instead of a string
-    throw "Cannot get identity of Scope::LookupValue";
-}
-
-bool directly_declared_in_scope(ptr<Scope> scope, string identity)
-{
-    return scope->lookup.find(identity) != scope->lookup.end();
-}
-
-bool declared_in_scope(ptr<Scope> scope, string identity)
-{
-    while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())
-        scope = ptr<Scope>(scope->parent);
-
-    return directly_declared_in_scope(scope, identity);
-}
-
-void declare(ptr<Scope> scope, Scope::LookupValue value)
-{
-    string identity = identity_of(value);
-
-    // FIXME: Throw a meaningful error object instead of a string
-    if (directly_declared_in_scope(scope, identity))
-        throw "Cannot declare " + identity + " in scope, as " + identity + " already exists.";
-
-    scope->lookup.insert({identity, value});
-}
-
-Scope::LookupValue fetch(ptr<Scope> scope, string identity)
-{
-    while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())
-        scope = ptr<Scope>(scope->parent);
-
-    if (directly_declared_in_scope(scope, identity))
-        return scope->lookup.at(identity);
-
-    // FIXME: Throw a meaningful error object instead of a string
-    throw "Cannot fetch " + identity + " in scope, as it does not exist.";
-}
-
-ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity)
-{
-    auto found = fetch(scope, identity);
-    if (!IS_PTR(found, NativeType))
-        // FIXME: Throw a meaningful error object instead of a string
-        throw "'" + identity + "' is not a NativeType";
-    return AS_PTR(found, NativeType);
-}
-
-ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity)
-{
-    auto found = fetch(scope, identity);
-    if (!IS_PTR(found, EnumType))
-        // FIXME: Throw a meaningful error object instead of a string
-        throw "'" + identity + "' is not a EnumType";
-    return AS_PTR(found, EnumType);
-}
-
-ptr<Entity> fetch_entity(ptr<Scope> scope, string identity)
-{
-    auto found = fetch(scope, identity);
-    if (!IS_PTR(found, Entity))
-        // FIXME: Throw a meaningful error object instead of a string
-        throw "'" + identity + "' is not an Entity";
-    return AS_PTR(found, Entity);
 }
 
 // PARSER //
