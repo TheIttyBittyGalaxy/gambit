@@ -1,10 +1,10 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <vector>
-#include "utilty.h"
-#include "token.h"
 #include "apm.h"
+#include "token.h"
+#include "utilty.h"
+#include <vector>
 using namespace std;
 
 class Parser
