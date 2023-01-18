@@ -140,6 +140,13 @@ void Parser::parse_program()
     }
 };
 
+ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
+{
+    auto identity = CREATE(UnresolvedIdentity);
+    identity->identity = eat(Token::Identity).str;
+    return identity;
+}
+
 bool Parser::peek_entity_definition()
 {
     return peek(Token::KeyEntity) || peek(Token::KeyExtend);
@@ -207,7 +214,7 @@ void Parser::parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
     else
         eat(Token::KeyState);
 
-    field->type = eat(Token::Identity).str;
+    field->type = parse_unresolved_identity();
     field->identity = eat(Token::Identity).str;
 
     entity->fields.insert({field->identity, field});

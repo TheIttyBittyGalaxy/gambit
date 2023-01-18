@@ -146,11 +146,13 @@ string json_str(Json json, size_t depth = 1)
 
 Json to_json(ptr<Program> program);
 Json to_json(ptr<Scope> scope);
+Json to_json(ptr<UnresolvedIdentity> unresolved_identity);
 Json to_json(ptr<NativeType> native_type);
 Json to_json(ptr<EnumType> enum_type);
 Json to_json(ptr<EnumValue> enum_value);
 Json to_json(ptr<Entity> entity);
 Json to_json(ptr<EntityField> field);
+Json to_json(Type type);
 Json to_json(Scope::LookupValue entity);
 Json to_json(ptr<Literal> literal);
 Json to_json(Expression expression);
@@ -169,6 +171,16 @@ Json to_json(ptr<Scope> scope)
         {"node", string("Scope")},
         {"lookup", to_json<Scope::LookupValue>(scope->lookup)},
     });
+}
+
+Json to_json(ptr<UnresolvedIdentity> unresolved_identity)
+{
+    {
+        return JsonObject({
+            {"node", string("UnresolvedIdentity")},
+            {"identity", unresolved_identity->identity},
+        });
+    }
 }
 
 Json to_json(ptr<NativeType> native_type)
@@ -212,11 +224,25 @@ Json to_json(ptr<EntityField> field)
     return JsonObject({
         {"node", string("EntityField")},
         {"identity", field->identity},
-        {"type", field->type},
+        {"type", to_json<Type>(field->type)},
         {"is_static", field->is_static},
         {"is_property", field->is_property},
         {"default_value", to_json<Expression>(field->default_value)},
     });
+}
+
+Json to_json(Type type)
+{
+    if (IS_PTR(type, UnresolvedIdentity))
+        return to_json(AS_PTR(type, UnresolvedIdentity));
+    if (IS_PTR(type, NativeType))
+        return to_json(AS_PTR(type, NativeType));
+    if (IS_PTR(type, EnumType))
+        return to_json(AS_PTR(type, EnumType));
+    if (IS_PTR(type, Entity))
+        return to_json(AS_PTR(type, Entity));
+
+    throw "Unable to serialise Type";
 }
 
 Json to_json(Scope::LookupValue value)

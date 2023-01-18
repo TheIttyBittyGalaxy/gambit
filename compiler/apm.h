@@ -14,6 +14,8 @@ using namespace std;
 struct Program;
 struct Scope;
 
+struct UnresolvedIdentity;
+
 struct NativeType;
 
 struct EnumType;
@@ -21,6 +23,8 @@ struct EnumValue;
 
 struct Entity;
 struct EntityField;
+
+using Type = variant<ptr<UnresolvedIdentity>, ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
 
 struct Literal;
 using Expression = variant<ptr<Literal>, ptr<EnumValue>>;
@@ -37,6 +41,12 @@ struct Scope
     using LookupValue = variant<ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
     wptr<Scope> parent;
     map<string, LookupValue> lookup;
+};
+
+// Unresolved Identity
+struct UnresolvedIdentity
+{
+    string identity;
 };
 
 // Native type
@@ -72,7 +82,7 @@ struct Entity
 struct EntityField
 {
     string identity;
-    string type;
+    Type type;
     bool is_static = false;
     bool is_property = false;
     optional<Expression> default_value;

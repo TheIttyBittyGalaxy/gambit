@@ -30,6 +30,8 @@ private:
 
     void parse_program();
 
+    ptr<UnresolvedIdentity> parse_unresolved_identity();
+
     bool peek_entity_definition();
     void parse_entity_definition(ptr<Scope> scope);
 
