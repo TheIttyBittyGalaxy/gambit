@@ -32,14 +32,14 @@ private:
 
     ptr<UnresolvedIdentity> parse_unresolved_identity();
 
+    bool peek_enum_definition();
+    void parse_enum_definition(ptr<Scope> scope);
+
     bool peek_entity_definition();
     void parse_entity_definition(ptr<Scope> scope);
 
     bool peek_entity_field();
     void parse_entity_field(ptr<Scope> scope, ptr<Entity> entity);
-
-    bool peek_enum_definition();
-    void parse_enum_definition(ptr<Scope> scope);
 
     bool peek_expression();
     Expression parse_expression();

@@ -147,6 +147,30 @@ ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
     return identity;
 }
 
+bool Parser::peek_enum_definition()
+{
+    return peek(Token::KeyEnum);
+}
+
+void Parser::parse_enum_definition(ptr<Scope> scope)
+{
+    auto enum_type = CREATE(EnumType);
+
+    eat(Token::KeyEnum);
+    enum_type->identity = eat(Token::Identity).str;
+    declare(scope, enum_type);
+
+    eat(Token::CurlyL);
+    do
+    {
+        auto enum_value = CREATE(EnumValue);
+        enum_value->identity = eat(Token::Identity).str;
+        enum_type->values.emplace_back(enum_value);
+    } while (match(Token::Comma));
+
+    eat(Token::CurlyR);
+}
+
 bool Parser::peek_entity_definition()
 {
     return peek(Token::KeyEntity) || peek(Token::KeyExtend);
@@ -221,30 +245,6 @@ void Parser::parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
 
     if (match(Token::Assign))
         field->default_value = parse_expression();
-}
-
-bool Parser::peek_enum_definition()
-{
-    return peek(Token::KeyEnum);
-}
-
-void Parser::parse_enum_definition(ptr<Scope> scope)
-{
-    auto enum_type = CREATE(EnumType);
-
-    eat(Token::KeyEnum);
-    enum_type->identity = eat(Token::Identity).str;
-    declare(scope, enum_type);
-
-    eat(Token::CurlyL);
-    do
-    {
-        auto enum_value = CREATE(EnumValue);
-        enum_value->identity = eat(Token::Identity).str;
-        enum_type->values.emplace_back(enum_value);
-    } while (match(Token::Comma));
-
-    eat(Token::CurlyR);
 }
 
 bool Parser::peek_expression()
