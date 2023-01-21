@@ -69,13 +69,15 @@ public:
 
     void new_line()
     {
-        result += "\n" + string(depth(), '\t');
+        if (result != "")
+            result += "\n" + string(depth(), '\t');
     }
 
     void on_add_value()
     {
         if (is_first_in_container)
         {
+            new_line();
             is_first_in_container = false;
             return;
         }
@@ -92,9 +94,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Array);
         is_first_in_container = true;
-
         result += "[";
-        new_line();
     }
 
     void object()
@@ -105,9 +105,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Object);
         is_first_in_container = true;
-
         result += "{";
-        new_line();
     }
 
     void array(string key)
@@ -118,9 +116,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Array);
         is_first_in_container = true;
-
         result += to_json(key) + ": [";
-        new_line();
     }
 
     void object(string key)
@@ -131,9 +127,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Object);
         is_first_in_container = true;
-
         result += to_json(key) + ": {";
-        new_line();
     }
 
     void close()

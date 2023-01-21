@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
 {
     vector<int> ints = {1, 2, 3, 4, 5};
     map<string, string> stuff = {
-        {"Hello", "World"},
-        {"Eat", "Cake"},
+        // {"Hello", "World"},
+        // {"Eat", "Cake"},
     };
 
     optional<int> opt1 = 2;
