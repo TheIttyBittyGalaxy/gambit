@@ -177,7 +177,7 @@ public:
 template <typename T>
 string to_json(const optional<T> &opt, const size_t &depth)
 {
-    return opt.has_value() ? to_json(opt.value()) : to_json(monostate());
+    return opt.has_value() ? to_json(opt.value(), depth) : to_json(monostate(), depth);
 }
 
 template <typename T>
