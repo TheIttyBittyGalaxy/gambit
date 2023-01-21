@@ -13,12 +13,12 @@ using namespace std;
 
 class JsonContainer;
 
-string to_json(JsonContainer value);
-string to_json(int value);
-string to_json(double value);
-string to_json(bool value);
-string to_json(monostate value);
-string to_json(string value);
+string to_json(const JsonContainer &value);
+string to_json(const int &value);
+string to_json(const double &value);
+string to_json(const bool &value);
+string to_json(const monostate &value);
+string to_json(const string &value);
 
 template <typename T>
 string to_json(const optional<T> &opt);
@@ -46,13 +46,6 @@ private:
     stack<Container> container_stack;
     bool is_first_in_container = true;
 
-    Container current_container() const
-    {
-        if (depth() == 0)
-            return Container::None;
-        return container_stack.top();
-    }
-
     size_t stack_depth() const
     {
         return container_stack.size();
@@ -61,6 +54,13 @@ private:
     size_t depth() const
     {
         return base_depth + stack_depth();
+    }
+
+    Container current_container() const
+    {
+        if (stack_depth() == 0)
+            return Container::None;
+        return container_stack.top();
     }
 
 public:
@@ -79,6 +79,7 @@ public:
             is_first_in_container = false;
             return;
         }
+
         result += ",";
         new_line();
     }
@@ -88,6 +89,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Array);
         is_first_in_container = true;
+
         result += "[";
         new_line();
     }
@@ -97,6 +99,7 @@ public:
         on_add_value();
         container_stack.emplace(Container::Object);
         is_first_in_container = true;
+
         result += "{";
         new_line();
     }
@@ -113,10 +116,7 @@ public:
             new_line();
         is_first_in_container = false;
 
-        if (container == Container::Array)
-            result += "]";
-        else
-            result += "}";
+        result += (container == Container::Array) ? "]" : "}";
     }
 
     template <typename T>
