@@ -39,7 +39,9 @@ int main(int argc, char *argv[])
     json.add(opt2);
     json.close();
 
-    cout << (string)json;
+    std::ofstream test_output;
+    test_output.open("local/test.json");
+    test_output << to_json(json);
 
     return 0;
     // FIXME: Allow the path to the source project to be passed directly, rather than infered.

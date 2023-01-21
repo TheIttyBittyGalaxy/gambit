@@ -1,31 +1,31 @@
 #include "json.h"
 
-string to_json(const JsonContainer &value)
+string to_json(const JsonContainer &value, const size_t &depth)
 {
     return (string)value;
 };
 
-string to_json(const int &value)
+string to_json(const int &value, const size_t &depth)
 {
     return to_string(value);
 }
 
-string to_json(const double &value)
+string to_json(const double &value, const size_t &depth)
 {
     return to_string(value);
 }
 
-string to_json(const bool &value)
+string to_json(const bool &value, const size_t &depth)
 {
     return value ? "true" : "false";
 }
 
-string to_json(const monostate &value)
+string to_json(const monostate &value, const size_t &depth)
 {
     return "null";
 }
 
-string to_json(const string &value)
+string to_json(const string &value, const size_t &depth)
 {
     string json;
     for (const char c : value)

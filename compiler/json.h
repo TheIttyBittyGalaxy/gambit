@@ -13,21 +13,21 @@ using namespace std;
 
 class JsonContainer;
 
-string to_json(const JsonContainer &value);
-string to_json(const int &value);
-string to_json(const double &value);
-string to_json(const bool &value);
-string to_json(const monostate &value);
-string to_json(const string &value);
+string to_json(const JsonContainer &value, const size_t &depth = 0);
+string to_json(const int &value, const size_t &depth = 0);
+string to_json(const double &value, const size_t &depth = 0);
+string to_json(const bool &value, const size_t &depth = 0);
+string to_json(const monostate &value, const size_t &depth = 0);
+string to_json(const string &value, const size_t &depth = 0);
 
 template <typename T>
-string to_json(const optional<T> &opt);
+string to_json(const optional<T> &opt, const size_t &depth = 0);
 
 template <typename T>
-string to_json(const vector<T> &value);
+string to_json(const vector<T> &value, const size_t &depth = 0);
 
 template <typename T>
-string to_json(const map<string, T> &value);
+string to_json(const map<string, T> &value, const size_t &depth = 0);
 
 // Json container
 
@@ -127,7 +127,7 @@ public:
             throw runtime_error("Cannot add a value as current container is not an Array."); // FIXME: Use a more appropriate exception type
 
         on_add_value();
-        result += to_json(value);
+        result += to_json(value, depth());
     };
 
     template <typename T>
@@ -137,7 +137,7 @@ public:
             throw runtime_error("Cannot add a key-value pair as current container is not an Object."); // FIXME: Use a more appropriate exception type
 
         on_add_value();
-        result += to_json(key) + ": " + to_json(value);
+        result += to_json(key) + ": " + to_json(value, depth());
     };
 
     operator string() const
@@ -149,15 +149,15 @@ public:
 // to_json implementations
 
 template <typename T>
-string to_json(const optional<T> &opt)
+string to_json(const optional<T> &opt, const size_t &depth)
 {
     return opt.has_value() ? to_json(opt.value()) : to_json(monostate());
 }
 
 template <typename T>
-string to_json(const vector<T> &value)
+string to_json(const vector<T> &value, const size_t &depth)
 {
-    JsonContainer json;
+    JsonContainer json(depth);
     json.array();
     for (auto elem : value)
         json.add(elem);
@@ -166,9 +166,9 @@ string to_json(const vector<T> &value)
 }
 
 template <typename T>
-string to_json(const map<string, T> &value)
+string to_json(const map<string, T> &value, const size_t &depth)
 {
-    JsonContainer json;
+    JsonContainer json(depth);
     json.object();
     for (auto entry : value)
         json.add(entry.first, entry.second);
