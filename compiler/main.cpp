@@ -24,19 +24,21 @@ int main(int argc, char *argv[])
     optional<int> opt2;
 
     JsonContainer json;
-    json.array();
-    json.add(3.14);
-    json.add(42);
-    json.add(string("Hello world"));
     json.object();
     json.add("greeting", string("howdy"));
     json.add("list", ints);
-    json.add("map", stuff);
-    json.close();
+
+    json.array("array");
+    json.add(3.14);
+    json.add(42);
+    json.add(string("Hello world"));
     json.add(false);
     json.add(true);
     json.add(opt1);
     json.add(opt2);
+    json.close();
+
+    json.add("map", stuff);
     json.close();
 
     std::ofstream test_output;

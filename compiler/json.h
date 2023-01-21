@@ -86,6 +86,9 @@ public:
 
     void array()
     {
+        if (current_container() == Container::Object)
+            throw runtime_error("Must specify a key when creating an Array inside of an Object."); // FIXME: Use a more appropriate exception type
+
         on_add_value();
         container_stack.emplace(Container::Array);
         is_first_in_container = true;
@@ -96,11 +99,40 @@ public:
 
     void object()
     {
+        if (current_container() == Container::Object)
+            throw runtime_error("Must specify a key when creating an Object inside of an Object."); // FIXME: Use a more appropriate exception type
+
         on_add_value();
         container_stack.emplace(Container::Object);
         is_first_in_container = true;
 
         result += "{";
+        new_line();
+    }
+
+    void array(string key)
+    {
+        if (current_container() != Container::Object)
+            throw runtime_error("Cannot specify a key when creating an Array inside that is not inside of a Object."); // FIXME: Use a more appropriate exception type
+
+        on_add_value();
+        container_stack.emplace(Container::Array);
+        is_first_in_container = true;
+
+        result += to_json(key) + ": [";
+        new_line();
+    }
+
+    void object(string key)
+    {
+        if (current_container() != Container::Object)
+            throw runtime_error("Cannot specify a key when creating an Object inside that is not inside of a Object."); // FIXME: Use a more appropriate exception type
+
+        on_add_value();
+        container_stack.emplace(Container::Object);
+        is_first_in_container = true;
+
+        result += to_json(key) + ": {";
         new_line();
     }
 
