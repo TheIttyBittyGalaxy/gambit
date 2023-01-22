@@ -41,6 +41,9 @@ private:
     bool peek_entity_field();
     void parse_entity_field(ptr<Scope> scope, ptr<Entity> entity);
 
+    bool peek_type();
+    Type parse_type(ptr<Scope> scope);
+
     bool peek_expression();
     Expression parse_expression();
 

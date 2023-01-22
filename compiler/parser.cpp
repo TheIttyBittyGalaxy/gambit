@@ -245,13 +245,32 @@ void Parser::parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
     else
         eat(Token::KeyState);
 
-    field->type = parse_unresolved_identity();
+    field->type = parse_type(scope);
     field->identity = eat(Token::Identity).str;
 
     entity->fields.insert({field->identity, field});
 
     if (match(Token::Assign))
         field->default_value = parse_expression();
+}
+
+bool Parser::peek_type()
+{
+    return peek(Token::Identity);
+}
+
+Type Parser::parse_type(ptr<Scope> scope)
+{
+    Type type = parse_unresolved_identity();
+
+    if (match(Token::Question))
+    {
+        auto opt = CREATE(OptionalType);
+        opt->type = type;
+        type = opt;
+    }
+
+    return type;
 }
 
 bool Parser::peek_expression()

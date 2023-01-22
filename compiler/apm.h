@@ -16,15 +16,15 @@ struct Scope;
 
 struct UnresolvedIdentity;
 
-struct NativeType;
-
 struct EnumType;
 struct EnumValue;
 
 struct Entity;
 struct EntityField;
 
-using Type = variant<ptr<UnresolvedIdentity>, ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
+struct NativeType;
+struct OptionalType;
+using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<UnresolvedIdentity>, ptr<EnumType>, ptr<Entity>>;
 
 struct Literal;
 using Expression = variant<ptr<Literal>, ptr<EnumValue>>;
@@ -47,14 +47,6 @@ struct Scope
 struct UnresolvedIdentity
 {
     string identity;
-};
-
-// Native type
-
-struct NativeType
-{
-    string identity;
-    string cpp_identity;
 };
 
 // Enums
@@ -89,6 +81,19 @@ struct EntityField
     optional<Expression> default_value;
 };
 
+// Types
+
+struct NativeType
+{
+    string identity;
+    string cpp_identity;
+};
+
+struct OptionalType
+{
+    Type type;
+};
+
 // Expressions
 
 struct Literal
@@ -113,11 +118,12 @@ string to_json(const ptr<Program> &program, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &node, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
-string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<EntityField> &entity_field, const size_t &depth = 0);
+string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
+string to_json(const ptr<OptionalType> &native_type, const size_t &depth = 0);
 string to_json(const Type &type, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);

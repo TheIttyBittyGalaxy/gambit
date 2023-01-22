@@ -50,17 +50,6 @@ string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
     return (string)json;
 };
 
-string to_json(const ptr<NativeType> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("NativeType"));
-    STRUCT_FIELD(identity);
-    STRUCT_FIELD(cpp_identity);
-    json.close();
-    return (string)json;
-};
-
 string to_json(const ptr<EnumType> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -109,10 +98,32 @@ string to_json(const ptr<EntityField> &node, const size_t &depth)
     return (string)json;
 };
 
+string to_json(const ptr<NativeType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("NativeType"));
+    STRUCT_FIELD(identity);
+    STRUCT_FIELD(cpp_identity);
+    json.close();
+    return (string)json;
+};
+
+string to_json(const ptr<OptionalType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("OptionalType"));
+    STRUCT_FIELD(type);
+    json.close();
+    return (string)json;
+};
+
 string to_json(const Type &node, const size_t &depth)
 {
-    VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(NativeType);
+    VARIANT_PTR(OptionalType);
+    VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
 
