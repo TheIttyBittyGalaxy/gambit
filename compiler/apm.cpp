@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "apm.h"
 
 string identity_of(Scope::LookupValue value)
@@ -11,8 +12,8 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, Entity))
         return AS_PTR(value, Entity)->identity;
 
-    // FIXME: Throw a meaningful error object instead of a string
-    throw "Cannot get identity of Scope::LookupValue";
+    // FIXME: Throw an appropriate error object
+    throw runtime_error("Cannot get identity of Scope::LookupValue");
 }
 
 bool directly_declared_in_scope(ptr<Scope> scope, string identity)
@@ -32,9 +33,9 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
 
-    // FIXME: Throw a meaningful error object instead of a string
+    // FIXME: Throw an appropriate error object
     if (directly_declared_in_scope(scope, identity))
-        throw "Cannot declare " + identity + " in scope, as " + identity + " already exists.";
+        throw runtime_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.");
 
     scope->lookup.insert({identity, value});
 }
@@ -47,16 +48,16 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
     if (directly_declared_in_scope(scope, identity))
         return scope->lookup.at(identity);
 
-    // FIXME: Throw a meaningful error object instead of a string
-    throw "Cannot fetch " + identity + " in scope, as it does not exist.";
+    // FIXME: Throw an appropriate error object
+    throw runtime_error("Cannot fetch " + identity + " in scope, as it does not exist.");
 }
 
 ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity)
 {
     auto found = fetch(scope, identity);
     if (!IS_PTR(found, NativeType))
-        // FIXME: Throw a meaningful error object instead of a string
-        throw "'" + identity + "' is not a NativeType";
+        // FIXME: Throw an appropriate error object
+        throw runtime_error("'" + identity + "' is not a NativeType");
     return AS_PTR(found, NativeType);
 }
 
@@ -64,8 +65,8 @@ ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity)
 {
     auto found = fetch(scope, identity);
     if (!IS_PTR(found, EnumType))
-        // FIXME: Throw a meaningful error object instead of a string
-        throw "'" + identity + "' is not a EnumType";
+        // FIXME: Throw an appropriate error object
+        throw runtime_error("'" + identity + "' is not a EnumType");
     return AS_PTR(found, EnumType);
 }
 
@@ -73,7 +74,7 @@ ptr<Entity> fetch_entity(ptr<Scope> scope, string identity)
 {
     auto found = fetch(scope, identity);
     if (!IS_PTR(found, Entity))
-        // FIXME: Throw a meaningful error object instead of a string
+        // FIXME: Throw an appropriate error object
         throw "'" + identity + "' is not an Entity";
     return AS_PTR(found, Entity);
 }
