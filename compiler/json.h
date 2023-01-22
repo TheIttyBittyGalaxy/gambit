@@ -9,6 +9,14 @@
 #include <vector>
 using namespace std;
 
+// JSON serialisation Exception
+
+class json_serialisation_error : public logic_error
+{
+public:
+    json_serialisation_error(const string &error) : logic_error(error) {}
+};
+
 // Forward declarations
 
 class JsonContainer;
@@ -89,7 +97,7 @@ public:
     void array()
     {
         if (current_container() == Container::Object)
-            throw runtime_error("Must specify a key when creating an Array inside of an Object."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Must specify a key when creating an Array inside of an Object.");
 
         on_add_value();
         container_stack.emplace(Container::Array);
@@ -100,7 +108,7 @@ public:
     void object()
     {
         if (current_container() == Container::Object)
-            throw runtime_error("Must specify a key when creating an Object inside of an Object."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Must specify a key when creating an Object inside of an Object.");
 
         on_add_value();
         container_stack.emplace(Container::Object);
@@ -111,7 +119,7 @@ public:
     void array(string key)
     {
         if (current_container() != Container::Object)
-            throw runtime_error("Cannot specify a key when creating an Array inside that is not inside of a Object."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Cannot specify a key when creating an Array inside that is not inside of a Object.");
 
         on_add_value();
         container_stack.emplace(Container::Array);
@@ -122,7 +130,7 @@ public:
     void object(string key)
     {
         if (current_container() != Container::Object)
-            throw runtime_error("Cannot specify a key when creating an Object inside that is not inside of a Object."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Cannot specify a key when creating an Object inside that is not inside of a Object.");
 
         on_add_value();
         container_stack.emplace(Container::Object);
@@ -133,7 +141,7 @@ public:
     void close()
     {
         if (stack_depth() == 0)
-            throw runtime_error("Cannot close JSON container as no container has been opened."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Cannot close JSON container as no container has been opened.");
 
         Container container = current_container();
         container_stack.pop();
@@ -150,7 +158,7 @@ public:
     add(T value)
     {
         if (current_container() != Container::Array)
-            throw runtime_error("Cannot add a value as current container is not an Array."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Cannot add a value as current container is not an Array.");
 
         on_add_value();
         result += to_json(value, depth());
@@ -160,7 +168,7 @@ public:
     void add(string key, T value)
     {
         if (current_container() != Container::Object)
-            throw runtime_error("Cannot add a key-value pair as current container is not an Object."); // FIXME: Use a more appropriate exception type
+            throw json_serialisation_error("Cannot add a key-value pair as current container is not an Object.");
 
         on_add_value();
         result += to_json(key) + ": " + to_json(value, depth());
