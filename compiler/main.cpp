@@ -69,12 +69,12 @@ int main(int argc, char *argv[])
     cout << "\nPARSING" << endl;
     Parser parser;
     auto program = parser.parse(tokens);
-    output_program(program, "parser_output.json");
+    output_program(program, "parser_output");
 
     cout << "\nRESOLVER" << endl;
     Resolver resolver;
     resolver.resolve(program);
-    output_program(program, "resolver_output.json");
+    output_program(program, "resolver_output");
 
     cout << "\nERRORS" << endl;
     for (auto err : errors)
