@@ -10,7 +10,24 @@
 #include <string>
 using namespace std;
 
-// MAIN //
+// Output program to JSON file
+void output_program(ptr<Program> program, string file_name)
+{
+    std::ofstream output;
+    output.open("local/" + file_name + ".json");
+    if (output.is_open())
+    {
+        output << to_json(program);
+        cout << "Saved APM to local/" + file_name + ".json" << endl;
+        output.close();
+    }
+    else
+    {
+        cout << "Error attempting to save APM to local/" + file_name + ".json" << endl;
+    }
+}
+
+// Main
 
 int main(int argc, char *argv[])
 {
@@ -51,11 +68,8 @@ int main(int argc, char *argv[])
     cout << "\nPARSING" << endl;
     Parser parser;
     auto program = parser.parse(tokens);
+    output_program(program, "parser_output.json");
 
-    std::ofstream parser_output;
-    parser_output.open("local/parser_output.json");
-    parser_output << to_json(program);
-    cout << "Saved parser output to local/parser_output.json" << endl;
 
     cout << "\nERRORS" << endl;
     for (auto err : errors)
