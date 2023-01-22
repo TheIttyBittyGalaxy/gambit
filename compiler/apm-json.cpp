@@ -89,6 +89,7 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     json.add("node", string("Entity"));
     STRUCT_FIELD(identity);
     STRUCT_FIELD(fields);
+    STRUCT_FIELD(signature);
     STRUCT_FIELD(base_definition_found);
     json.close();
     return (string)json;

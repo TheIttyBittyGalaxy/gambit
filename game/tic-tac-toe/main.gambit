@@ -23,12 +23,12 @@ extend Player {
     } // Because this property is derived entirely from static fields, it's technically a static field (a.k.a a 'static property')
 }
 
-entity Board() {
+entity Board {
     state List<Mark, 9> squares
     property bool is_full = #(squares filter (square: sqaure.mark != none)) == 0
 }
 
-entity Square(index) {
+entity Square[index] {
     static int index
     static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index] // Use of an expression here is valid, as the expression can be resolved at compile time
     state Mark? mark // Defaults to `none`

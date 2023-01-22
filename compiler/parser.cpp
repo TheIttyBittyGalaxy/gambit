@@ -199,11 +199,18 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
 
     entity->base_definition_found = is_base_definition;
 
-    if (is_base_definition && peek(Token::ParenL))
+    if (peek(Token::SquareL))
     {
-        eat(Token::ParenL);
-        // FIXME: Parse entity signature
-        eat(Token::ParenR);
+        if (!is_base_definition)
+            throw Error("Cannot define an Entity's signature on an additive definition.", tokens.at(current_token));
+
+        eat(Token::SquareL);
+        do
+        {
+            auto identity = eat(Token::Identity).str;
+            entity->signature.emplace_back(identity);
+        } while (match(Token::Comma));
+        eat(Token::SquareR);
     }
 
     eat(Token::CurlyL);

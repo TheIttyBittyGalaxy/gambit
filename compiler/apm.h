@@ -76,6 +76,7 @@ struct Entity
 {
     string identity;
     map<string, ptr<EntityField>> fields;
+    vector<string> signature;
     bool base_definition_found = false;
 };
 
