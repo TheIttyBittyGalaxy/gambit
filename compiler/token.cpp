@@ -3,12 +3,16 @@ using namespace std;
 
 string to_string(Token t)
 {
+    if (t.kind == Token::InvalidToken)
+        return "[INVALID]";
     if (t.kind == Token::Line)
         return "[" + to_string(t.line) + ":" + to_string(t.column) + " /]";
     return "[" + to_string(t.line) + ":" + to_string(t.column) + " " + token_name.at(t.kind) + " " + t.str + "]";
 }
 
 const map<Token::Kind, string> token_name = {
+    {Token::InvalidToken, "InvalidToken"},
+
     {Token::Line, "Line"},
 
     {Token::Equal, "Equal"},

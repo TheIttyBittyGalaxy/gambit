@@ -10,6 +10,8 @@ struct Token
 {
     enum Kind
     {
+        InvalidToken,
+
         Line,
 
         Equal,
@@ -70,6 +72,8 @@ struct Token
     string str;
     size_t line;
     size_t column;
+
+    Token() : kind(Token::InvalidToken), str(""), line(0), column(0){};
 
     Token(Kind kind, string str, size_t line, size_t column) : kind(kind),
                                                                str(str),
