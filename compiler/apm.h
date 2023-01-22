@@ -1,6 +1,7 @@
 #ifndef APM_H
 #define APM_H
 
+#include "token.h"
 #include "utilty.h"
 #include <map>
 #include <optional>
@@ -47,6 +48,7 @@ struct Scope
 struct UnresolvedIdentity
 {
     string identity;
+    Token token;
 };
 
 // Enums

@@ -143,7 +143,10 @@ void Parser::parse_program()
 ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
-    identity->identity = eat(Token::Identity).str;
+    Token token = eat(Token::Identity);
+    identity->token = token;
+    identity->identity = token.str;
+
     return identity;
 }
 
