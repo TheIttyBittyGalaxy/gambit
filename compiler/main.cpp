@@ -3,6 +3,7 @@
 #include "json.h"
 #include "lexing.h"
 #include "parser.h"
+#include "resolver.h"
 #include "token.h"
 #include "utilty.h"
 #include <fstream>
@@ -70,6 +71,10 @@ int main(int argc, char *argv[])
     auto program = parser.parse(tokens);
     output_program(program, "parser_output.json");
 
+    cout << "\nRESOLVER" << endl;
+    Resolver resolver;
+    resolver.resolve(program);
+    output_program(program, "resolver_output.json");
 
     cout << "\nERRORS" << endl;
     for (auto err : errors)
