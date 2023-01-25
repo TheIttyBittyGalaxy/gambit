@@ -1,102 +1,145 @@
 # 1. Entities
 
-A entity is 'a thing that can exist' in your game. For example, if your game is played with a regular deck of cards, a `Card` is a entity in your game. Entities must be defined, where they are defined with a list of fields. Each field must have a name and a data type, will be either a static field, a property, or a state.
+Entities are how you declare types of game object in Gambit.
 
-Once a entity has been defined, you may create instances of it. If your game were played with a deck of cards, there would be 1 card definition and 52 card instances.
+Entity definitions declare the states, properties, and static values of a specific type of entity. These are known as the entity's 'fields'. An instance of an entity will have all of these fields. When defining an entity, you may also define it's signature - a shorthand way of referring to instances of that entity that match certain values.
 
-Entities are _similar_ to classes in other programming languages, but don't behave in the same way, and are designed for implementing things that are specified by the game's rules. e.g. you would implement an important game piece as a entity, but you wouldn't have a 'GamePieceManager' like you might in conventional object-oriented languages.
+'Additive definitions' allow you to declare additional fields for instances of an entity that have static fields that match certain values.
 
-## 1.1 Entity definitions
+'Entity selectors' allow you select all instances of an entity type whose fields match certain values.
 
-### 1.1.1 Base definitions
-
-Let's set we wanted to define a regular set of playing cards. We could do that something like this.
+**Example**
 
 ```gambit
-enum Face { ACE, 2, 3, 4, 5, 6, 7, 8, 9, JACK, QUEEN, KING } // `Suit` and `Face` are both enums (see more in the 'types' section of this document)
+enum Face { ACE, 2, 3, 4, 5, 6, 7, 8, 9, JACK, QUEEN, KING }
 enum Suit { HEART, DIAMOND, CLUB, SPADE }
 
-define entity Card[suit, face] {
+entity Card[suit, face] {
+	static Suit suit
+	static Face face
+	state int tokens: 0
+	property bool is_powerful: tokens >= 3 or face == JACK|QUEEN|KING
+}
+```
+
+> 🚩 Entities are _comparable_ to [classes](<https://en.wikipedia.org/wiki/Class_(computer_programming)>) in other programming languages, but are not the same thing. They do not use inheritance, methods, or other common OOP features. They are good for implementing game objects such as cards, game pieces, and players, but may not be suitable in all cases where you might use a class in other languages.
+
+## 1.1 Entity fields
+
+There are three kinds of field a entity can have, each with different behaviours.
+
+| field    | description                                                                                                                          | example                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Static   | Static fields are constant values that are known at compile time, e.g. the suit of a card.                                           | `static Suit suit`                               |
+| State    | States are values that can change during the game, e.g. how many coin tokens the player has. They must defined with a default value. | `int tokens: 0`                                  |
+| Property | Properties are values derived from other fields, e.g. if a chess piece can move diagonally. They must defined with a pure expression | `bool can_move_diagonal: piece == BISHOP\|QUEEN` |
+
+> 🚩 All state fields across all entity instances comprise the 'game state'.
+
+## 1.2 Entity definitions
+
+### 1.2.1 Base definitions
+
+The definition where an entity is 'first' declared is called the 'base definition'. This does not actually have to be the first definition the compiler sees, however it will be treated as the base definition that all other 'additive definitions' build on top of. For this reason, each type of entity must have exactly one base definition.
+
+Base definitions are indicated using the `entity` keyword.
+
+```gambit
+entity Card {
 	static Suit suit
 	static Face face
 }
 ```
 
-### 1.1.2 Additive definitions
-
-Once a entity has been defined, you may also define additional fields in separate declarations. This is particularly useful in situations where you want to program extensions to the game in a separate file, without having to make significant edits to the 'core' game.
-
-Additive definitions are the same as base definitions, but without the `define` keyword. Additive definition may not define the entity's signature.
+Base definitions may optionally specify a signature for the entity. This is a comma separated list of field names in-between `[` `]` brackets. The signature is written after the entity's name.
 
 ```gambit
-define entity Card[suit, face] {
+entity Card[suit, face] {
+	static Suit suit
+	static Face face
+}
+```
+
+### 1.2.2 Additive definitions
+
+Once a entity has been defined, you may also define additional fields in a separate 'additive definition'. You may also use additive definitions to provide values to fields that were defined in other definitions.
+
+Additive definitions are indicated using the `extend` keyword.
+
+```gambit
+entity Card[suit, face] {
 	static Suit suit
 	static Face face
 }
 
-entity Card {
+extend Card {
 	state Boolean activated
 }
 ```
 
-You may also use additive definitions to define the values of fields that were defined without values in other definitions. This is most useful when using selective definitions.
-
-### 1.1.3 Selective definitions
-
-You can create additive definitions that only apply to instances that match a given static selector. These selectors may define additional fields, or define the values of fields that were already defined elsewhere.
-
-Let's say that in our game, played with a regular set of playing cards, the player has the ability to add tokens to picture cards. We could define that as follows.
+You can create additive definitions that only apply to instances of the entity that match a specific static selector. In this case, the selector goes after the entity's name. This is the most useful way to use additive definitions.
 
 ```gambit
-entity Card {
+entity Card[face, suit] {
 	static Suit suit
 	static Face face
 }
 
-entity Card[face: ACE|JACK|QUEEN|KING] {
-	state Integer tokens: 0
+extend Card[face: ACE|JACK|QUEEN|KING] { // This selector matches any picture cards
+	state int tokens: 0
+	static int tokens_need_to_win: 3
+}
+
+extend Card[ACE, SPADES] { // This selector uses the entity's signature to match the Ace of Spades.
+	static int tokens_need_to_win: 2
 }
 ```
 
-We could even add an additional rule that states that the Ace of Spades has a default value of 2 tokens.
+### 1.2.3 Entity definition scoping
+
+All entity definitions (base and additive) are scoped to the namespace they are written in. An entity type is scoped to the same namespace as the base definition.
+
+In order for a statement or expression to access a field of an entity, it must be in the same scope as the definition where that field was defined (or any nested scope).
 
 ```gambit
-entity Card[ACE, SPADE] {
-	tokens: 2
+entity Foo {
+	state int bar
 }
+
+namespace GameExpansion {
+	extend Foo {
+		state int super_bar
+	}
+
+	// Can access Foo.super_bar here
+}
+
+// Cannot access Foo.super_bar here
 ```
 
-### 1.1.4 Scoped definitions
-
-Additive definitions of a entity are scoped, meaning the additional fields can only be accessed elsewhere in the same scope. Different scopes may specify different fields that still have the same name.
+Because entity fields are scoped in this way, it is possible for an entity to have multiple fields with the same name, but that exist in separate scopes.
 
 ```gambit
-scope sapphire_expansion {
-	entity Card {
-		state Boolean super_shiny
-		state Integer tokens // Can only be accessed in the 'sapphire_expansion' scope
+entity Foo { ... }
+
+namespace RubyExpansion {
+	extend Foo {
+		static string power
 	}
 }
 
-scope ruby_expansion {
-	entity Card {
-		state Integer tokens // Can only be access in the 'ruby_expansion' scope
+namespace EmeraldExpansion {
+	extend Foo {
+		state int power: 0
 	}
 }
 ```
 
-## 1.2 Entity signatures
+## 1.3 Entity signatures
 
-Given the definition below, instances of a class would have to specified with the long-hand named syntax `Card[suit: SPADES, face: ACE]`.
+An entity signature is a pattern that matches instances of an entity based on the values of it's fields. It is a way to specify the values specific fields of an entity without having to them them.
 
-```gambit
-define entity Card {
-	static Suit suit
-	static Face face
-}
-```
-
-This can be a bit cumbersome. However, in the base definition of a entity you can specify a 'signature' for the entity. This provides a syntax for supplying specific fields without having to name them. Given the following definition...
+For example...
 
 ```gambit
 define entity Card[suit, face] {
@@ -105,77 +148,22 @@ define entity Card[suit, face] {
 }
 ```
 
-...the Ace of Spades can now be written as `Card[SPADES, ACE]`. If the value of the value literal can be inferred, it can be shortened even further to just `[SPADES, ACE]`.
+...allows the pattern `Card[suit: SPADES, face: ACE]` to be rewritten as `Card[SPADES, ACE]`. If the type can be inferred from context, it can be shortened even further to just `[SPADES, ACE]`.
 
-### 1.2.1 Partial signatures
-
-Partial signatures can also be provided in the case where it is unambiguous what is meant by them.
+It is legal to provide partial signatures - just so long as it is unambiguous what is meant by them.
 
 ```gambit
 Card[CLUB] // Matches any clubs
 Card[ACE] // Matches any aces
 ```
 
-In the case of playing cards, if you only provide a single value to the signature, it is totally unambiguous as if to the `suit` or the `face` has been provided, because those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
+In this case, is totally unambiguous if the value provided is the `suit` or the `face`, as those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
 
-## 1.3 Entity fields
+## 1.4 Instantiating entities
 
-There are three kinds of field a entity can have, each with different behaviours.
+In order for an instance of an entity to be created, all of it's static fields must be specified.
 
-### 1.3.1 Static fields
-
-Static fields constant values that are known at compile time. An example might be the suit of a card.
-
-```gambit
-static Suit suit
-```
-
-### 1.3.2 State fields
-
-State fields are fields that can change during the game. State fields must be defined with a default value. An example might be how many coin tokens the player has.
-
-All state fields across all entity instances comprise the 'game state'.
-
-```gambit
-int tokens = 0
-```
-
-### 1.3.3 Property fields
-
-A property of a entity is a field that is derived from other parts of the game state. An example would be if a king is in check in chess. They are defined with a pure expression, which is scoped to the entity it is a member of.
-
-```gambit
-static int max_health: 20 // Static field
-int health: 1 // State field
-num health_percentage => health / max_health // Property field
-```
-
-## 1.4 Creating instances
-
-We can create a card with the following syntax. In order for an instance to be created, all of it's static fields must be specified.
-
-```gambit
-Card ace_of_spades = [SPADES, ACE]
-```
-
-To do these one by one for a full deck of cards would be tedious, and so we can use loops instead.
-
-```gambit
-List<Card> deck
-for suit in Suit {
-	for face in Face {
-		deck.insert([suit, face])
-	}
-}
-```
-
-Which in Gambit can be reduced to
-
-```gambit
-List<Card> deck = for suit, face in Suit, Face => [suit, face]
-```
-
-> TODO: This isn't the best looking code I've ever seen. Perhaps study some functional languages to see how they might to something like this?
+> TODO: Figure out a good syntax for this
 
 # 2. Selectors
 

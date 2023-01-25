@@ -3,7 +3,7 @@
         static List<Player> players
     }
 
-    entity Player(player_number) {
+    entity Player[player_number] {
         static int player_number
     }
 */
