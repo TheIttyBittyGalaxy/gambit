@@ -1,4 +1,4 @@
-# 1. Entities
+# Entities
 
 Entities are how you declare types of game object in Gambit.
 
@@ -24,7 +24,7 @@ entity Card[suit, face] {
 
 > 🚩 Entities are _comparable_ to [classes](<https://en.wikipedia.org/wiki/Class_(computer_programming)>) in other programming languages, but are not the same thing. They do not use inheritance, methods, or other common OOP features. They are good for implementing game objects such as cards, game pieces, and players, but may not be suitable in all cases where you might use a class in other languages.
 
-## 1.1 Entity fields
+## Entity fields
 
 There are three kinds of field a entity can have, each with different behaviours.
 
@@ -36,9 +36,9 @@ There are three kinds of field a entity can have, each with different behaviours
 
 > 🚩 All state fields across all entity instances comprise the 'game state'.
 
-## 1.2 Entity definitions
+## Entity definitions
 
-### 1.2.1 Base definitions
+### Base definitions
 
 The definition where an entity is 'first' declared is called the 'base definition'. This does not actually have to be the first definition the compiler sees, however it will be treated as the base definition that all other 'additive definitions' build on top of. For this reason, each type of entity must have exactly one base definition.
 
@@ -60,7 +60,7 @@ entity Card[suit, face] {
 }
 ```
 
-### 1.2.2 Additive definitions
+### Additive definitions
 
 Once a entity has been defined, you may also define additional fields in a separate 'additive definition'. You may also use additive definitions to provide values to fields that were defined in other definitions.
 
@@ -95,7 +95,7 @@ extend Card[ACE, SPADES] { // This selector uses the entity's signature to match
 }
 ```
 
-### 1.2.3 Entity definition scoping
+### Entity definition scoping
 
 All entity definitions (base and additive) are scoped to the namespace they are written in. An entity type is scoped to the same namespace as the base definition.
 
@@ -135,7 +135,7 @@ namespace EmeraldExpansion {
 }
 ```
 
-## 1.3 Entity signatures
+## Entity signatures
 
 An entity signature is a pattern that matches instances of an entity based on the values of it's fields. It is a way to specify the values specific fields of an entity without having to them them.
 
@@ -159,13 +159,13 @@ Card[ACE] // Matches any aces
 
 In this case, is totally unambiguous if the value provided is the `suit` or the `face`, as those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
 
-## 1.4 Instantiating entities
+## Instantiating entities
 
 In order for an instance of an entity to be created, all of it's static fields must be specified.
 
 > TODO: Figure out a good syntax for this
 
-# 2. Selectors
+# Selectors
 
 During your game, you can select all entity instances that have specific values. e.g. all of the hearts in a deck of cards, all players with 10 or more coin tokens, etc.
 
@@ -190,11 +190,11 @@ A selector is said to be a 'static selector' if it selects instances based only 
 
 > \* Technically, a property is considered to be a 'static property' if the expression used to define it is also static. Static properties do not cause a selector to become a dynamic one, and can be used in a static one.
 
-# 3. Functions & Procedures
+# Functions & Procedures
 
 Functions and procedures in Gambit are two different things. The only difference between them is that functions must be 'mathematically pure', or in other words, cannot change the game state. Functions are considered to be a subtype of Procedures, and so all functions are also procedures. You can imagined functions as 'read-only' procedures.
 
-## 3.1 Method call syntax
+## Method call syntax
 
 If a function or procedure may be called the typical way.
 
@@ -206,7 +206,7 @@ However may also be called using the 'method syntax', where the first argument p
 
 a:f(b, c)
 
-## 3.2 Selectors as parameters
+## Selectors as parameters
 
 When defining a function or procedure (henceforth 'procedures') parameter, you may specify it's type, but you may also specify a static selector. Procedures can be overloaded. If multiple overloads match the same set of parameter types, the overloads will be ranked by the specificity of their selectors, and the first to match the given parameter will be executed.
 
@@ -248,9 +248,9 @@ main() {
 
 > TODO: Is only allowing static selectors the right choice? On one hand, it allows us to do comprehensive static analysis. This is most useful for preventing situations where two overloads with the same specificity match a given set of arguments, as we will be able to detect if this occurs at compile time. On the other hand, in some games, differing behaviours may be purely the result of non-static fields. In this case, currently the programmer is forced to place any logic that interacts with these dynamic fields in the function itself. This code is non expandable, _unless_ they use dynamic procedure fields to allow entities to specify their own logic. Maybe that's the right call, but maybe it comes with it's own issues?
 
-# 4. Types
+# Types
 
-## 4.1 Primitive types
+## Primitive types
 
 | Type        | Description                                                                     |
 | ----------- | ------------------------------------------------------------------------------- |
@@ -261,26 +261,26 @@ main() {
 | `Procedure` | A procedure.                                                                    |
 | `Function`  | A procedure that has no effect on the game state. Is a sub-type of `Procedure`. |
 
-## 4.2 Enum types
+## Enum types
 
 > TODO: Write up
 
-## 4.3 List types
+## List types
 
 > TODO: Write up
 > Almost definitely need some notion of ordered and unordered lists?
 
-## 4.4 Optional types
+## Optional types
 
 Every type has a corresponding 'optional type', which can be a value of that type or `none`. It's syntax is `Type?`.
 
-## 4.5 Union types
+## Union types
 
 Multiple types can be combined into one by creating their union. The original types will be considered subtypes of the union. The syntax is `TypeA | Type B`.
 
 > ! How should this interact with multi-types?? Presumably something like `A!|B` is valid, and means you can be either one or more of A, or just one of B? So `A!|B` is not equal to `(A|B)!`. Though, confusingly, `A!?|B` is equal to `(A!|B)?`
 
-## 4.6 Multi-types
+## Multi-types
 
 Every type has a corresponding 'multi type', which can be any combination of values of that type. It's syntax is `Type!`
 
@@ -316,7 +316,7 @@ Heart&Spade == Club&Spade // false
 Heart&Spade is Club&Spade // false
 ```
 
-## 4.7 First class functions and procedures
+## First class functions and procedures
 
 Functions and procedures can be first class. This also means they can be the fields of entities. For example, say that some cards in your game have an 'activate' ability, that could be implemented something like this.
 
@@ -349,7 +349,7 @@ jackpot = entity Card {
 }
 ```
 
-# 5. Notation
+# Notation
 
 Often, it can be useful to specify a notion for certain kinds of values that may appear in your game. For example, in [Magic the Gathering](https://mtg.fandom.com/wiki/Magic:_The_Gathering), cards have a 'mana cost'. There are 5 different 'colours' of mana, and in even the most basic cases, a card may specify a cost of any amount of each specific kind of mana, and/or a certain amount of mana of any colour. e.g. the card 'Abundance' require you may 2 green mana and then also 2 mana of any colour. A notation such as `GG2` would be more convenient that having to type out all the names and fields of a struct by hand, while remaining more readable than a nameless constructor.
 
@@ -387,6 +387,6 @@ procedure do_thing(ManaCost cost) {
 }
 ```
 
-## 5.1 Ambiguity
+## Ambiguity
 
 When a notated value matches multiple possible notations, usually this ambiguity is resolved using type inference. e.g. maybe `%2` could annotate a mama cost, or it could annotate a power and toughness. Usually, Gambit can tell from context. In cases where it can't however, this will throw an error.
