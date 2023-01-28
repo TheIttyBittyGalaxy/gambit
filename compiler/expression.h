@@ -7,6 +7,7 @@ enum class Precedence
     Term,
     Factor,
     Unary,
+    Match,
 }; // Happens first
 
 #endif

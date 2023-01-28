@@ -2,7 +2,9 @@
 #include "json.h"
 #include <exception>
 
-#define STRUCT_FIELD(field) json.add(#field, node->field);
+#define STRUCT_PTR_FIELD(field) json.add(#field, node->field);
+
+#define STRUCT_FIELD(field) json.add(#field, node.field);
 
 #define VARIANT(T)   \
     if (IS(node, T)) \
@@ -17,7 +19,7 @@ string to_json(const ptr<Program> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("Program"));
-    STRUCT_FIELD(global_scope);
+    STRUCT_PTR_FIELD(global_scope);
     json.close();
     return (string)json;
 };
@@ -36,7 +38,7 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("Scope"));
-    STRUCT_FIELD(lookup);
+    STRUCT_PTR_FIELD(lookup);
     json.close();
     return (string)json;
 };
@@ -46,7 +48,7 @@ string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("UnresolvedIdentity"));
-    STRUCT_FIELD(identity);
+    STRUCT_PTR_FIELD(identity);
     json.close();
     return (string)json;
 };
@@ -56,8 +58,8 @@ string to_json(const ptr<EnumType> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("EnumType"));
-    STRUCT_FIELD(identity);
-    STRUCT_FIELD(values);
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
 };
@@ -67,7 +69,7 @@ string to_json(const ptr<EnumValue> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("EnumValue"));
-    STRUCT_FIELD(identity);
+    STRUCT_PTR_FIELD(identity);
     json.close();
     return (string)json;
 };
@@ -77,10 +79,10 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("Entity"));
-    STRUCT_FIELD(identity);
-    STRUCT_FIELD(fields);
-    STRUCT_FIELD(signature);
-    STRUCT_FIELD(base_definition_found);
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(fields);
+    STRUCT_PTR_FIELD(signature);
+    STRUCT_PTR_FIELD(base_definition_found);
     json.close();
     return (string)json;
 };
@@ -90,11 +92,11 @@ string to_json(const ptr<EntityField> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("EntityField"));
-    STRUCT_FIELD(identity);
-    STRUCT_FIELD(type);
-    STRUCT_FIELD(is_static);
-    STRUCT_FIELD(is_property);
-    STRUCT_FIELD(default_value);
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(is_static);
+    STRUCT_PTR_FIELD(is_property);
+    STRUCT_PTR_FIELD(default_value);
     json.close();
     return (string)json;
 };
@@ -104,8 +106,8 @@ string to_json(const ptr<NativeType> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("NativeType"));
-    STRUCT_FIELD(identity);
-    STRUCT_FIELD(cpp_identity);
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(cpp_identity);
     json.close();
     return (string)json;
 };
@@ -115,7 +117,7 @@ string to_json(const ptr<OptionalType> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("OptionalType"));
-    STRUCT_FIELD(type);
+    STRUCT_PTR_FIELD(type);
     json.close();
     return (string)json;
 };
@@ -153,8 +155,8 @@ string to_json(const ptr<Unary> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("Unary"));
-    STRUCT_FIELD(op);
-    STRUCT_FIELD(value);
+    STRUCT_PTR_FIELD(op);
+    STRUCT_PTR_FIELD(value);
     json.close();
     return (string)json;
 };
@@ -164,9 +166,30 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("Binary"));
-    STRUCT_FIELD(op);
-    STRUCT_FIELD(lhs);
-    STRUCT_FIELD(rhs);
+    STRUCT_PTR_FIELD(op);
+    STRUCT_PTR_FIELD(lhs);
+    STRUCT_PTR_FIELD(rhs);
+    json.close();
+    return (string)json;
+};
+
+string to_json(const Match::Rule &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(pattern);
+    STRUCT_FIELD(result);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<Match> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Match"));
+    STRUCT_PTR_FIELD(subject);
+    STRUCT_PTR_FIELD(rules);
     json.close();
     return (string)json;
 };
@@ -178,6 +201,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(EnumValue);
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
+    VARIANT_PTR(Match);
 
     throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
 };

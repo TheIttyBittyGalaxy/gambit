@@ -30,7 +30,8 @@ using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<UnresolvedIdentity>
 struct Literal;
 struct Unary;
 struct Binary;
-using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>>;
+struct Match;
+using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>, ptr<Match>>;
 
 // Program
 
@@ -118,6 +119,17 @@ struct Binary
     Expression rhs;
 };
 
+struct Match
+{
+    struct Rule
+    {
+        Expression pattern;
+        Expression result;
+    };
+    Expression subject;
+    vector<Rule> rules;
+};
+
 // Methods
 
 string identity_of(Scope::LookupValue value);
@@ -144,6 +156,8 @@ string to_json(const ptr<OptionalType> &native_type, const size_t &depth = 0);
 string to_json(const Type &type, const size_t &depth = 0);
 string to_json(const ptr<Unary> &literal, const size_t &depth = 0);
 string to_json(const ptr<Binary> &literal, const size_t &depth = 0);
+string to_json(const Match::Rule &node, const size_t &depth = 0);
+string to_json(const ptr<Match> &literal, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 

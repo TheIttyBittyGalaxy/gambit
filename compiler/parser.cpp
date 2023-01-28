@@ -312,6 +312,8 @@ Expression Parser::parse_expression(Precedence precedence)
     Expression expr;
     if (peek_paren_expr())
         expr = parse_paren_expr();
+    else if (peek_match())
+        expr = parse_match();
     else if (peek_unary())
         expr = parse_unary();
     else if (peek(Token::Identity))
@@ -345,6 +347,31 @@ Expression Parser::parse_paren_expr()
     auto expr = parse_expression();
     eat(Token::ParenR);
     return expr;
+}
+
+bool Parser::peek_match()
+{
+    return peek(Token::KeyMatch);
+}
+
+ptr<Match> Parser::parse_match()
+{
+    auto match = CREATE(Match);
+
+    eat(Token::KeyMatch);
+    match->subject = parse_expression();
+
+    eat(Token::CurlyL);
+    while (peek_expression())
+    {
+        auto pattern = parse_expression();
+        eat(Token::Colon);
+        auto result = parse_expression();
+        match->rules.emplace_back(Match::Rule{pattern, result});
+    }
+    eat(Token::CurlyR);
+
+    return match;
 }
 
 bool Parser::peek_unary()

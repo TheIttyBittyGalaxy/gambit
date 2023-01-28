@@ -50,6 +50,8 @@ private:
 
     bool peek_paren_expr();
     Expression parse_paren_expr();
+    bool peek_match();
+    ptr<Match> parse_match();
     bool peek_unary();
     ptr<Unary> parse_unary();
     bool peek_literal();
