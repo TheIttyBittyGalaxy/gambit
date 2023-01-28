@@ -16,8 +16,6 @@ private:
     void resolve_program(ptr<Program> program);
     void resolve_scope(ptr<Scope> scope);
 
-    optional<Scope::LookupValue> resolve_identity(ptr<UnresolvedIdentity> unresolved_identity, ptr<Scope> scope);
-
     Type resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope);
     optional<Type> resolve_type(Type type, ptr<Scope> scope);
 

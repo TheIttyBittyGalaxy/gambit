@@ -22,16 +22,6 @@ void Resolver::resolve_scope(ptr<Scope> scope)
     }
 };
 
-optional<Scope::LookupValue> Resolver::resolve_identity(ptr<UnresolvedIdentity> unresolved_identity, ptr<Scope> scope)
-{
-    string id = unresolved_identity->identity;
-    if (declared_in_scope(scope, id))
-        return fetch(scope, id);
-
-    emit_error("'" + id + "' is not defined.", unresolved_identity->token);
-    return {};
-};
-
 Type Resolver::resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope)
 {
     auto resolved = resolve_type(type->type, scope);
@@ -50,10 +40,12 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
 
     if (IS_PTR(type, UnresolvedIdentity))
     {
-        auto opt_resolved = resolve_identity(AS_PTR(type, UnresolvedIdentity), scope);
-        if (opt_resolved.has_value())
+        auto unresolved_identity = AS_PTR(type, UnresolvedIdentity);
+        string id = unresolved_identity->identity;
+
+        if (declared_in_scope(scope, id))
         {
-            auto resolved = opt_resolved.value();
+            auto resolved = fetch(scope, id);
             if (IS_PTR(resolved, NativeType))
                 return AS_PTR(resolved, NativeType);
             if (IS_PTR(resolved, EnumType))
@@ -64,6 +56,11 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
             auto unresolved_identity = AS_PTR(type, UnresolvedIdentity);
             emit_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
         }
+        else
+        {
+            emit_error("'" + id + "' is not defined.", unresolved_identity->token);
+        }
+
         return {};
     }
 
