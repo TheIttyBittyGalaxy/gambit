@@ -1,6 +1,6 @@
 # ♟ Gambit
 
-Gambit is a programming language designed for creating turn-based games with complex rule sets. The compiler generates a playable executable with a built in [Monte-Carlo Tree Search](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) AI. Gambit's [entity system](/documentation/overview.md#1-entities) allows game objects to be declared and iteratively extended according to complex rule sets (and avoids the [Deadly Diamond of Death](https://en.wikipedia.org/wiki/Multiple_inheritance#The_diamond_problem)!). It puts an emphasis on functional and declarative programming features to help handle the complexity of games with many rules that interact with one another.
+Gambit is a programming language designed for creating turn-based games with complex rule sets. The compiler generates a playable executable with a built in [Monte-Carlo Tree Search](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) AI. Gambit's [entity system](/documentation/overview.md#entities) allows game objects to be declared and iteratively extended according to complex rule sets (and avoids the [Deadly Diamond of Death](https://en.wikipedia.org/wiki/Multiple_inheritance#The_diamond_problem)!). It puts an emphasis on functional and declarative programming features to help handle the complexity of games with many rules that interact with one another.
 
 ## Development Status
 
