@@ -148,10 +148,35 @@ string to_json(const ptr<Literal> &node, const size_t &depth)
     return (string)json;
 };
 
+string to_json(const ptr<Unary> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Unary"));
+    STRUCT_FIELD(op);
+    STRUCT_FIELD(value);
+    json.close();
+    return (string)json;
+};
+
+string to_json(const ptr<Binary> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Binary"));
+    STRUCT_FIELD(op);
+    STRUCT_FIELD(lhs);
+    STRUCT_FIELD(rhs);
+    json.close();
+    return (string)json;
+};
+
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(Literal);
     VARIANT_PTR(EnumValue);
+    VARIANT_PTR(Unary);
+    VARIANT_PTR(Binary);
 
     throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
 };

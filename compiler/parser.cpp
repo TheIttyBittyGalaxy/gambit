@@ -300,22 +300,79 @@ Type Parser::parse_type(ptr<Scope> scope)
 
 bool Parser::peek_expression()
 {
-    return peek_literal();
+    return peek_paren_expr() || peek_unary() || peek_literal();
 }
 
-Expression Parser::parse_expression()
+// Parses any expression of the given precedence or higher
+Expression Parser::parse_expression(Precedence precedence)
 {
-    if (peek_literal())
+    // Prefix expressions
+    Expression expr;
+    if (peek_paren_expr())
+        expr = parse_paren_expr();
+    else if (peek_unary())
+        expr = parse_unary();
+    else if (peek_literal())
+        expr = parse_literal();
+    else
+        throw Error("Expected expression", tokens.at(current_token));
+
+    while (true)
     {
-        return parse_literal();
+        if (peek_factor() && precedence <= Precedence::Factor)
+            expr = parse_factor(expr);
+        else if (peek_term() && precedence <= Precedence::Term)
+            expr = parse_term(expr);
+        else
+            break;
     }
 
-    throw Error("Expected expression", tokens.at(current_token));
+    return expr;
+}
+
+bool Parser::peek_paren_expr()
+{
+    return peek(Token::ParenL);
+}
+
+Expression Parser::parse_paren_expr()
+{
+    eat(Token::ParenL);
+    auto expr = parse_expression();
+    eat(Token::ParenR);
+    return expr;
+}
+
+bool Parser::peek_unary()
+{
+    return peek(Token::Add) ||
+           peek(Token::Sub) ||
+           peek(Token::KeyNot);
+}
+
+ptr<Unary> Parser::parse_unary()
+{
+    auto expr = CREATE(Unary);
+
+    if (peek(Token::Add))
+        expr->op = eat(Token::Add).str;
+    else if (peek(Token::Sub))
+        expr->op = eat(Token::Sub).str;
+    else if (peek(Token::KeyNot))
+        expr->op = eat(Token::KeyNot).str;
+    else
+        throw Error("Expected unary expression", tokens.at(current_token)); // FIXME: Should this be a compiler error rather than a language error?
+
+    expr->value = parse_expression(Precedence::Unary);
+
+    return expr;
 }
 
 bool Parser::peek_literal()
 {
-    return peek(Token::Number) || peek(Token::String) || peek(Token::Boolean);
+    return peek(Token::Number) ||
+           peek(Token::String) ||
+           peek(Token::Boolean);
 }
 
 ptr<Literal> Parser::parse_literal()
@@ -343,4 +400,47 @@ ptr<Literal> Parser::parse_literal()
     }
 
     return literal;
+}
+
+bool Parser::peek_term()
+{
+    return peek(Token::Add) ||
+           peek(Token::Sub);
+}
+
+ptr<Binary> Parser::parse_term(Expression lhs)
+{
+    return parse_binary(lhs, Precedence::Term);
+}
+
+bool Parser::peek_factor()
+{
+    return peek(Token::Mul) ||
+           peek(Token::Div);
+}
+
+ptr<Binary> Parser::parse_factor(Expression lhs)
+{
+    return parse_binary(lhs, Precedence::Factor);
+}
+
+ptr<Binary> Parser::parse_binary(Expression lhs, Precedence precedence)
+{
+    auto expr = CREATE(Binary);
+    expr->lhs = lhs;
+
+    if (peek(Token::Add) && precedence <= Precedence::Term)
+        expr->op = eat(Token::Add).str;
+    else if (peek(Token::Sub) && precedence <= Precedence::Term)
+        expr->op = eat(Token::Sub).str;
+    else if (peek(Token::Mul) && precedence <= Precedence::Factor)
+        expr->op = eat(Token::Mul).str;
+    else if (peek(Token::Div) && precedence <= Precedence::Factor)
+        expr->op = eat(Token::Div).str;
+    else
+        throw Error("Expected binary expression", tokens.at(current_token)); // FIXME: Should this be a compiler error rather than a language error?
+
+    expr->rhs = parse_expression(precedence);
+
+    return expr;
 }

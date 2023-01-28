@@ -28,7 +28,9 @@ struct OptionalType;
 using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<UnresolvedIdentity>, ptr<EnumType>, ptr<Entity>>;
 
 struct Literal;
-using Expression = variant<ptr<Literal>, ptr<EnumValue>>;
+struct Unary;
+struct Binary;
+using Expression = variant<ptr<Literal>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>>;
 
 // Program
 
@@ -103,6 +105,19 @@ struct Literal
     variant<double, int, bool, string> value;
 };
 
+struct Unary
+{
+    string op;
+    Expression value;
+};
+
+struct Binary
+{
+    string op;
+    Expression lhs;
+    Expression rhs;
+};
+
 // Methods
 
 string identity_of(Scope::LookupValue value);
@@ -127,6 +142,8 @@ string to_json(const ptr<EntityField> &entity_field, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const ptr<OptionalType> &native_type, const size_t &depth = 0);
 string to_json(const Type &type, const size_t &depth = 0);
+string to_json(const ptr<Unary> &literal, const size_t &depth = 0);
+string to_json(const ptr<Binary> &literal, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 

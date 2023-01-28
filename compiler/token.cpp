@@ -80,7 +80,7 @@ const map<Token::Kind, regex> token_match_rules = {
     {Token::Add, regex("\\+")},
     {Token::Sub, regex("\\-")},
     {Token::Mul, regex("\\*")},
-    {Token::Div, regex("\\\\")},
+    {Token::Div, regex("\\/")},
     {Token::Dot, regex("\\.")},
     {Token::Comma, regex("\\,")},
     {Token::Colon, regex("\\:")},

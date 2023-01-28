@@ -2,6 +2,7 @@
 #define PARSER_H
 
 #include "apm.h"
+#include "expression.h"
 #include "token.h"
 #include "utilty.h"
 #include <vector>
@@ -45,10 +46,20 @@ private:
     Type parse_type(ptr<Scope> scope);
 
     bool peek_expression();
-    Expression parse_expression();
+    Expression parse_expression(Precedence precedence = Precedence::None);
 
+    bool peek_paren_expr();
+    Expression parse_paren_expr();
+    bool peek_unary();
+    ptr<Unary> parse_unary();
     bool peek_literal();
     ptr<Literal> parse_literal();
+
+    bool peek_term();
+    ptr<Binary> parse_term(Expression lhs);
+    bool peek_factor();
+    ptr<Binary> parse_factor(Expression lhs);
+    ptr<Binary> parse_binary(Expression lhs, Precedence precedence);
 };
 
 #endif
