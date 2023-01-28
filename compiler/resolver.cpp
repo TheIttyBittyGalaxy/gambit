@@ -28,7 +28,7 @@ optional<Scope::LookupValue> Resolver::resolve_identity(ptr<UnresolvedIdentity> 
     if (declared_in_scope(scope, id))
         return fetch(scope, id);
 
-    emit_error("'" + id + "' is not defined.", unresolved_identity->token); // FIXME: Supply the token of the identity
+    emit_error("'" + id + "' is not defined.", unresolved_identity->token);
     return {};
 };
 
@@ -76,6 +76,10 @@ void Resolver::resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scop
     //        If no such base definition exists, throw an `Entity cannot be extended as it is not defined` error.
     //        Hoisting should happen before any identity resolution, other an identity could resolve to an entity
     //        defintion that will later get hoisted.
+    if (!definition->base_definition_found)
+    {
+        emit_error("Entity `" + definition->identity + "` does not have a base definition."); // FIXME: Supply the token of the identity
+    }
 
     for (auto entry : definition->fields)
     {
