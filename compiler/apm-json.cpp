@@ -160,6 +160,16 @@ string to_json(const ptr<Literal> &node, const size_t &depth)
     return (string)json;
 };
 
+string to_json(const ptr<ListValue> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ListValue"));
+    STRUCT_PTR_FIELD(values);
+    json.close();
+    return (string)json;
+};
+
 string to_json(const ptr<Unary> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -216,6 +226,7 @@ string to_json(const ptr<InvalidValue> &node, const size_t &depth)
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(Literal);
+    VARIANT_PTR(ListValue);
     VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(EnumValue);
     VARIANT_PTR(Unary);

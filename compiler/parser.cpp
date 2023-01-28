@@ -320,6 +320,8 @@ Expression Parser::parse_expression(Precedence precedence)
         expr = parse_unresolved_identity();
     else if (peek_literal())
         expr = parse_literal();
+    else if (peek_list_value())
+        expr = parse_list_value();
     else
         throw Error("Expected expression", tokens.at(current_token));
 
@@ -431,6 +433,26 @@ ptr<Literal> Parser::parse_literal()
     }
 
     return literal;
+}
+
+bool Parser::peek_list_value()
+{
+    return peek(Token::SquareL);
+}
+
+ptr<ListValue> Parser::parse_list_value()
+{
+    auto list = CREATE(ListValue);
+    eat(Token::SquareL);
+    if (peek_expression())
+    {
+        do
+        {
+            list->values.push_back(parse_expression());
+        } while (match(Token::Comma));
+    }
+    eat(Token::SquareR);
+    return list;
 }
 
 bool Parser::peek_term()

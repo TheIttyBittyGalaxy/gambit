@@ -35,6 +35,7 @@ using Type = variant<
     ptr<InvalidType>>;
 
 struct Literal;
+struct ListValue;
 struct Unary;
 struct Binary;
 struct Match;
@@ -43,6 +44,7 @@ using Expression = variant<
     ptr<UnresolvedIdentity>,
     ptr<EnumValue>,
     ptr<Literal>,
+    ptr<ListValue>,
     ptr<Unary>,
     ptr<Binary>,
     ptr<Match>,
@@ -126,6 +128,11 @@ struct Literal
     variant<double, int, bool, string> value;
 };
 
+struct ListValue
+{
+    vector<Expression> values;
+};
+
 struct Unary
 {
     string op;
@@ -186,6 +193,7 @@ string to_json(const Match::Rule &node, const size_t &depth = 0);
 string to_json(const ptr<Match> &literal, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &native_type, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
+string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 
 #endif

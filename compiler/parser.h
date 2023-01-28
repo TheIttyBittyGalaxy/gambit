@@ -56,6 +56,8 @@ private:
     ptr<Unary> parse_unary();
     bool peek_literal();
     ptr<Literal> parse_literal();
+    bool peek_list_value();
+    ptr<ListValue> parse_list_value();
 
     bool peek_term();
     ptr<Binary> parse_term(Expression lhs);

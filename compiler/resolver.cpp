@@ -146,6 +146,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     }
     else if (IS_PTR(expression, Literal))
         ; // pass
+    else if (IS_PTR(expression, ListValue))
+        resolve_list_value(AS_PTR(expression, ListValue), scope, type_hint);
     else if (IS_PTR(expression, EnumValue))
         ; // pass
     else if (IS_PTR(expression, Unary))
@@ -158,6 +160,12 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         throw runtime_error("Cannot resolve Expression variant."); // FIXME: Use an appropriate exception type
 
     return expression;
+}
+
+void Resolver::resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Type> type_hint)
+{
+    for (size_t i = 0; i < list->values.size(); i++)
+        list->values[i] = resolve_expression(list->values[i], scope, type_hint);
 }
 
 void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Type> type_hint)
