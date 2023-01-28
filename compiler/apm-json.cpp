@@ -122,10 +122,20 @@ string to_json(const ptr<OptionalType> &node, const size_t &depth)
     return (string)json;
 };
 
+string to_json(const ptr<InvalidType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidType"));
+    json.close();
+    return (string)json;
+};
+
 string to_json(const Type &node, const size_t &depth)
 {
     VARIANT_PTR(NativeType);
     VARIANT_PTR(OptionalType);
+    VARIANT_PTR(InvalidType);
     VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
@@ -194,6 +204,15 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     return (string)json;
 };
 
+string to_json(const ptr<InvalidValue> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidValue"));
+    json.close();
+    return (string)json;
+};
+
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(Literal);
@@ -202,6 +221,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
     VARIANT_PTR(Match);
+    VARIANT_PTR(InvalidValue);
 
     throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
 };

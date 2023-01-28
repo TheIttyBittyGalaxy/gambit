@@ -25,13 +25,15 @@ struct EntityField;
 
 struct NativeType;
 struct OptionalType;
-using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<UnresolvedIdentity>, ptr<EnumType>, ptr<Entity>>;
+struct InvalidType;
+using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<InvalidType>, ptr<UnresolvedIdentity>, ptr<EnumType>, ptr<Entity>>;
 
 struct Literal;
 struct Unary;
 struct Binary;
 struct Match;
-using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>, ptr<Match>>;
+struct InvalidValue;
+using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>, ptr<Match>, ptr<InvalidValue>>;
 
 // Program
 
@@ -99,6 +101,11 @@ struct OptionalType
     Type type;
 };
 
+struct InvalidType
+{
+    // FIXME: Include the token of node that eventually became this invalid type
+};
+
 // Expressions
 
 struct Literal
@@ -130,6 +137,11 @@ struct Match
     vector<Rule> rules;
 };
 
+struct InvalidValue
+{
+    // FIXME: Include the token of node that eventually became this invalid value
+};
+
 // Methods
 
 string identity_of(Scope::LookupValue value);
@@ -153,11 +165,13 @@ string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<EntityField> &entity_field, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const ptr<OptionalType> &native_type, const size_t &depth = 0);
+string to_json(const ptr<InvalidType> &native_type, const size_t &depth = 0);
 string to_json(const Type &type, const size_t &depth = 0);
 string to_json(const ptr<Unary> &literal, const size_t &depth = 0);
 string to_json(const ptr<Binary> &literal, const size_t &depth = 0);
 string to_json(const Match::Rule &node, const size_t &depth = 0);
 string to_json(const ptr<Match> &literal, const size_t &depth = 0);
+string to_json(const ptr<InvalidValue> &native_type, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 

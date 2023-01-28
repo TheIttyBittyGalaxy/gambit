@@ -88,6 +88,109 @@ void Resolver::resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scop
 void Resolver::resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, ptr<Scope> scope)
 {
     auto resolved_type = resolve_type(field->type, scope);
-    if (resolved_type.has_value())
-        field->type = resolved_type.value();
+    field->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
+
+    if (field->default_value.has_value())
+    {
+        // FIXME: Scope passed into resolve_expression should be scope of the entity definition, not of the parent scope
+        field->default_value = resolve_expression(field->default_value.value(), scope, field->type);
+        // FIXME: Type check the default value
+    }
 };
+
+Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Type> type_hint)
+{
+    if (IS_PTR(expression, UnresolvedIdentity))
+    {
+        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+        string id = unresolved_identity->identity;
+
+        if (declared_in_scope(scope, id)) // Resolve identity from scope
+        {
+            auto resolved = fetch(scope, id);
+
+            // FIXME: Return resolved value if it makes for a valid expression
+
+            if (IS_PTR(resolved, NativeType) || IS_PTR(resolved, EnumType) || IS_PTR(resolved, Entity))
+                emit_error("Expected value, got type '" + identity_of(resolved) + "'", unresolved_identity->token);
+            else
+                emit_error("Expected value, got '" + identity_of(resolved) + "'", unresolved_identity->token);
+
+            return CREATE(InvalidValue);
+        }
+
+        if (type_hint.has_value()) // Resolve identity from type hint
+        {
+            auto the_type_hint = type_hint.value();
+            optional<ptr<EnumType>> enum_type = {};
+
+            if (IS_PTR(the_type_hint, EnumType)) // Type hint is enum type
+            {
+                enum_type = AS_PTR(the_type_hint, EnumType);
+            }
+            else if (IS_PTR(the_type_hint, OptionalType)) // Type hint is optional enum type
+            {
+                auto opt_type = AS_PTR(the_type_hint, OptionalType);
+                if (IS_PTR(opt_type->type, EnumType))
+                    enum_type = AS_PTR(opt_type->type, EnumType);
+            }
+
+            if (enum_type.has_value())
+                for (const auto &value : enum_type.value()->values)
+                    if (value->identity == unresolved_identity->identity)
+                        return value;
+        }
+
+        emit_error("'" + id + "' is not defined.", unresolved_identity->token);
+        return CREATE(InvalidValue);
+    }
+    else if (IS_PTR(expression, Literal))
+        ; // pass
+    else if (IS_PTR(expression, EnumValue))
+        ; // pass
+    else if (IS_PTR(expression, Unary))
+        resolve_unary(AS_PTR(expression, Unary), scope, type_hint);
+    else if (IS_PTR(expression, Binary))
+        resolve_binary(AS_PTR(expression, Binary), scope, type_hint);
+    else if (IS_PTR(expression, Match))
+        resolve_match(AS_PTR(expression, Match), scope, type_hint);
+    else
+        throw runtime_error("Cannot resolve Expression variant."); // FIXME: Use an appropriate exception type
+
+    return expression;
+}
+
+void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Type> type_hint)
+{
+    match->subject = resolve_expression(match->subject, scope);
+    // FIXME: Implement type checking on the subject
+    // auto subject_type = determine_type(match->subject);
+
+    for (auto &rule : match->rules)
+    {
+        rule.pattern = resolve_expression(rule.pattern, scope);
+
+        // FIXME: Implement type checking and inference on the pattern
+        // resolve_expression(rule.pattern, subject_type);
+        // auto pattern_type = determine_type(rule.pattern);
+        // if (!is_subtype_of(pattern_type, subject_type))
+        // {
+        //     emit_error("Pattern's type is not compatible with the type of the match subject"); // FIXME: Improve this error message
+        // }
+
+        rule.result = resolve_expression(rule.result, scope, type_hint);
+    }
+}
+
+void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Type> type_hint)
+{
+    unary->value = resolve_expression(unary->value, scope);
+    // FIXME: Implement type checking on the operands
+}
+
+void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Type> type_hint)
+{
+    binary->lhs = resolve_expression(binary->lhs, scope);
+    binary->rhs = resolve_expression(binary->rhs, scope);
+    // FIXME: Implement type checking on the operands
+}
