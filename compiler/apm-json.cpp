@@ -1,5 +1,6 @@
 #include "apm.h"
 #include "json.h"
+#include <exception>
 
 #define STRUCT_FIELD(field) json.add(#field, node->field);
 
@@ -27,7 +28,7 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
 
-    throw "Could not serialise Scope::LookupValue"; // FIXME: Use a proper exception type
+    throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
 }
 
 string to_json(const ptr<Scope> &node, const size_t &depth)
@@ -127,7 +128,7 @@ string to_json(const Type &node, const size_t &depth)
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
 
-    throw "Could not serialise Type node"; // FIXME: Use a proper exception type
+    throw runtime_error("Could not serialise Type node"); // FIXME: Use a proper exception type
 };
 
 string to_json(const ptr<Literal> &node, const size_t &depth)
@@ -152,5 +153,5 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Literal);
     VARIANT_PTR(EnumValue);
 
-    throw "Could not serialise Expression node"; // FIXME: Use a proper exception type
+    throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
 };
