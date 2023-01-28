@@ -304,6 +304,8 @@ bool Parser::peek_expression()
 }
 
 // Parses any expression of the given precedence or higher
+// FIXME: This does not correctly handle associativity.
+//        e.g. 1/2/3 is interpreted as 1/(2/3), not (1/2)/3
 Expression Parser::parse_expression(Precedence precedence)
 {
     // Prefix expressions
