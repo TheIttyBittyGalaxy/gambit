@@ -3,7 +3,7 @@
 string to_json(const JsonContainer &value, const size_t &depth)
 {
     return (string)value;
-};
+}
 
 string to_json(const int &value, const size_t &depth)
 {

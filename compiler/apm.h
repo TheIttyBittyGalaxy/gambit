@@ -65,6 +65,7 @@ struct Scope
 };
 
 // Unresolved Identity
+
 struct UnresolvedIdentity
 {
     string identity;
@@ -176,7 +177,7 @@ ptr<Entity> fetch_entity(ptr<Scope> scope, string identity);
 // JSON Serialisation
 
 string to_json(const ptr<Program> &program, const size_t &depth = 0);
-string to_json(const Scope::LookupValue &node, const size_t &depth = 0);
+string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
@@ -184,14 +185,14 @@ string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<EntityField> &entity_field, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
-string to_json(const ptr<OptionalType> &native_type, const size_t &depth = 0);
-string to_json(const ptr<InvalidType> &native_type, const size_t &depth = 0);
+string to_json(const ptr<OptionalType> &optional_type, const size_t &depth = 0);
+string to_json(const ptr<InvalidType> &invalid_type, const size_t &depth = 0);
 string to_json(const Type &type, const size_t &depth = 0);
-string to_json(const ptr<Unary> &literal, const size_t &depth = 0);
-string to_json(const ptr<Binary> &literal, const size_t &depth = 0);
-string to_json(const Match::Rule &node, const size_t &depth = 0);
-string to_json(const ptr<Match> &literal, const size_t &depth = 0);
-string to_json(const ptr<InvalidValue> &native_type, const size_t &depth = 0);
+string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
+string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
+string to_json(const Match::Rule &rule, const size_t &depth = 0);
+string to_json(const ptr<Match> &match, const size_t &depth = 0);
+string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);

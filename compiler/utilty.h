@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <variant>
-
 using namespace std;
 
 // Pointers

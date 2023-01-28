@@ -1,5 +1,5 @@
-#ifndef Expression_H
-#define Expression_H
+#ifndef EXPRESSION_H
+#define EXPRESSION_H
 
 enum class Precedence
 { // Happens last

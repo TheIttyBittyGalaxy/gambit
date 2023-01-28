@@ -11,7 +11,8 @@
 #include <string>
 using namespace std;
 
-// Output program to JSON file
+// Output to JSON
+
 void output_program(ptr<Program> program, string file_name)
 {
     std::ofstream output;

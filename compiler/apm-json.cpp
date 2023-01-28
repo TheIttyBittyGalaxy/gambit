@@ -2,6 +2,8 @@
 #include "json.h"
 #include <exception>
 
+// Macros
+
 #define STRUCT_PTR_FIELD(field) json.add(#field, node->field);
 
 #define STRUCT_FIELD(field) json.add(#field, node.field);
@@ -14,6 +16,8 @@
     if (IS_PTR(node, T)) \
         return to_json(AS_PTR(node, T), depth);
 
+// Serialisation
+
 string to_json(const ptr<Program> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -22,7 +26,7 @@ string to_json(const ptr<Program> &node, const size_t &depth)
     STRUCT_PTR_FIELD(global_scope);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
@@ -41,7 +45,7 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
     STRUCT_PTR_FIELD(lookup);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
 {
@@ -51,7 +55,7 @@ string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
     STRUCT_PTR_FIELD(identity);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<EnumType> &node, const size_t &depth)
 {
@@ -62,7 +66,7 @@ string to_json(const ptr<EnumType> &node, const size_t &depth)
     STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<EnumValue> &node, const size_t &depth)
 {
@@ -72,7 +76,7 @@ string to_json(const ptr<EnumValue> &node, const size_t &depth)
     STRUCT_PTR_FIELD(identity);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<Entity> &node, const size_t &depth)
 {
@@ -85,7 +89,7 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     STRUCT_PTR_FIELD(base_definition_found);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<EntityField> &node, const size_t &depth)
 {
@@ -99,7 +103,7 @@ string to_json(const ptr<EntityField> &node, const size_t &depth)
     STRUCT_PTR_FIELD(initializer);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<NativeType> &node, const size_t &depth)
 {
@@ -110,7 +114,7 @@ string to_json(const ptr<NativeType> &node, const size_t &depth)
     STRUCT_PTR_FIELD(cpp_identity);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<OptionalType> &node, const size_t &depth)
 {
@@ -120,7 +124,7 @@ string to_json(const ptr<OptionalType> &node, const size_t &depth)
     STRUCT_PTR_FIELD(type);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<InvalidType> &node, const size_t &depth)
 {
@@ -129,7 +133,7 @@ string to_json(const ptr<InvalidType> &node, const size_t &depth)
     json.add("node", string("InvalidType"));
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const Type &node, const size_t &depth)
 {
@@ -141,7 +145,7 @@ string to_json(const Type &node, const size_t &depth)
     VARIANT_PTR(Entity);
 
     throw runtime_error("Could not serialise Type node"); // FIXME: Use a proper exception type
-};
+}
 
 string to_json(const ptr<Literal> &node, const size_t &depth)
 {
@@ -158,7 +162,7 @@ string to_json(const ptr<Literal> &node, const size_t &depth)
         json.add("value", AS(node->value, string));
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<ListValue> &node, const size_t &depth)
 {
@@ -168,7 +172,7 @@ string to_json(const ptr<ListValue> &node, const size_t &depth)
     STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<Unary> &node, const size_t &depth)
 {
@@ -179,7 +183,7 @@ string to_json(const ptr<Unary> &node, const size_t &depth)
     STRUCT_PTR_FIELD(value);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<Binary> &node, const size_t &depth)
 {
@@ -191,7 +195,7 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
     STRUCT_PTR_FIELD(rhs);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const Match::Rule &node, const size_t &depth)
 {
@@ -212,7 +216,7 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     STRUCT_PTR_FIELD(rules);
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const ptr<InvalidValue> &node, const size_t &depth)
 {
@@ -221,7 +225,7 @@ string to_json(const ptr<InvalidValue> &node, const size_t &depth)
     json.add("node", string("InvalidValue"));
     json.close();
     return (string)json;
-};
+}
 
 string to_json(const Expression &node, const size_t &depth)
 {
