@@ -276,7 +276,7 @@ void Parser::parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
     entity->fields.insert({field->identity, field});
 
     if (match(Token::Assign))
-        field->default_value = parse_expression();
+        field->initializer = parse_expression();
 }
 
 bool Parser::peek_type()

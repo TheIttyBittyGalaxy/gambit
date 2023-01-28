@@ -90,10 +90,10 @@ void Resolver::resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, 
     auto resolved_type = resolve_type(field->type, scope);
     field->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
 
-    if (field->default_value.has_value())
+    if (field->initializer.has_value())
     {
         // FIXME: Scope passed into resolve_expression should be scope of the entity definition, not of the parent scope
-        field->default_value = resolve_expression(field->default_value.value(), scope, field->type);
+        field->initializer = resolve_expression(field->initializer.value(), scope, field->type);
         // FIXME: Type check the default value
     }
 };

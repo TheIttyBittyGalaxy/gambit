@@ -96,7 +96,7 @@ string to_json(const ptr<EntityField> &node, const size_t &depth)
     STRUCT_PTR_FIELD(type);
     STRUCT_PTR_FIELD(is_static);
     STRUCT_PTR_FIELD(is_property);
-    STRUCT_PTR_FIELD(default_value);
+    STRUCT_PTR_FIELD(initializer);
     json.close();
     return (string)json;
 };

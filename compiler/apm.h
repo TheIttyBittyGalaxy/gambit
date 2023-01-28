@@ -85,7 +85,7 @@ struct EntityField
     Type type;
     bool is_static = false;
     bool is_property = false;
-    optional<Expression> default_value;
+    optional<Expression> initializer;
 };
 
 // Types
