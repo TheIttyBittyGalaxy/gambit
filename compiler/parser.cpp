@@ -314,6 +314,8 @@ Expression Parser::parse_expression(Precedence precedence)
         expr = parse_paren_expr();
     else if (peek_unary())
         expr = parse_unary();
+    else if (peek(Token::Identity))
+        expr = parse_unresolved_identity();
     else if (peek_literal())
         expr = parse_literal();
     else

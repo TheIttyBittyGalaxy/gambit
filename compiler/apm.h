@@ -30,7 +30,7 @@ using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<UnresolvedIdentity>
 struct Literal;
 struct Unary;
 struct Binary;
-using Expression = variant<ptr<Literal>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>>;
+using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>>;
 
 // Program
 

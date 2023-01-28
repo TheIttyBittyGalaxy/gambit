@@ -174,6 +174,7 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(Literal);
+    VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(EnumValue);
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
