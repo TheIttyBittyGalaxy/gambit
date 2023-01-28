@@ -23,7 +23,7 @@ ptr<Program> Parser::parse(vector<Token> new_tokens)
 
     parse_program();
     return program;
-};
+}
 
 bool Parser::end_of_file()
 {
@@ -42,7 +42,7 @@ bool Parser::peek(Token::Kind kind)
     while (tokens.at(i).kind == Token::Line)
         i++;
     return tokens.at(i).kind == kind;
-};
+}
 
 Token Parser::eat(Token::Kind kind)
 {
@@ -76,7 +76,7 @@ Token Parser::eat(Token::Kind kind)
 
     current_token++;
     return token;
-};
+}
 
 bool Parser::match(Token::Kind kind)
 {
@@ -86,7 +86,7 @@ bool Parser::match(Token::Kind kind)
         return true;
     }
     return false;
-};
+}
 
 void Parser::skip_whitespace()
 {
@@ -160,7 +160,7 @@ void Parser::parse_program()
             skip_to_depth(0);
         }
     }
-};
+}
 
 ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
@@ -253,7 +253,7 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
         }
     }
     eat(Token::CurlyR);
-};
+}
 
 bool Parser::peek_entity_field()
 {

@@ -26,14 +26,27 @@ struct EntityField;
 struct NativeType;
 struct OptionalType;
 struct InvalidType;
-using Type = variant<ptr<NativeType>, ptr<OptionalType>, ptr<InvalidType>, ptr<UnresolvedIdentity>, ptr<EnumType>, ptr<Entity>>;
+using Type = variant<
+    ptr<UnresolvedIdentity>,
+    ptr<EnumType>,
+    ptr<Entity>,
+    ptr<NativeType>,
+    ptr<OptionalType>,
+    ptr<InvalidType>>;
 
 struct Literal;
 struct Unary;
 struct Binary;
 struct Match;
 struct InvalidValue;
-using Expression = variant<ptr<Literal>, ptr<UnresolvedIdentity>, ptr<EnumValue>, ptr<Unary>, ptr<Binary>, ptr<Match>, ptr<InvalidValue>>;
+using Expression = variant<
+    ptr<UnresolvedIdentity>,
+    ptr<EnumValue>,
+    ptr<Literal>,
+    ptr<Unary>,
+    ptr<Binary>,
+    ptr<Match>,
+    ptr<InvalidValue>>;
 
 // Program
 

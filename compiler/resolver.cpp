@@ -10,7 +10,7 @@ void Resolver::resolve(ptr<Program> program)
 void Resolver::resolve_program(ptr<Program> program)
 {
     resolve_scope(program->global_scope);
-};
+}
 
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
@@ -20,7 +20,7 @@ void Resolver::resolve_scope(ptr<Scope> scope)
         if (IS_PTR(value, Entity))
             resolve_entity_definition(AS_PTR(value, Entity), scope);
     }
-};
+}
 
 Type Resolver::resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope)
 {
@@ -28,7 +28,7 @@ Type Resolver::resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope)
     if (resolved.has_value())
         type->type = resolved.value();
     return type;
-};
+}
 
 optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
 {
@@ -65,7 +65,7 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
     }
 
     throw runtime_error("Cannot resolve type variant."); // FIXME: Use an appropriate exception type
-};
+}
 
 void Resolver::resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scope)
 {
@@ -83,7 +83,7 @@ void Resolver::resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scop
         auto field = entry.second;
         resolve_entity_field(field, definition, scope);
     }
-};
+}
 
 void Resolver::resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, ptr<Scope> scope)
 {
@@ -96,7 +96,7 @@ void Resolver::resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, 
         field->initializer = resolve_expression(field->initializer.value(), scope, field->type);
         // FIXME: Type check the default value
     }
-};
+}
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Type> type_hint)
 {
