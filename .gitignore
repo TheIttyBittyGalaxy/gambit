@@ -3,6 +3,7 @@ local
 
 # Visual Studio Code
 .vscode
+*.code-workspace
 
 # Prerequisites
 *.d
