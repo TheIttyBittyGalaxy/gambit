@@ -1,8 +1,12 @@
-# Entities & Properties
+# Gambit
+
+Gambit is a programming language specifically designed for developing games. Alongside typical imperative features, it provides a declarative features for defining relationships between game objects. The core of this feature set are [Entities & Properties](#entities--properties)
+
+## Entities & Properties
 
 Entities represent types of game objects, such as cards, board pieces, or players. Properties define relationships between entities.
 
-## Entity Declaration
+### Entity Declaration
 
 To declare an entity, use the `entity` keyword followed by the entity name. e.g.
 
@@ -11,7 +15,7 @@ entity Card
 entity Player
 ```
 
-## Property Declaration
+### Property Declaration
 
 Properties are declared by listing the related entity type(s) and the property name in square brackets `[]`. They may be listed in any order. All properties also have a [kind](#property-kinds) and a type, which are included before the brackets. e.g.
 
@@ -38,7 +42,7 @@ trait bool [Player a matches_colour_with Player b] = a.colour == b.colour
 >
 > Entities and properties are ideal for implementing game objects (e.g. cards, game pieces, and players), as well as rules that relate to them. However, they may not be suitable for all cases where you might use a class in other languages.
 
-## Property Kinds
+### Property Kinds
 
 There are three kinds of property: fixed, trait, and state. Each works slightly differently.
 
@@ -50,7 +54,7 @@ There are three kinds of property: fixed, trait, and state. Each works slightly 
 
 > 🚩 All of a game's state properties together comprise the 'game state'.
 
-# Selectors
+## Selectors
 
 Selectors select all entities with specific values for their properties. For example, all hearts in a deck of playing cards, or all players with 10 or more coins.
 
@@ -67,11 +71,11 @@ Card<in_play>
 
 A selector is 'static' if it selects instances using only fixed properties, otherwise, it is 'dynamic'.
 
-# Functions & Procedures
+## Functions & Procedures
 
 In Gambit, functions and procedures have are same, except for one key difference; functions must be "mathematically pure" and cannot change the game state, whereas procedures can change the game state. Functions are a subtype of procedures. You can imagine functions as 'read-only' procedures.
 
-## Procedure Declaration
+### Procedure Declaration
 
 Procedures are declared without any keyword. e.g.
 
@@ -81,7 +85,7 @@ main() {
 }
 ```
 
-## Function Declaration
+### Function Declaration
 
 Functions are declared with the `fn` keyword.
 
@@ -97,11 +101,11 @@ Functions can also be declared using an arrow syntax. In this case, the function
 fn can_win(Player player) => player.coins > 20
 ```
 
-## Selector Parameters
+### Selector Parameters
 
 When defining a parameter to a function or procedure, you may specify a [selector](#selectors) instead of a type.
 
-## Procedure Overloads
+### Procedure Overloads
 
 Functions and procedures can be overloaded. Overloads must have the same return type, but must have different parameters / parameter types.
 
@@ -143,7 +147,7 @@ main() {
 }
 ```
 
-## Method call syntax
+### Method call syntax
 
 If a procedure may be called the typical way.
 
@@ -157,9 +161,9 @@ However may also be called using the 'method syntax', where the first argument p
 a:f(b, c)
 ```
 
-# Types
+## Types
 
-## Primitive types
+### Primitive types
 
 | Type        | Description                                                                     |
 | ----------- | ------------------------------------------------------------------------------- |
@@ -170,26 +174,26 @@ a:f(b, c)
 | `Procedure` | A procedure.                                                                    |
 | `Function`  | A procedure that has no effect on the game state. Is a sub-type of `Procedure`. |
 
-## Enum types
+### Enum types
 
 > TODO: Write up
 
-## List types
+### List types
 
 > TODO: Write up
 > Almost definitely need some notion of ordered and unordered lists?
 
-## Optional types
+### Optional types
 
 Every type has a corresponding 'optional type', which can be a value of that type or `none`. It's syntax is `Type?`.
 
-## Union types
+### Union types
 
 Multiple types can be combined into one by creating their union. The original types will be considered subtypes of the union. The syntax is `TypeA | Type B`.
 
 > ! How should this interact with multi-types?? Presumably something like `A!|B` is valid, and means you can be either one or more of A, or just one of B? So `A!|B` is not equal to `(A|B)!`. Though, confusingly, `A!?|B` is equal to `(A!|B)?`
 
-## Multi-types
+### Multi-types
 
 Every type has a corresponding 'multi type', which can be any combination of values of that type. It's syntax is `Type!`
 
@@ -225,16 +229,18 @@ Heart&Spade == Club&Spade // false
 Heart&Spade is Club&Spade // false
 ```
 
-# Notation
+## Notation
 
-Often, it can be useful to specify a notion for certain kinds of values that may appear in your game. For example, in [Magic the Gathering](https://mtg.fandom.com/wiki/Magic:_The_Gathering), cards have a 'mana cost'. There are 5 different 'colours' of mana, and in even the most basic cases, a card may specify a cost of any amount of each specific kind of mana, and/or a certain amount of mana of any colour. e.g. the card 'Abundance' require you may 2 green mana and then also 2 mana of any colour. A notation such as `GG2` would be more convenient that having to type out all the names and fields of a struct by hand, while remaining more readable than a nameless constructor.
+In Gambit, it is possible to define notations for certain types of value. Notations are recognised using regular expressions and parsed using functions. This feature is particularly useful in cases where it is inconvenient or impractical to write out an entire structure literal by hand, but a nameless constructor would be too difficult to read.
 
-Gambit allows you to define a notations for certain kinds of values. You provide Gambit with a regular expression and a function. Then, if in an expression Gambit matches a `'` followed by a match to your regular expression, it will run your function with the matched notation as it's parameter.
+### Creating a Notation
 
-To parse our simple MTG mana cost notation, we could do something like this
+To create a notation, you need to provide Gambit with a regular expression and a function. If a match to the regular expression is found inside single quotes, Gambit will call the function with the matched string as its parameter.
+
+For example, let's say we want to create a notation for [Magic the Gathering](https://mtg.fandom.com/wiki/Magic:_The_Gathering) style mana cost. We can define the following struct to represent the mana cost.
 
 ```gambit
-structure ManaCost {
+struct ManaCost {
 	Integer red = 0
 	Integer black = 0
 	Integer green = 0
@@ -242,27 +248,31 @@ structure ManaCost {
 	Integer white = 0
 	Integer colourless = 0
 }
+```
 
-notation ManaCost ([RBGUW]*)(%d*) -> match, colour, colourless {
-	value.colourless = as_integer(colourless)
-	for c in colour {
-		match c {
-			"R": value.red++
-			"B": value.black++
-			"G": value.green++
-			"U": value.blue++
-			"W": value.white++
-		}
-	}
-}
+We can then define a notation for this struct using the regular expression `[RBGUW]*(\d*)` and a function that maps the matched string to the fields of the `ManaCost` struct.
 
-...
+In this notation, `[RBGUW]*` matches any combination of the letters R, B, G, U, and W (representing the five different colors of mana), and `(\d*)` matches any number of digits (representing the amount of colorless mana required). The notation function maps the matched strings to the fields of the `ManaCost` struct.
 
-procedure do_thing(ManaCost cost) {
-	 return cost == 'RRG
+```gambit
+notation ManaCost ([RBGUW]*)(%d*) => match, colour, colourless {
+    value.colourless = as_integer(colourless)
+    for c in colour {
+        match c {
+            "R": value.red++
+            "B": value.black++
+            "G": value.green++
+            "U": value.blue++
+            "W": value.white++
+        }
+    }
 }
 ```
 
-## Ambiguity
+## Using Notations
 
-When a notated value matches multiple possible notations, usually this ambiguity is resolved using type inference. e.g. maybe `%2` could annotate a mama cost, or it could annotate a power and toughness. Usually, Gambit can tell from context. In cases where it can't however, this will throw an error.
+Once you have defined a notation, you can use it in your code by enclosing the notation in single quotes. For example, to create a `ManaCost` object with two red and one green mana, you can use the notation `'RRG'`:
+
+### Ambiguity
+
+In cases where a notated value matches multiple possible notations, Gambit will usually be able to infer the correct type from context. However, if it cannot infer a single type, an error will be thrown.
