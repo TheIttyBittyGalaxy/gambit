@@ -1,202 +1,151 @@
-# Entities
+# Entities & Properties
 
-Entities are how you declare types of game object in Gambit.
+Entities represent types of game objects, such as cards, board pieces, or players. Properties define relationships between entities.
 
-Entity definitions declare the states, properties, and static values of a specific type of entity. These are known as the entity's 'fields'. An instance of an entity will have all of these fields. When defining an entity, you may also define it's signature - a shorthand way of referring to instances of that entity that match certain values.
+## Entity Declaration
 
-'Additive definitions' allow you to declare additional fields for instances of an entity that have static fields that match certain values.
-
-'Entity selectors' allow you select all instances of an entity type whose fields match certain values.
-
-**Example**
+To declare an entity, use the `entity` keyword followed by the entity name. e.g.
 
 ```gambit
-enum Face { ACE, 2, 3, 4, 5, 6, 7, 8, 9, JACK, QUEEN, KING }
-enum Suit { HEART, DIAMOND, CLUB, SPADE }
-
-entity Card[suit, face] {
-	static Suit suit
-	static Face face
-	state int tokens: 0
-	property bool is_powerful: tokens >= 3 or face == JACK|QUEEN|KING
-}
+entity Card
+entity Player
 ```
 
-> 🚩 Entities are _comparable_ to [classes](<https://en.wikipedia.org/wiki/Class_(computer_programming)>) in other programming languages, but are not the same thing. They do not use inheritance, methods, or other common OOP features. They are good for implementing game objects such as cards, game pieces, and players, but may not be suitable in all cases where you might use a class in other languages.
+## Property Declaration
 
-## Entity fields
-
-There are three kinds of field a entity can have, each with different behaviours.
-
-| field    | description                                                                                                                          | example                                          |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| Static   | Static fields are constant values that are known at compile time, e.g. the suit of a card.                                           | `static Suit suit`                               |
-| State    | States are values that can change during the game, e.g. how many coin tokens the player has. They must defined with a default value. | `int tokens: 0`                                  |
-| Property | Properties are values derived from other fields, e.g. if a chess piece can move diagonally. They must defined with a pure expression | `bool can_move_diagonal: piece == BISHOP\|QUEEN` |
-
-> 🚩 All state fields across all entity instances comprise the 'game state'.
-
-## Entity definitions
-
-### Base definitions
-
-The definition where an entity is 'first' declared is called the 'base definition'. This does not actually have to be the first definition the compiler sees, however it will be treated as the base definition that all other 'additive definitions' build on top of. For this reason, each type of entity must have exactly one base definition.
-
-Base definitions are indicated using the `entity` keyword.
+Properties are declared by listing the related entity type(s) and the property name in square brackets `[]`. They may be listed in any order. All properties also have a [kind](#property-kinds) and a type, which are included before the brackets. e.g.
 
 ```gambit
-entity Card {
-	static Suit suit
-	static Face face
-}
+fixed bool [Checker is_queen]
+state bool [Checker is_placed_on GridSquare]
 ```
 
-Base definitions may optionally specify a signature for the entity. This is a comma separated list of field names in-between `[` `]` brackets. The signature is written after the entity's name.
+As shown, properties can be tied to one or more entities. For example, in a game with `Checker` and `GridSquare` entities, you could create a `bool [Checker is_placed_on GridSquare]` property. This would give each `Checker` in the game a boolean `is_placed_on` value for every `GridSquare` in the game.
+
+Properties can also have default values. e.g.
 
 ```gambit
-entity Card[suit, face] {
-	static Suit suit
-	static Face face
-}
+fixed bool [Checker is_queen] = false
 ```
 
-### Additive definitions
-
-Once a entity has been defined, you may also define additional fields in a separate 'additive definition'. You may also use additive definitions to provide values to fields that were defined in other definitions.
-
-Additive definitions are indicated using the `extend` keyword.
+If you want to refer to the entities related by the property in the property's value, you can put identifiers for the entities in the square brackets. e.g.
 
 ```gambit
-entity Card[suit, face] {
-	static Suit suit
-	static Face face
-}
-
-extend Card {
-	state Boolean activated
-}
+trait bool [Player a matches_colour_with Player b] = a.colour == b.colour
 ```
 
-You can create additive definitions that only apply to instances of the entity that match a specific static selector. In this case, the selector goes after the entity's name. This is the most useful way to use additive definitions.
+> 🚩 Entities and properties are comparable to [classes](<https://en.wikipedia.org/wiki/Class_(computer_programming)>) and [attributes](<https://en.wikipedia.org/wiki/Class_(computer_programming)#Structure>) in other programming languages, but are not the same. Gambit entities do not use inheritance, methods, or other common OOP features. The significant difference is that in Gambit properties can be tied to one or more entities, unlike regular OOP attributes, which are inherently tied to one class.
+>
+> Entities and properties are ideal for implementing game objects (e.g. cards, game pieces, and players), as well as rules that relate to them. However, they may not be suitable for all cases where you might use a class in other languages.
 
-```gambit
-entity Card[face, suit] {
-	static Suit suit
-	static Face face
-}
+## Property Kinds
 
-extend Card[face: ACE|JACK|QUEEN|KING] { // This selector matches any picture cards
-	state int tokens: 0
-	static int tokens_need_to_win: 3
-}
+There are three kinds of property: fixed, trait, and state. Each works slightly differently.
 
-extend Card[ACE, SPADES] { // This selector uses the entity's signature to match the Ace of Spades.
-	static int tokens_need_to_win: 2
-}
-```
+| Property | Description                                                | Example                              |                                                                     |
+| -------- | ---------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------- |
+| Fixed    | A constant value that is known at compile time.            | the suit of a card                   | `fixed Suit [Card suit]`                                            |
+| Trait    | A value that is derived formulaically from the game state. | if a chess piece can move diagonally | `trait bool [Piece p can_move_diagonal] = p.piece == BISHOP\|QUEEN` |
+| State    | A value that changes during the game.                      | how many coins the player has        | `state int [Player coins] = 0`                                      |
 
-### Entity definition scoping
-
-All entity definitions (base and additive) are scoped to the namespace they are written in. An entity type is scoped to the same namespace as the base definition.
-
-In order for a statement or expression to access a field of an entity, it must be in the same scope as the definition where that field was defined (or any nested scope).
-
-```gambit
-entity Foo {
-	state int bar
-}
-
-namespace GameExpansion {
-	extend Foo {
-		state int super_bar
-	}
-
-	// Can access Foo.super_bar here
-}
-
-// Cannot access Foo.super_bar here
-```
-
-Because entity fields are scoped in this way, it is possible for an entity to have multiple fields with the same name, but that exist in separate scopes.
-
-```gambit
-entity Foo { ... }
-
-namespace RubyExpansion {
-	extend Foo {
-		static string power
-	}
-}
-
-namespace EmeraldExpansion {
-	extend Foo {
-		state int power: 0
-	}
-}
-```
-
-## Entity signatures
-
-An entity signature is a pattern that matches instances of an entity based on the values of it's fields. It is a way to specify the values specific fields of an entity without having to them them.
-
-For example...
-
-```gambit
-define entity Card[suit, face] {
-	static Suit suit
-	static Face face
-}
-```
-
-...allows the pattern `Card[suit: SPADES, face: ACE]` to be rewritten as `Card[SPADES, ACE]`. If the type can be inferred from context, it can be shortened even further to just `[SPADES, ACE]`.
-
-It is legal to provide partial signatures - just so long as it is unambiguous what is meant by them.
-
-```gambit
-Card[CLUB] // Matches any clubs
-Card[ACE] // Matches any aces
-```
-
-In this case, is totally unambiguous if the value provided is the `suit` or the `face`, as those two fields have no overlap in their domain of values. If they did, the syntax would be invalid.
-
-## Instantiating entities
-
-In order for an instance of an entity to be created, all of it's static fields must be specified.
-
-> TODO: Figure out a good syntax for this
+> 🚩 All of a game's state properties together comprise the 'game state'.
 
 # Selectors
 
-During your game, you can select all entity instances that have specific values. e.g. all of the hearts in a deck of cards, all players with 10 or more coin tokens, etc.
+Selectors select all entities with specific values for their properties. For example, all hearts in a deck of playing cards, or all players with 10 or more coins.
 
 ```gambit
-Card[suit: HEART]
-Player[tokens >= 10]
+Card<suit: HEART>
+Player<tokens >= 10>
 ```
 
-You can add as many selectors as you like to select entities under specific circumstances.
+Boolean properties can be used as follows to select entities where the property is `true`.
 
 ```gambit
-Card[in_play][face: ACE][tokens >= 3]
+Card<in_play>
 ```
 
-You can also select entities using their signature.
-
-```gambit
-Card[ACE, SPADE]
-```
-
-A selector is said to be a 'static selector' if it selects instances based only on their static fields. A selector is said to be a 'dynamic selector' if it selects instances using one or more state or property fields\*.
-
-> \* Technically, a property is considered to be a 'static property' if the expression used to define it is also static. Static properties do not cause a selector to become a dynamic one, and can be used in a static one.
+A selector is 'static' if it selects instances using only fixed properties, otherwise, it is 'dynamic'.
 
 # Functions & Procedures
 
-Functions and procedures in Gambit are two different things. The only difference between them is that functions must be 'mathematically pure', or in other words, cannot change the game state. Functions are considered to be a subtype of Procedures, and so all functions are also procedures. You can imagined functions as 'read-only' procedures.
+In Gambit, functions and procedures have are same, except for one key difference; functions must be "mathematically pure" and cannot change the game state, whereas procedures can change the game state. Functions are a subtype of procedures. You can imagine functions as 'read-only' procedures.
+
+## Procedure Declaration
+
+Procedures are declared without any keyword. e.g.
+
+```gambit
+main() {
+	...
+}
+```
+
+## Function Declaration
+
+Functions are declared with the `fn` keyword.
+
+```gambit
+fn possible_moves(Player player) {
+	...
+}
+```
+
+Functions can also be declared using an arrow syntax. In this case, the function is defined using exactly one expression statement, the value of which will be returned by the function. e.g.
+
+```gambit
+fn can_win(Player player) => player.coins > 20
+```
+
+## Selector Parameters
+
+When defining a parameter to a function or procedure, you may specify a [selector](#selectors) instead of a type.
+
+## Procedure Overloads
+
+Functions and procedures can be overloaded. Overloads must have the same return type, but must have different parameters / parameter types.
+
+When a procedure is called, if multiple overloads match the arguments given, the overload with the most specific selectors will be executed.
+
+```gambit
+fn point_value(Card card)                      => 2
+fn point_value(Card<suit: ACE> card)           => 2 + card.tokens
+fn point_value(Card<suit: ACE|SPADES> card)    => 11
+fn point_value(Card<suit: HEARTS, face: !ACE>) => 3
+```
+
+It is a compile-time error to have call to a procedure where the parameters match multiple overloads of the same specificity
+
+```gambit
+fn point_value(Card card) => 1
+
+// These two functions have the same specificity
+fn point_value(Card<value: ACE> card) => 4
+fn point_value(Card<suit: SPADE> card) => 2
+
+main() {
+	score = point_value(Card<value: ACE, suit: SPADE>) // ERROR: It is ambiguous which overload of `point_value` should be called.
+}
+```
+
+If, however, no ambiguous calls are identified at compile-time, both overloads may co-exist.
+
+```gambit
+fn point_value(Card card) => 1
+
+// These two functions have the same specificity
+fn point_value(Card<value: ACE> card) => 4
+fn point_value(Card<suit: SPADE> card) => 2
+
+main() {
+	score = point_value(card<value: ACE, suit: HEART>)
+	      + point_value(card<value:   3, suit: SPADE>)
+}
+```
 
 ## Method call syntax
 
-If a function or procedure may be called the typical way.
+If a procedure may be called the typical way.
 
 ```gambit
 f(a, b, c)
@@ -204,49 +153,9 @@ f(a, b, c)
 
 However may also be called using the 'method syntax', where the first argument proceeds the function name.
 
+```gambit
 a:f(b, c)
-
-## Selectors as parameters
-
-When defining a function or procedure (henceforth 'procedures') parameter, you may specify it's type, but you may also specify a static selector. Procedures can be overloaded. If multiple overloads match the same set of parameter types, the overloads will be ranked by the specificity of their selectors, and the first to match the given parameter will be executed.
-
-```gambit
-fn point_value(Card card)                 => 2
-fn point_value(Card[ACE] card)            => 2 + card.tokens
-fn point_value(Card[ACE, SPADES] card)    => 11
-fn point_value(Card[HEARTS][face != ACE]) => 3
 ```
-
-It is a compile-time error to have call to a procedure where the parameters match multiple overloads of the same specificity
-
-```gambit
-fn point_value(Card card) => 2
-
-// These two functions have the same specificity
-fn point_value(Card[SPADE] card) => 1
-fn point_value(Card[ACE] card) => 4
-
-main() {
-	score = point_value([ACE, SPADE]) // ERROR: It is ambiguous which overload of `point_value` should be called.
-}
-```
-
-If, however, no ambiguous calls are identified at compile-time, both overloads may co-exist.
-
-```gambit
-fn point_value(Card card) => 2
-
-// These two functions have the same specificity
-fn point_value(Card[SPADE] card) => 1
-fn point_value(Card[ACE] card) => 4
-
-main() {
-	score = point_value([ACE, HEART])
-	      + point_value([  3, SPADE])
-}
-```
-
-> TODO: Is only allowing static selectors the right choice? On one hand, it allows us to do comprehensive static analysis. This is most useful for preventing situations where two overloads with the same specificity match a given set of arguments, as we will be able to detect if this occurs at compile time. On the other hand, in some games, differing behaviours may be purely the result of non-static fields. In this case, currently the programmer is forced to place any logic that interacts with these dynamic fields in the function itself. This code is non expandable, _unless_ they use dynamic procedure fields to allow entities to specify their own logic. Maybe that's the right call, but maybe it comes with it's own issues?
 
 # Types
 
@@ -314,39 +223,6 @@ Spade is Heart&Spade // false
 
 Heart&Spade == Club&Spade // false
 Heart&Spade is Club&Spade // false
-```
-
-## First class functions and procedures
-
-Functions and procedures can be first class. This also means they can be the fields of entities. For example, say that some cards in your game have an 'activate' ability, that could be implemented something like this.
-
-```gambit
-define entity Card {
-	static Procedure(Player user)? activate_ability
-	state bool activated = false
-	...
-}
-
-procedure activate_card(Player player, Card card) {
-	IF card HAS activate_ability AND NOT card.activated {
-		card.activate_ability(player)
-		card.activated = true
-	}
-}
-
-procedure gain_two_money(Player player) {
-	player.money += 2
-}
-
-atm = entity Card {
-	activate_ability = gain_two_money
-}
-
-jackpot = entity Card {
-	procedure activate_ability(user) {
-		card.user.money += roll(6) + roll(6)
-	}
-}
 ```
 
 # Notation
