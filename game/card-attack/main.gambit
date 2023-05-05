@@ -1,0 +1,143 @@
+/* Defined natively by Gambit
+    entity Game
+    
+    entity Player
+    static int (Player player).number
+
+    Game game
+    List<Player> players
+*/
+
+// Suits & Ranks
+enum Suit { SPADE, CLUB, HEART, DIAMOND }
+enum Rank { ACE, 2, 3, 4, 5, 6, 7, 8, 9, 10, JACK, QUEEN, KING }
+enum Colour { BLACK, RED }
+
+fn bool (Rank rank).is_picture: match rank {
+    ACE: true,
+    JACK: true,
+    QUEEN: true,
+    KING: true,
+    default: false
+}
+
+fn int (Rank rank).value: match rank {
+    ACE: 11,    
+    rank.is_picture: 10, // What should the semantics of this be? I would imagine any expressions must be constrained to only access the value being matched?
+    default: rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
+}
+
+fn Colour (Suit suit).colour: match suit {
+    SPADE: BLACK,
+    CLUB: BLACK,
+    HEART: RED,
+    DIAMOND: RED,
+}
+
+// Cards
+entity Card
+static Suit (Card card).suit
+static Rank (Card card).rank
+static bool (Card card).is_picture: card.rank.is_picture
+static int (Card card).value: card.rank.value
+static Colour (Card card).colour: card.suit.colour
+state int (Card card).tokens
+
+// Attacks
+fn int (Card card).power:
+    card.value + card.tokens
+
+fn int (Card a, Card b).combined_power:
+    a.power + b.power
+
+fn bool (Card a, Card b).match_suit:
+    a.suit == b.suit
+
+fn bool (Card attacker_one, Card attacker_two, Card defender).can_attack:
+    (attacker_one, attacker_two).combined_power > defender.power and 
+    ((attacker_one, defender).match_suit or (attacker_two, defender).match_suit)
+
+// Player
+state int (Player player).tokens
+state List<Card> (Player player).cards
+
+// Main
+main() {
+    player_one = game.players[1] // Infer type `Player`
+    player_two = game.players[2]
+
+    player_one.tokens = 10
+    player_two.tokens = 10
+
+    List<Card, 52> deck;
+    for suit in Suit:
+        for rank in Rank:
+            deck insert Card(suit: suit, rank: rank)
+
+    shuffle(deck)
+
+    for i in 1..8 {
+        player_one.cards insert pop(deck)
+        player_two.cards insert pop(deck)
+    }
+
+    current_player = player_one
+    other_player = player_two
+    loop {
+
+        // Add tokens to card
+        if current_player.tokens > 0 {
+            options = player_one.cards
+            options insert none
+            chosen_card = current_player choose options ("Which card would you like to add tokens to?") // Infer type `Card?`
+            if chosen_card { // Promote `Card?` to `Card`
+                token_count = current_player choose 1..current_player.tokens ("How many tokens?")
+                current_player.tokens -= token_count
+                chosen_card.tokens += token_count
+            }
+        }
+
+        // Attack
+        if #current_player.cards >= 2 and (current_player choose bool ("Would you like to attack?")) {
+            attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `List<Card, 2>`
+            attacker_one = attackers[1]
+            attacker_one = attackers[2]
+
+            defender = current_player choose other_player.cards ("Who would you like to attack?")
+
+            if not (attacker_one, attacker_two, defender).can_attack:
+                illegal
+
+            // NOTE: There is probably a way the engine could select all three-way-pairs of (attacker, attacker, defender)
+            //       that yeild a `can_attack` of true, and then just present those options to the user.
+
+            other_player.cards remove defender
+            current_player.tokens += defender.power
+
+            weakest_attacker = match attacker_one, attacker_two {
+                attacker_one.power > attacker_two.power:
+                    attacker_one
+                attacker_one.power < attacker_two.power:
+                    attacker_two
+                default:
+                    current_player choose [attacker_one, attacker_two] ("Which attacker would you like to discard?")
+            }
+
+            current_player.cards remove weakest_attacker
+            current_player.tokens += weakest_attacker.tokens
+        }
+
+        // Determine winner
+        if #current_player.cards < 2 and #other_player.cards < 2 {
+            if current_player.tokens > other_player.tokens:
+                current_player wins
+            else if current_player.tokens < other_player.tokens:
+                other_player wins
+            else:
+                draw
+        }
+
+        // Next turn
+        swap other_player, current_player
+    }
+}
