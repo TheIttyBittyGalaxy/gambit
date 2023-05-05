@@ -22,6 +22,11 @@ struct EnumValue;
 
 struct Entity;
 
+struct State;
+
+struct Pattern;
+struct PatternList;
+
 struct NativeType;
 struct OptionalType;
 struct InvalidType;
@@ -58,7 +63,11 @@ struct Program
 
 struct Scope
 {
-    using LookupValue = variant<ptr<NativeType>, ptr<EnumType>, ptr<Entity>>;
+    using LookupValue = variant<
+        ptr<NativeType>,
+        ptr<EnumType>,
+        ptr<Entity>,
+        ptr<State>>;
     wptr<Scope> parent;
     map<string, LookupValue> lookup;
 };
@@ -89,6 +98,29 @@ struct EnumValue
 struct Entity
 {
     string identity;
+};
+
+// States
+
+struct State
+{
+    string identity;
+    Type type;
+    ptr<PatternList> pattern_list;
+    optional<Expression> initial_value;
+};
+
+// Patterns
+
+struct Pattern
+{
+    Type type;
+    string name;
+};
+
+struct PatternList
+{
+    vector<ptr<Pattern>> patterns;
 };
 
 // Types
@@ -170,6 +202,9 @@ string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t 
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
+string to_json(const ptr<State> &state, const size_t &depth = 0);
+string to_json(const ptr<Pattern> &state, const size_t &depth = 0);
+string to_json(const ptr<PatternList> &state, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const ptr<OptionalType> &optional_type, const size_t &depth = 0);
 string to_json(const ptr<InvalidType> &invalid_type, const size_t &depth = 0);

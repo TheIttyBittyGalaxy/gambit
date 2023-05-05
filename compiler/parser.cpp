@@ -150,6 +150,8 @@ void Parser::parse_program()
                 parse_entity_definition(program->global_scope);
             else if (peek_enum_definition())
                 parse_enum_definition(program->global_scope);
+            else if (peek_state())
+                parse_state(program->global_scope);
             else
                 throw Error("Unexpected '" + tokens.at(current_token).str + "' in global scope.", tokens.at(current_token));
         }
@@ -210,6 +212,64 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
     declare(scope, entity);
 
     eat(Token::Line);
+}
+
+bool Parser::peek_state()
+{
+    return peek(Token::KeyState);
+}
+
+ptr<State> Parser::parse_state(ptr<Scope> scope)
+{
+    auto state = CREATE(State);
+
+    eat(Token::KeyState);
+    state->type = parse_type(scope);
+    state->pattern_list = parse_pattern_list(scope);
+    eat(Token::Dot);
+    state->identity = eat(Token::Identity).str;
+
+    declare(scope, state);
+
+    if (match(Token::Assign))
+        state->initial_value = parse_expression();
+
+    return state;
+}
+
+bool Parser::peek_pattern()
+{
+    return peek_type();
+}
+
+ptr<Pattern> Parser::parse_pattern(ptr<Scope> scope)
+{
+    auto pattern = CREATE(Pattern);
+
+    pattern->type = parse_type(scope);
+    pattern->name = eat(Token::Identity).str;
+
+    return pattern;
+}
+
+bool Parser::peek_pattern_list()
+{
+    return peek(Token::ParenL);
+}
+
+ptr<PatternList> Parser::parse_pattern_list(ptr<Scope> scope)
+{
+    auto pattern_list = CREATE(PatternList);
+
+    eat(Token::ParenL);
+    do
+    {
+        auto pattern = parse_pattern(scope);
+        pattern_list->patterns.emplace_back(pattern);
+    } while (match(Token::Comma));
+    eat(Token::ParenR);
+
+    return pattern_list;
 }
 
 bool Parser::peek_type()

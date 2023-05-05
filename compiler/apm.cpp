@@ -12,6 +12,9 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, Entity))
         return AS_PTR(value, Entity)->identity;
 
+    if (IS_PTR(value, State))
+        return AS_PTR(value, State)->identity;
+
     // FIXME: Throw an appropriate error object
     throw runtime_error("Cannot get identity of Scope::LookupValue");
 }

@@ -33,6 +33,7 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(NativeType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
+    VARIANT_PTR(State);
 
     throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
 }
@@ -84,6 +85,40 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     json.object();
     json.add("node", string("Entity"));
     STRUCT_PTR_FIELD(identity);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<State> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("State"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(initial_value);
+    STRUCT_PTR_FIELD(pattern_list);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<Pattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Pattern"));
+    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(name);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<PatternList> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PatternList"));
+    STRUCT_PTR_FIELD(patterns);
     json.close();
     return (string)json;
 }

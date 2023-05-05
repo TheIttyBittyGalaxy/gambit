@@ -17,6 +17,11 @@ private:
     void resolve_program(ptr<Program> program);
     void resolve_scope(ptr<Scope> scope);
 
+    void resolve_state(ptr<State> state, ptr<Scope> scope);
+
+    void resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope);
+    void resolve_pattern_list(ptr<PatternList> pattern_list, ptr<Scope> scope);
+
     Type resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope);
     optional<Type> resolve_type(Type type, ptr<Scope> scope);
 

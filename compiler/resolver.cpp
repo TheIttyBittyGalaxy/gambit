@@ -17,9 +17,35 @@ void Resolver::resolve_scope(ptr<Scope> scope)
     for (auto entry : scope->lookup)
     {
         auto value = entry.second;
-        if (IS_PTR(value, Entity))
-            continue;
+        if (IS_PTR(value, State))
+            resolve_state(AS_PTR(value, State), scope);
     }
+}
+
+void Resolver::resolve_state(ptr<State> state, ptr<Scope> scope)
+{
+    auto resolved_type = resolve_type(state->type, scope);
+    state->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
+
+    resolve_pattern_list(state->pattern_list, scope);
+
+    if (state->initial_value.has_value())
+    {
+        state->initial_value = resolve_expression(state->initial_value.value(), scope, state->type);
+        // FIXME: Type check the default value
+    }
+}
+
+void Resolver::resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope)
+{
+    auto resolved_type = resolve_type(pattern->type, scope);
+    pattern->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
+}
+
+void Resolver::resolve_pattern_list(ptr<PatternList> pattern_list, ptr<Scope> scope)
+{
+    for (auto pattern : pattern_list->patterns)
+        resolve_pattern(pattern, scope);
 }
 
 Type Resolver::resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope)

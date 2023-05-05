@@ -1,12 +1,11 @@
-/* Defined natively by Gambit
-    entity Game
-    
-    entity Player
-    static int (Player player).number
+// FIXME: These should be natively defined by Gambit
+entity Game
 
-    Game game
-    List<Player> players
-*/
+entity Player
+static int (Player player).number
+
+Game game
+List<Player> players
 
 // Naughts and crosses
 
