@@ -17,8 +17,24 @@ void Resolver::resolve_scope(ptr<Scope> scope)
     for (auto entry : scope->lookup)
     {
         auto value = entry.second;
-        if (IS_PTR(value, State))
+        if (IS_PTR(value, StaticProperty))
+            resolve_static_property(AS_PTR(value, StaticProperty), scope);
+        else if (IS_PTR(value, State))
             resolve_state(AS_PTR(value, State), scope);
+    }
+}
+
+void Resolver::resolve_static_property(ptr<StaticProperty> static_property, ptr<Scope> scope)
+{
+    auto resolved_type = resolve_type(static_property->type, scope);
+    static_property->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
+
+    resolve_pattern_list(static_property->pattern_list, scope);
+
+    if (static_property->initial_value.has_value())
+    {
+        static_property->initial_value = resolve_expression(static_property->initial_value.value(), scope, static_property->type);
+        // FIXME: Type check the default value
     }
 }
 

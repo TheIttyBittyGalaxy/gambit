@@ -20,7 +20,7 @@ static Mark (Player player).mark = match player.number {
 
 entity Square
 static int (Square square).index
-static string (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
+static string (Square square).name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
 state Mark? (Square square).mark
 
 entity Board

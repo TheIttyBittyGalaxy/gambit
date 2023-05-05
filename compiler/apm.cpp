@@ -12,6 +12,9 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, Entity))
         return AS_PTR(value, Entity)->identity;
 
+    if (IS_PTR(value, StaticProperty))
+        return AS_PTR(value, StaticProperty)->identity;
+
     if (IS_PTR(value, State))
         return AS_PTR(value, State)->identity;
 
