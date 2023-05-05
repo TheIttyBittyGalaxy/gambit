@@ -1,72 +1,74 @@
-/* Gambit gives us the following by default
-    entity Game {
-        static List<Player> players
-    }
+/* Defined natively by Gambit
+    entity Game
+    
+    entity Player
+    static int (Player player).number
 
-    entity Player[player_number] {
-        static int player_number
-    }
+    Game game
+    List<Player> players
 */
+
+// Naughts and crosses
 
 enum Mark { NAUGHT, CROSS }
 
-extend Game {
-    state Board board
-    state Player current_player
-    state bool is_over = false
+static Mark (Player player).mark = match player.number {
+    1: NAUGHT
+    2: CROSS
 }
 
-extend Player {
-    property Mark mark = match player_number {
-        1: NAUGHT
-        2: CROSS
-    } // Because this property is derived entirely from static fields, it's technically a static field (a.k.a a 'static property')
-}
+// Game board and squares
 
-entity Board {
-    state List<Mark, 9> squares
-    property bool is_full = #(squares filter (square: sqaure.mark != none)) == 0
-}
+entity Square
+static int (Square square).index
+static string (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
+state Mark? (Square square).mark
 
-entity Square[index] {
-    static int index
-    static string name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index] // Use of an expression here is valid, as the expression can be resolved at compile time
-    state Mark? mark // Defaults to `none`
-}
+entity Board
+state List<Mark, 9> (Board board).squares
 
-fn available_squares(Board board) { // Infer return type as `List<Square>`
-    return board.squares filter (square: square.mark == none)
-}
+fn bool (Board board).is_full:
+    #(squares filter (square: sqaure.mark != none)) == 0
 
-fn winner(Board board) -> Mark? {
-    lines = [ // infer type as `List<int 8*3>`
+fn List<Square> (Board board).available_squares:
+    board.squares filter (square: square.mark == none)
+
+fn bool winning_track(Mark? a, Mark? b, Mark? c):
+    a != none and a == b and b == c
+
+fn Mark? (Board board).winner {
+    lines = [ // infer type as `List<int, 8*3>`
         [1, 2, 3], [4, 5, 6], [7, 8, 9],
         [1, 4, 7], [2, 5, 8], [3, 6, 9],
         [1, 5, 9], [3, 5, 7],
     ]
 
-    for line in lines { // Infer type of `line` as `List<int 3>`
-        marks = line transform (index: game.board[index].mark) // Infer type of `marks` as `List<Mark? 3>`
-        mark = marks[1]
-        if mark and marks[1] == marks[2] and marks[2] == marks[3]: // Subtle type promotion. After the lhs of the and has been evalutated, mark is promoted from `Mark?` to `Mark`
-            return mark
+    for line in lines { // Infer type of `line` as `List<int, 3>`
+        marks = line map (board_index: board[board_index].mark) // Infer type of `marks` as `List<Mark? 3>`
+        if (marks[1], marks[2], marks[3]).winning_track: return mark
     }
 }
 
+// Game implementation
+state Board (Game game).board
+
 main() {
-    game.current_player = game.players[1]
+    current_player = game.players[1] // Infer type `Player`
+    other_player = game.players[2] // Infer type `Player`
+
     loop {
-        choice = game.current_player choose game.board:available_squares ("Which sqaure do you want to play?") // Infer type of 'choice' as 'Square'
-        choice.mark = game.current_player.mark
+        chosen_square = current_player choose game.board.available_squares ("Which sqaure do you want to play?") // Infer type of 'chosen_square' as 'Square'
+        chosen_square.mark = current_player.mark
 
-        if game.board:winner { // Type promotion. Within this code block game.board:winner is promoted from `Mark?` to `Mark`
-            Player[mark: game.board:winner] wins
-            break
-        } else if game.board.is_full {
-            break
+        if game.board.winner { // game.board.winner is promoted from `Mark?` to `Mark` (note, `winner` is a function in this case!)
+            // This isn't really nessecary, we could just as easily do `current_player wins`, but
+            // I wrote it this way to test selectors, type promotion, etc
+            Player[mark: game.board.winner] wins
         }
+        
+        if game.board.is_full:
+            draw
 
-        if game.current_player == game.players[1]: game.current_player = game.players[2]
-        else: game.current_player = game.players[1]
-    } // This loop is valid as it contains brake statements in the body of the loop
+        swap current_player, other_player
+    } // This loop is valid as it contains terminating statements in the body of the loop (i.e. win, draw, loose, break)
 }
