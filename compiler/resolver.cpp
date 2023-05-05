@@ -16,11 +16,13 @@ void Resolver::resolve_scope(ptr<Scope> scope)
 {
     for (auto entry : scope->lookup)
     {
-        auto value = entry.second;
-        if (IS_PTR(value, StaticProperty))
-            resolve_static_property(AS_PTR(value, StaticProperty), scope);
-        else if (IS_PTR(value, State))
-            resolve_state(AS_PTR(value, State), scope);
+        for (auto value : entry.second.values)
+        {
+            if (IS_PTR(value, StaticProperty))
+                resolve_static_property(AS_PTR(value, StaticProperty), scope);
+            else if (IS_PTR(value, State))
+                resolve_state(AS_PTR(value, State), scope);
+        }
     }
 }
 
@@ -87,7 +89,9 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
 
         if (declared_in_scope(scope, id))
         {
-            auto resolved = fetch(scope, id);
+            auto index = fetch(scope, id);
+            auto resolved = index.values.at(0);
+
             if (IS_PTR(resolved, NativeType))
                 return AS_PTR(resolved, NativeType);
             if (IS_PTR(resolved, EnumType))
@@ -122,10 +126,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
 
             // FIXME: Return resolved value if it makes for a valid expression
 
-            if (IS_PTR(resolved, NativeType) || IS_PTR(resolved, EnumType) || IS_PTR(resolved, Entity))
-                emit_error("Expected value, got type '" + identity_of(resolved) + "'", unresolved_identity->token);
-            else
-                emit_error("Expected value, got '" + identity_of(resolved) + "'", unresolved_identity->token);
+            // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
+            emit_error("Expected value, got '" + id + "'", unresolved_identity->token);
 
             return CREATE(InvalidValue);
         }

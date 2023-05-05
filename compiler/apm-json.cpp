@@ -39,6 +39,16 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
 }
 
+string to_json(const Scope::LookupIndex &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(can_overload);
+    STRUCT_FIELD(values);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<Scope> &node, const size_t &depth)
 {
     JsonContainer json(depth);

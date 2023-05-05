@@ -70,8 +70,15 @@ struct Scope
         ptr<Entity>,
         ptr<StaticProperty>,
         ptr<State>>;
+
+    struct LookupIndex
+    {
+        bool can_overload = false;
+        vector<LookupValue> values;
+    };
+
     wptr<Scope> parent;
-    map<string, LookupValue> lookup;
+    map<string, LookupIndex> lookup;
 };
 
 // Unresolved Identity
@@ -198,7 +205,11 @@ string identity_of(Scope::LookupValue value);
 bool directly_declared_in_scope(ptr<Scope> scope, string identity);
 bool declared_in_scope(ptr<Scope> scope, string identity);
 void declare(ptr<Scope> scope, Scope::LookupValue value);
-Scope::LookupValue fetch(ptr<Scope> scope, string identity);
+Scope::LookupIndex fetch(ptr<Scope> scope, string identity);
+
+// TODO: As of writing, the functions below aren't actually used anywhere in the code.
+//       Assuming they still aren't being used, is there a genuninely helpful utility
+//       method they could be replaced with? (or otherwise should they just be removed?)
 ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity);
 ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity);
 ptr<Entity> fetch_entity(ptr<Scope> scope, string identity);
@@ -207,6 +218,7 @@ ptr<Entity> fetch_entity(ptr<Scope> scope, string identity);
 
 string to_json(const ptr<Program> &program, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
+string to_json(const Scope::LookupIndex &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);

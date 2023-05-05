@@ -38,15 +38,29 @@ bool declared_in_scope(ptr<Scope> scope, string identity)
 void declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
+    bool value_is_overloadable = IS_PTR(value, StaticProperty) || IS_PTR(value, State);
+    Scope::LookupIndex *index;
 
-    // FIXME: Throw an appropriate error object
     if (directly_declared_in_scope(scope, identity))
-        throw runtime_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.");
+    {
+        index = &scope->lookup[identity];
 
-    scope->lookup.insert({identity, value});
+        if (!index->can_overload || !value_is_overloadable)
+        {
+            // FIXME: Throw an appropriate error object
+            throw runtime_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.");
+        }
+    }
+    else
+    {
+        index = &scope->lookup[identity];
+        index->can_overload = value_is_overloadable;
+    }
+
+    index->values.emplace_back(value);
 }
 
-Scope::LookupValue fetch(ptr<Scope> scope, string identity)
+Scope::LookupIndex fetch(ptr<Scope> scope, string identity)
 {
     while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())
         scope = ptr<Scope>(scope->parent);
@@ -60,7 +74,9 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
 
 ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity)
 {
-    auto found = fetch(scope, identity);
+    auto index = fetch(scope, identity);
+    auto found = index.values.at(0); // Types cannot be overloaded. Therefore, if the index does contain a NativeType, it will be the only LookupValue in the vector.
+
     if (!IS_PTR(found, NativeType))
         // FIXME: Throw an appropriate error object
         throw runtime_error("'" + identity + "' is not a NativeType");
@@ -69,7 +85,9 @@ ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity)
 
 ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity)
 {
-    auto found = fetch(scope, identity);
+    auto index = fetch(scope, identity);
+    auto found = index.values.at(0); // Types cannot be overloaded. Therefore, if the index does contain an EnumType, it will be the only LookupValue in the vector.
+
     if (!IS_PTR(found, EnumType))
         // FIXME: Throw an appropriate error object
         throw runtime_error("'" + identity + "' is not a EnumType");
@@ -78,7 +96,9 @@ ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity)
 
 ptr<Entity> fetch_entity(ptr<Scope> scope, string identity)
 {
-    auto found = fetch(scope, identity);
+    auto index = fetch(scope, identity);
+    auto found = index.values.at(0); // Types cannot be overloaded. Therefore, if the index does contain an Entity, it will be the only LookupValue in the vector.
+
     if (!IS_PTR(found, Entity))
         // FIXME: Throw an appropriate error object
         throw "'" + identity + "' is not an Entity";
