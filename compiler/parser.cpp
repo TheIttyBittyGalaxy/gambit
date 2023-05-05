@@ -198,85 +198,18 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
 
 bool Parser::peek_entity_definition()
 {
-    return peek(Token::KeyEntity) || peek(Token::KeyExtend);
+    return peek(Token::KeyEntity);
 }
 
 void Parser::parse_entity_definition(ptr<Scope> scope)
 {
-    bool is_base_definition = !match(Token::KeyExtend);
-    if (is_base_definition)
-        eat(Token::KeyEntity);
+    auto entity = CREATE(Entity);
 
-    Token identity = eat(Token::Identity);
+    eat(Token::KeyEntity);
+    entity->identity = eat(Token::Identity).str;
+    declare(scope, entity);
 
-    ptr<Entity> entity;
-
-    if (is_base_definition || !declared_in_scope(scope, identity.str))
-    {
-        entity = CREATE(Entity);
-        entity->identity = identity.str;
-        declare(scope, entity);
-    }
-    else
-    {
-        entity = fetch_entity(scope, identity.str);
-    }
-
-    entity->base_definition_found = is_base_definition;
-
-    if (peek(Token::SquareL))
-    {
-        if (!is_base_definition)
-            throw Error("Cannot define an Entity's signature on an additive definition.", tokens.at(current_token));
-
-        eat(Token::SquareL);
-        do
-        {
-            auto identity = eat(Token::Identity).str;
-            entity->signature.emplace_back(identity);
-        } while (match(Token::Comma));
-        eat(Token::SquareR);
-    }
-
-    eat(Token::CurlyL);
-    while (peek_entity_field())
-    {
-        try
-        {
-            parse_entity_field(scope, entity);
-            eat(Token::Line);
-        }
-        catch (Error err)
-        {
-            emit_error(err.msg, err.token);
-            skip_to_end_of_line();
-        }
-    }
-    eat(Token::CurlyR);
-}
-
-bool Parser::peek_entity_field()
-{
-    return peek(Token::KeyStatic) || peek(Token::KeyState) || peek(Token::KeyProperty);
-}
-
-void Parser::parse_entity_field(ptr<Scope> scope, ptr<Entity> entity)
-{
-    auto field = CREATE(EntityField);
-    if (match(Token::KeyStatic))
-        field->is_static = true;
-    else if (match(Token::KeyProperty))
-        field->is_property = true;
-    else
-        eat(Token::KeyState);
-
-    field->type = parse_type(scope);
-    field->identity = eat(Token::Identity).str;
-
-    entity->fields.insert({field->identity, field});
-
-    if (match(Token::Assign))
-        field->initializer = parse_expression();
+    eat(Token::Line);
 }
 
 bool Parser::peek_type()

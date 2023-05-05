@@ -21,7 +21,6 @@ struct EnumType;
 struct EnumValue;
 
 struct Entity;
-struct EntityField;
 
 struct NativeType;
 struct OptionalType;
@@ -90,18 +89,6 @@ struct EnumValue
 struct Entity
 {
     string identity;
-    map<string, ptr<EntityField>> fields;
-    vector<string> signature;
-    bool base_definition_found = false;
-};
-
-struct EntityField
-{
-    string identity;
-    Type type;
-    bool is_static = false;
-    bool is_property = false;
-    optional<Expression> initializer;
 };
 
 // Types
@@ -183,7 +170,6 @@ string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t 
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
-string to_json(const ptr<EntityField> &entity_field, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const ptr<OptionalType> &optional_type, const size_t &depth = 0);
 string to_json(const ptr<InvalidType> &invalid_type, const size_t &depth = 0);

@@ -84,23 +84,6 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     json.object();
     json.add("node", string("Entity"));
     STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(fields);
-    STRUCT_PTR_FIELD(signature);
-    STRUCT_PTR_FIELD(base_definition_found);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<EntityField> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("EntityField"));
-    STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(type);
-    STRUCT_PTR_FIELD(is_static);
-    STRUCT_PTR_FIELD(is_property);
-    STRUCT_PTR_FIELD(initializer);
     json.close();
     return (string)json;
 }

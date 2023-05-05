@@ -40,11 +40,9 @@ struct Token
 
         KeyEntity,
         KeyEnum,
-        KeyExtend,
         KeyFn,
         KeyStatic,
         KeyState,
-        KeyProperty,
         KeyBreak,
         KeyContinue,
         KeyElse,

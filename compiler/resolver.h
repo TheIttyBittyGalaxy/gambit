@@ -20,9 +20,6 @@ private:
     Type resolve_optional_type(ptr<OptionalType> type, ptr<Scope> scope);
     optional<Type> resolve_type(Type type, ptr<Scope> scope);
 
-    void resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scope);
-    void resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, ptr<Scope> scope);
-
     Expression resolve_expression(Expression expression, ptr<Scope> scope, optional<Type> type_hint = {});
     void resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Type> type_hint = {});
     void resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Type> type_hint = {});

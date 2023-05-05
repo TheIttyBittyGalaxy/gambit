@@ -18,7 +18,7 @@ void Resolver::resolve_scope(ptr<Scope> scope)
     {
         auto value = entry.second;
         if (IS_PTR(value, Entity))
-            resolve_entity_definition(AS_PTR(value, Entity), scope);
+            continue;
     }
 }
 
@@ -65,37 +65,6 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
     }
 
     throw runtime_error("Cannot resolve type variant."); // FIXME: Use an appropriate exception type
-}
-
-void Resolver::resolve_entity_definition(ptr<Entity> definition, ptr<Scope> scope)
-{
-    // FIXME: Hoist additive definition that never find a base definition into a base definition in a parent scope.
-    //        If no such base definition exists, throw an `Entity cannot be extended as it is not defined` error.
-    //        Hoisting should happen before any identity resolution, other an identity could resolve to an entity
-    //        defintion that will later get hoisted.
-    if (!definition->base_definition_found)
-    {
-        emit_error("Entity `" + definition->identity + "` does not have a base definition."); // FIXME: Supply the token of the identity
-    }
-
-    for (auto entry : definition->fields)
-    {
-        auto field = entry.second;
-        resolve_entity_field(field, definition, scope);
-    }
-}
-
-void Resolver::resolve_entity_field(ptr<EntityField> field, ptr<Entity> entity, ptr<Scope> scope)
-{
-    auto resolved_type = resolve_type(field->type, scope);
-    field->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
-
-    if (field->initializer.has_value())
-    {
-        // FIXME: Scope passed into resolve_expression should be scope of the entity definition, not of the parent scope
-        field->initializer = resolve_expression(field->initializer.value(), scope, field->type);
-        // FIXME: Type check the default value
-    }
 }
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Type> type_hint)

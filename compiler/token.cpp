@@ -41,11 +41,9 @@ const map<Token::Kind, string> token_name = {
 
     {Token::KeyEntity, "KeyEntity"},
     {Token::KeyEnum, "KeyEnum"},
-    {Token::KeyExtend, "KeyExtend"},
     {Token::KeyFn, "KeyFn"},
     {Token::KeyStatic, "KeyStatic"},
     {Token::KeyState, "KeyState"},
-    {Token::KeyProperty, "KeyProperty"},
     {Token::KeyBreak, "KeyBreak"},
     {Token::KeyContinue, "KeyContinue"},
     {Token::KeyElse, "KeyElse"},
@@ -104,12 +102,10 @@ const map<Token::Kind, regex> token_match_rules = {
 const map<string, Token::Kind> keyword_match_rules = {
     {"entity", Token::KeyEntity},
     {"enum", Token::KeyEnum},
-    {"extend", Token::KeyExtend},
     {"fn", Token::KeyFn},
 
     {"static", Token::KeyStatic},
     {"state", Token::KeyState},
-    {"property", Token::KeyProperty},
 
     {"break", Token::KeyBreak},
     {"continue", Token::KeyContinue},
