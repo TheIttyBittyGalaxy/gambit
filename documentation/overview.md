@@ -1,3 +1,5 @@
+> 🚧 FIXME: This documentation is out of date. The example games have been updated with the new syntax and feature set.
+
 # Gambit
 
 Gambit is a programming language specifically designed for developing games. Alongside typical imperative features, it provides a declarative features for defining relationships between game objects. The core of this feature set are [Entities & Properties](#entities--properties)
@@ -176,11 +178,11 @@ a:f(b, c)
 
 ### Enum types
 
-> TODO: Write up
+> 🚧 TODO: Write up
 
 ### List types
 
-> TODO: Write up
+> 🚧 TODO: Write up
 > Almost definitely need some notion of ordered and unordered lists?
 
 ### Optional types
