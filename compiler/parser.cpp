@@ -151,7 +151,7 @@ void Parser::parse_program()
             else if (peek_enum_definition())
                 parse_enum_definition(program->global_scope);
             else
-                throw Error("Expected Entity definition", tokens.at(current_token));
+                throw Error("Unexpected '" + tokens.at(current_token).str + "' in global scope.", tokens.at(current_token));
         }
         catch (Error err)
         {
