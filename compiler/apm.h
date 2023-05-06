@@ -23,6 +23,7 @@ struct EnumValue;
 struct Entity;
 
 struct StateProperty;
+struct FunctionProperty;
 
 struct Pattern;
 struct PatternList;
@@ -70,6 +71,7 @@ struct Scope
         ptr<EnumType>,
         ptr<Entity>,
         ptr<StateProperty>,
+        ptr<FunctionProperty>,
         ptr<OverloadedIdentity>>;
 
     struct OverloadedIdentity
@@ -110,7 +112,7 @@ struct Entity
     string identity;
 };
 
-// States
+// Properties
 
 struct StateProperty
 {
@@ -118,6 +120,14 @@ struct StateProperty
     Type type;
     ptr<PatternList> pattern_list;
     optional<Expression> initial_value;
+};
+
+struct FunctionProperty
+{
+    string identity;
+    Type type;
+    ptr<PatternList> pattern_list;
+    optional<Expression> body; // FIXME: Should be a code block, rather than a single expression.
 };
 
 // Patterns
@@ -197,6 +207,8 @@ struct InvalidValue
 string identity_of(Scope::LookupValue value);
 bool directly_declared_in_scope(ptr<Scope> scope, string identity);
 bool declared_in_scope(ptr<Scope> scope, string identity);
+bool is_overloadable(Scope::LookupValue value);
+
 void declare(ptr<Scope> scope, Scope::LookupValue value);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 
@@ -211,6 +223,7 @@ string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
+string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<Pattern> &state, const size_t &depth = 0);
 string to_json(const ptr<PatternList> &state, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);

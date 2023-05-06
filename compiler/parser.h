@@ -39,8 +39,10 @@ private:
     bool peek_entity_definition();
     void parse_entity_definition(ptr<Scope> scope);
 
-    bool peek_state();
-    ptr<StateProperty> parse_state(ptr<Scope> scope);
+    bool peek_state_property_definition();
+    ptr<StateProperty> parse_state_property_definition(ptr<Scope> scope);
+    bool peek_function_property_definition();
+    ptr<FunctionProperty> parse_function_property_definition(ptr<Scope> scope);
 
     bool peek_pattern();
     ptr<Pattern> parse_pattern(ptr<Scope> scope);

@@ -21,7 +21,10 @@ void Resolver::resolve_scope(ptr<Scope> scope)
 void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
 {
     if (IS_PTR(value, StateProperty))
-        resolve_state(AS_PTR(value, StateProperty), scope);
+        resolve_state_property(AS_PTR(value, StateProperty), scope);
+
+    if (IS_PTR(value, FunctionProperty))
+        resolve_function_property(AS_PTR(value, FunctionProperty), scope);
 
     if (IS_PTR(value, Scope::OverloadedIdentity))
     {
@@ -31,7 +34,7 @@ void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> s
     }
 }
 
-void Resolver::resolve_state(ptr<StateProperty> state, ptr<Scope> scope)
+void Resolver::resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope)
 {
     auto resolved_type = resolve_type(state->type, scope);
     state->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
@@ -43,6 +46,17 @@ void Resolver::resolve_state(ptr<StateProperty> state, ptr<Scope> scope)
         state->initial_value = resolve_expression(state->initial_value.value(), scope, state->type);
         // FIXME: Type check the default value
     }
+}
+
+void Resolver::resolve_function_property(ptr<FunctionProperty> funct, ptr<Scope> scope)
+{
+    auto resolved_type = resolve_type(funct->type, scope);
+    funct->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
+
+    resolve_pattern_list(funct->pattern_list, scope);
+
+    if (funct->body.has_value())
+        funct->body = resolve_expression(funct->body.value(), scope, funct->type);
 }
 
 void Resolver::resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope)

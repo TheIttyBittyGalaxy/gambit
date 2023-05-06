@@ -15,6 +15,9 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, StateProperty))
         return AS_PTR(value, StateProperty)->identity;
 
+    if (IS_PTR(value, FunctionProperty))
+        return AS_PTR(value, FunctionProperty)->identity;
+
     // FIXME: Throw an appropriate error object
     throw runtime_error("Cannot get identity of Scope::LookupValue");
 }
@@ -32,15 +35,20 @@ bool declared_in_scope(ptr<Scope> scope, string identity)
     return directly_declared_in_scope(scope, identity);
 }
 
+bool is_overloadable(Scope::LookupValue value)
+{
+    return IS_PTR(value, StateProperty) ||
+           IS_PTR(value, FunctionProperty);
+}
+
 void declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
-    bool value_is_overloadable = IS_PTR(value, StateProperty);
 
     if (directly_declared_in_scope(scope, identity))
     {
         auto existing = fetch(scope, identity);
-        if (IS_PTR(existing, Scope::OverloadedIdentity) && value_is_overloadable)
+        if (IS_PTR(existing, Scope::OverloadedIdentity) && is_overloadable(value))
         {
             auto overloaded_identity = AS_PTR(existing, Scope::OverloadedIdentity);
             overloaded_identity->overloads.emplace_back(value);
@@ -51,7 +59,7 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
             throw runtime_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.");
         }
     }
-    else if (value_is_overloadable)
+    else if (is_overloadable(value))
     {
         auto overloaded_identity = CREATE(Scope::OverloadedIdentity);
         overloaded_identity->identity = identity;

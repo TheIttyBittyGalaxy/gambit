@@ -150,8 +150,10 @@ void Parser::parse_program()
                 parse_entity_definition(program->global_scope);
             else if (peek_enum_definition())
                 parse_enum_definition(program->global_scope);
-            else if (peek_state())
-                parse_state(program->global_scope);
+            else if (peek_state_property_definition())
+                parse_state_property_definition(program->global_scope);
+            else if (peek_function_property_definition())
+                parse_function_property_definition(program->global_scope);
             else
                 throw Error("Unexpected '" + tokens.at(current_token).str + "' in global scope.", tokens.at(current_token));
         }
@@ -214,12 +216,12 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
     eat(Token::Line);
 }
 
-bool Parser::peek_state()
+bool Parser::peek_state_property_definition()
 {
     return peek(Token::KeyState);
 }
 
-ptr<StateProperty> Parser::parse_state(ptr<Scope> scope)
+ptr<StateProperty> Parser::parse_state_property_definition(ptr<Scope> scope)
 {
     auto state = CREATE(StateProperty);
 
@@ -235,6 +237,32 @@ ptr<StateProperty> Parser::parse_state(ptr<Scope> scope)
         state->initial_value = parse_expression();
 
     return state;
+}
+
+bool Parser::peek_function_property_definition()
+{
+    return peek(Token::KeyFn);
+}
+
+ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scope)
+{
+    auto funct = CREATE(FunctionProperty);
+
+    eat(Token::KeyFn);
+    funct->type = parse_type(scope);
+    funct->pattern_list = parse_pattern_list(scope);
+    eat(Token::Dot);
+    funct->identity = eat(Token::Identity).str;
+
+    declare(scope, funct);
+
+    // FIXME: Parse a code block, not an expression
+    if (match(Token::Colon))
+    {
+        match(Token::Line);
+        funct->body = parse_expression();
+    }
+    return funct;
 }
 
 bool Parser::peek_pattern()

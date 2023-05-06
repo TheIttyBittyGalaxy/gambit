@@ -34,6 +34,7 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
     VARIANT_PTR(StateProperty);
+    VARIANT_PTR(FunctionProperty);
     VARIANT_PTR(Scope::OverloadedIdentity);
 
     throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
@@ -108,8 +109,21 @@ string to_json(const ptr<StateProperty> &node, const size_t &depth)
     json.add("node", string("StateProperty"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(type);
-    STRUCT_PTR_FIELD(initial_value);
     STRUCT_PTR_FIELD(pattern_list);
+    STRUCT_PTR_FIELD(initial_value);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("FunctionProperty"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(pattern_list);
+    STRUCT_PTR_FIELD(body);
     json.close();
     return (string)json;
 }
