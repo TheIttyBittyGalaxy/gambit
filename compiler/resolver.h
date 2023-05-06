@@ -16,8 +16,9 @@ private:
 
     void resolve_program(ptr<Program> program);
     void resolve_scope(ptr<Scope> scope);
+    void resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope);
 
-    void resolve_state(ptr<State> state, ptr<Scope> scope);
+    void resolve_state(ptr<StateProperty> state, ptr<Scope> scope);
 
     void resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope);
     void resolve_pattern_list(ptr<PatternList> pattern_list, ptr<Scope> scope);

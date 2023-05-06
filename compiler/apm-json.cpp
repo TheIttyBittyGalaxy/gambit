@@ -33,17 +33,19 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(NativeType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
-    VARIANT_PTR(State);
+    VARIANT_PTR(StateProperty);
+    VARIANT_PTR(Scope::OverloadedIdentity);
 
     throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
 }
 
-string to_json(const Scope::LookupIndex &node, const size_t &depth)
+string to_json(const ptr<Scope::OverloadedIdentity> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    STRUCT_FIELD(can_overload);
-    STRUCT_FIELD(values);
+    json.add("node", string("Scope::OverloadedIdentity"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(overloads);
     json.close();
     return (string)json;
 }
@@ -99,11 +101,11 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<State> &node, const size_t &depth)
+string to_json(const ptr<StateProperty> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("State"));
+    json.add("node", string("StateProperty"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(type);
     STRUCT_PTR_FIELD(initial_value);

@@ -2,7 +2,7 @@
 entity Game
 
 entity Player
-static int (Player player).number
+state int (Player player).number // Really this should be static / read-only / something to that effect
 
 Game game
 List<Player> players
@@ -11,7 +11,7 @@ List<Player> players
 
 enum Mark { NAUGHT, CROSS }
 
-static Mark (Player player).mark = match player.number {
+state Mark (Player player).mark = match player.number {
     1: NAUGHT
     2: CROSS
 }
@@ -19,9 +19,9 @@ static Mark (Player player).mark = match player.number {
 // Game board and squares
 
 entity Square
-static int (Square square).index
-static string (Square square).name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
+state int (Square square).index // Really this should be static / read-only / something to that effect
 state Mark? (Square square).mark
+fn string (Square square).name = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
 
 entity Board
 state List<Mark, 9> (Board board).squares

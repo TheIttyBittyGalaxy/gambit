@@ -219,9 +219,9 @@ bool Parser::peek_state()
     return peek(Token::KeyState);
 }
 
-ptr<State> Parser::parse_state(ptr<Scope> scope)
+ptr<StateProperty> Parser::parse_state(ptr<Scope> scope)
 {
-    auto state = CREATE(State);
+    auto state = CREATE(StateProperty);
 
     eat(Token::KeyState);
     state->type = parse_type(scope);

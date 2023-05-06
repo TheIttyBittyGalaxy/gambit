@@ -22,7 +22,7 @@ struct EnumValue;
 
 struct Entity;
 
-struct State;
+struct StateProperty;
 
 struct Pattern;
 struct PatternList;
@@ -63,20 +63,23 @@ struct Program
 
 struct Scope
 {
+    struct OverloadedIdentity;
+
     using LookupValue = variant<
         ptr<NativeType>,
         ptr<EnumType>,
         ptr<Entity>,
-        ptr<State>>;
+        ptr<StateProperty>,
+        ptr<OverloadedIdentity>>;
 
-    struct LookupIndex
+    struct OverloadedIdentity
     {
-        bool can_overload = false;
-        vector<LookupValue> values;
+        string identity;
+        vector<LookupValue> overloads;
     };
 
     wptr<Scope> parent;
-    map<string, LookupIndex> lookup;
+    map<string, LookupValue> lookup;
 };
 
 // Unresolved Identity
@@ -109,7 +112,7 @@ struct Entity
 
 // States
 
-struct State
+struct StateProperty
 {
     string identity;
     Type type;
@@ -195,26 +198,19 @@ string identity_of(Scope::LookupValue value);
 bool directly_declared_in_scope(ptr<Scope> scope, string identity);
 bool declared_in_scope(ptr<Scope> scope, string identity);
 void declare(ptr<Scope> scope, Scope::LookupValue value);
-Scope::LookupIndex fetch(ptr<Scope> scope, string identity);
-
-// TODO: As of writing, the functions below aren't actually used anywhere in the code.
-//       Assuming they still aren't being used, is there a genuninely helpful utility
-//       method they could be replaced with? (or otherwise should they just be removed?)
-ptr<NativeType> fetch_native_type(ptr<Scope> scope, string identity);
-ptr<EnumType> fetch_enum_type(ptr<Scope> scope, string identity);
-ptr<Entity> fetch_entity(ptr<Scope> scope, string identity);
+Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 
 // JSON Serialisation
 
 string to_json(const ptr<Program> &program, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
-string to_json(const Scope::LookupIndex &lookup_index, const size_t &depth = 0);
+string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
-string to_json(const ptr<State> &state, const size_t &depth = 0);
+string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<Pattern> &state, const size_t &depth = 0);
 string to_json(const ptr<PatternList> &state, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);

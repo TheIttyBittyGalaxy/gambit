@@ -40,7 +40,7 @@ private:
     void parse_entity_definition(ptr<Scope> scope);
 
     bool peek_state();
-    ptr<State> parse_state(ptr<Scope> scope);
+    ptr<StateProperty> parse_state(ptr<Scope> scope);
 
     bool peek_pattern();
     ptr<Pattern> parse_pattern(ptr<Scope> scope);

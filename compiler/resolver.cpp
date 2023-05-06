@@ -14,17 +14,24 @@ void Resolver::resolve_program(ptr<Program> program)
 
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
-    for (auto entry : scope->lookup)
+    for (auto index : scope->lookup)
+        resolve_scope_lookup_value(index.second, scope);
+}
+
+void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
+{
+    if (IS_PTR(value, StateProperty))
+        resolve_state(AS_PTR(value, StateProperty), scope);
+
+    if (IS_PTR(value, Scope::OverloadedIdentity))
     {
-        for (auto value : entry.second.values)
-        {
-            if (IS_PTR(value, State))
-                resolve_state(AS_PTR(value, State), scope);
-        }
+        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
+        for (auto overload : overloaded_identity->overloads)
+            resolve_scope_lookup_value(overload, scope);
     }
 }
 
-void Resolver::resolve_state(ptr<State> state, ptr<Scope> scope)
+void Resolver::resolve_state(ptr<StateProperty> state, ptr<Scope> scope)
 {
     auto resolved_type = resolve_type(state->type, scope);
     state->type = resolved_type.has_value() ? resolved_type.value() : CREATE(InvalidType);
@@ -73,8 +80,7 @@ optional<Type> Resolver::resolve_type(Type type, ptr<Scope> scope)
 
         if (declared_in_scope(scope, id))
         {
-            auto index = fetch(scope, id);
-            auto resolved = index.values.at(0);
+            auto resolved = fetch(scope, id);
 
             if (IS_PTR(resolved, NativeType))
                 return AS_PTR(resolved, NativeType);
