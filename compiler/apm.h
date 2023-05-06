@@ -22,7 +22,6 @@ struct EnumValue;
 
 struct Entity;
 
-struct StaticProperty;
 struct State;
 
 struct Pattern;
@@ -68,7 +67,6 @@ struct Scope
         ptr<NativeType>,
         ptr<EnumType>,
         ptr<Entity>,
-        ptr<StaticProperty>,
         ptr<State>>;
 
     struct LookupIndex
@@ -109,15 +107,7 @@ struct Entity
     string identity;
 };
 
-// Static properties & states
-
-struct StaticProperty
-{
-    string identity;
-    Type type;
-    ptr<PatternList> pattern_list;
-    optional<Expression> initial_value;
-};
+// States
 
 struct State
 {
@@ -224,7 +214,6 @@ string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t 
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
-string to_json(const ptr<StaticProperty> &static_property, const size_t &depth = 0);
 string to_json(const ptr<State> &state, const size_t &depth = 0);
 string to_json(const ptr<Pattern> &state, const size_t &depth = 0);
 string to_json(const ptr<PatternList> &state, const size_t &depth = 0);

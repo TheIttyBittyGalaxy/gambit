@@ -33,7 +33,6 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(NativeType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
-    VARIANT_PTR(StaticProperty);
     VARIANT_PTR(State);
 
     throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
@@ -96,19 +95,6 @@ string to_json(const ptr<Entity> &node, const size_t &depth)
     json.object();
     json.add("node", string("Entity"));
     STRUCT_PTR_FIELD(identity);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<StaticProperty> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("StaticProperty"));
-    STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(type);
-    STRUCT_PTR_FIELD(initial_value);
-    STRUCT_PTR_FIELD(pattern_list);
     json.close();
     return (string)json;
 }

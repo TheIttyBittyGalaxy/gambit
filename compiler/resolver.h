@@ -17,7 +17,6 @@ private:
     void resolve_program(ptr<Program> program);
     void resolve_scope(ptr<Scope> scope);
 
-    void resolve_static_property(ptr<StaticProperty> static_property, ptr<Scope> scope);
     void resolve_state(ptr<State> state, ptr<Scope> scope);
 
     void resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope);

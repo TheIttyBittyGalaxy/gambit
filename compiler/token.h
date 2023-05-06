@@ -41,7 +41,6 @@ struct Token
         KeyEntity,
         KeyEnum,
         KeyFn,
-        KeyStatic,
         KeyState,
         KeyBreak,
         KeyContinue,

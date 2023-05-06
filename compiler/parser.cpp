@@ -150,8 +150,6 @@ void Parser::parse_program()
                 parse_entity_definition(program->global_scope);
             else if (peek_enum_definition())
                 parse_enum_definition(program->global_scope);
-            else if (peek_static_property())
-                parse_static_property(program->global_scope);
             else if (peek_state())
                 parse_state(program->global_scope);
             else
@@ -214,29 +212,6 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
     declare(scope, entity);
 
     eat(Token::Line);
-}
-
-bool Parser::peek_static_property()
-{
-    return peek(Token::KeyStatic);
-}
-
-ptr<StaticProperty> Parser::parse_static_property(ptr<Scope> scope)
-{
-    auto static_property = CREATE(StaticProperty);
-
-    eat(Token::KeyStatic);
-    static_property->type = parse_type(scope);
-    static_property->pattern_list = parse_pattern_list(scope);
-    eat(Token::Dot);
-    static_property->identity = eat(Token::Identity).str;
-
-    declare(scope, static_property);
-
-    if (match(Token::Assign))
-        static_property->initial_value = parse_expression();
-
-    return static_property;
 }
 
 bool Parser::peek_state()

@@ -12,9 +12,6 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, Entity))
         return AS_PTR(value, Entity)->identity;
 
-    if (IS_PTR(value, StaticProperty))
-        return AS_PTR(value, StaticProperty)->identity;
-
     if (IS_PTR(value, State))
         return AS_PTR(value, State)->identity;
 
@@ -38,7 +35,7 @@ bool declared_in_scope(ptr<Scope> scope, string identity)
 void declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
-    bool value_is_overloadable = IS_PTR(value, StaticProperty) || IS_PTR(value, State);
+    bool value_is_overloadable = IS_PTR(value, State);
     Scope::LookupIndex *index;
 
     if (directly_declared_in_scope(scope, identity))
