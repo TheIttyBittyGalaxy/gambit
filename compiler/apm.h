@@ -13,6 +13,7 @@ using namespace std;
 // Forward declarations
 
 struct Program;
+struct CodeBlock;
 struct Scope;
 
 struct UnresolvedIdentity;
@@ -55,11 +56,22 @@ using Expression = variant<
     ptr<Match>,
     ptr<InvalidValue>>;
 
+using Statement = variant<
+    Expression,
+    ptr<CodeBlock>>;
+
 // Program
 
 struct Program
 {
     ptr<Scope> global_scope;
+};
+
+struct CodeBlock
+{
+    bool singleton_block = false;
+    ptr<Scope> scope;
+    vector<Statement> statements;
 };
 
 struct Scope
@@ -127,7 +139,7 @@ struct FunctionProperty
     string identity;
     Type type;
     ptr<PatternList> pattern_list;
-    optional<Expression> body; // FIXME: Should be a code block, rather than a single expression.
+    optional<ptr<CodeBlock>> body;
 };
 
 // Patterns
@@ -215,6 +227,7 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 // JSON Serialisation
 
 string to_json(const ptr<Program> &program, const size_t &depth = 0);
+string to_json(const ptr<CodeBlock> &code_block, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
 string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
@@ -238,5 +251,6 @@ string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
+string to_json(const Statement &statement, const size_t &depth = 0);
 
 #endif

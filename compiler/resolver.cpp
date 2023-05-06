@@ -12,6 +12,29 @@ void Resolver::resolve_program(ptr<Program> program)
     resolve_scope(program->global_scope);
 }
 
+void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Type> type_hint)
+{
+    resolve_scope(code_block->scope);
+
+    if (code_block->singleton_block)
+    {
+        // The statement of a singleton code block is given the type hint,
+        // whereas statements in a regular code block are not.
+        auto stmt = code_block->statements[0];
+        stmt = resolve_statement(stmt, code_block->scope, type_hint);
+        code_block->statements[0] = stmt;
+    }
+    else
+    {
+        for (size_t i = 0; i < code_block->statements.size(); i++)
+        {
+            auto stmt = code_block->statements[i];
+            stmt = resolve_statement(stmt, code_block->scope);
+            code_block->statements[i] = stmt;
+        }
+    }
+}
+
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
     for (auto index : scope->lookup)
@@ -56,7 +79,7 @@ void Resolver::resolve_function_property(ptr<FunctionProperty> funct, ptr<Scope>
     resolve_pattern_list(funct->pattern_list, scope);
 
     if (funct->body.has_value())
-        funct->body = resolve_expression(funct->body.value(), scope, funct->type);
+        resolve_code_block(funct->body.value(), funct->type);
 }
 
 void Resolver::resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope)
@@ -218,4 +241,16 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Typ
     binary->lhs = resolve_expression(binary->lhs, scope);
     binary->rhs = resolve_expression(binary->rhs, scope);
     // FIXME: Implement type checking on the operands
+}
+
+Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional<Type> type_hint)
+{
+    if (IS_PTR(stmt, CodeBlock))
+        resolve_code_block(AS_PTR(stmt, CodeBlock), type_hint);
+    else if (IS(stmt, Expression))
+        return resolve_expression(AS(stmt, Expression), scope, type_hint);
+    else
+        throw runtime_error("Cannot resolve Expression variant."); // FIXME: Use an appropriate exception type
+
+    return stmt;
 }

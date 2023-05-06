@@ -28,6 +28,18 @@ string to_json(const ptr<Program> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<CodeBlock> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("CodeBlock"));
+    STRUCT_PTR_FIELD(singleton_block);
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(statements);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
     VARIANT_PTR(NativeType);
@@ -281,6 +293,14 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Binary);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
+
+    throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
+};
+
+string to_json(const Statement &node, const size_t &depth)
+{
+    VARIANT(Expression);
+    VARIANT_PTR(CodeBlock);
 
     throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
 };

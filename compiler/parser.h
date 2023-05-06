@@ -31,6 +31,9 @@ private:
 
     void parse_program();
 
+    bool peek_code_block();
+    ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
+
     ptr<UnresolvedIdentity> parse_unresolved_identity();
 
     bool peek_enum_definition();
@@ -71,6 +74,9 @@ private:
     bool peek_factor();
     ptr<Binary> parse_factor(Expression lhs);
     ptr<Binary> parse_binary(Expression lhs, Precedence precedence);
+
+    bool peek_statement();
+    Statement parse_statement(ptr<Scope> scope);
 };
 
 #endif

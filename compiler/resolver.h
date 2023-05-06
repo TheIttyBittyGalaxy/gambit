@@ -15,6 +15,7 @@ private:
     ptr<Program> program = nullptr;
 
     void resolve_program(ptr<Program> program);
+    void resolve_code_block(ptr<CodeBlock> code_block, optional<Type> type_hint = {});
     void resolve_scope(ptr<Scope> scope);
     void resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope);
 
@@ -32,6 +33,8 @@ private:
     void resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Type> type_hint = {});
     void resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Type> type_hint = {});
     void resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Type> type_hint = {});
+
+    Statement resolve_statement(Statement statement, ptr<Scope> scope, optional<Type> type_hint = {});
 };
 
 #endif

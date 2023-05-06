@@ -166,6 +166,40 @@ void Parser::parse_program()
     }
 }
 
+bool Parser::peek_code_block()
+{
+    return peek(Token::CurlyL) ||
+           peek(Token::Colon);
+}
+
+ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
+{
+    auto code_block = CREATE(CodeBlock);
+    code_block->scope = CREATE(Scope);
+    code_block->scope->parent = scope;
+
+    if (match(Token::Colon))
+    {
+        // FIXME: Do not allow the statement of a singleton code block to another code block
+        skip_whitespace();
+        auto statement = parse_statement(code_block->scope);
+        code_block->statements.emplace_back(statement);
+        code_block->singleton_block = true;
+    }
+    else
+    {
+        eat(Token::CurlyL);
+        while (!match(Token::CurlyR))
+        {
+            skip_whitespace();
+            auto statement = parse_statement(code_block->scope);
+            code_block->statements.emplace_back(statement);
+        }
+    }
+
+    return code_block;
+}
+
 ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
@@ -256,12 +290,9 @@ ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scop
 
     declare(scope, funct);
 
-    // FIXME: Parse a code block, not an expression
-    if (match(Token::Colon))
-    {
-        match(Token::Line);
-        funct->body = parse_expression();
-    }
+    if (peek_code_block())
+        funct->body = parse_code_block(scope);
+
     return funct;
 }
 
@@ -517,4 +548,26 @@ ptr<Binary> Parser::parse_binary(Expression lhs, Precedence precedence)
     expr->rhs = parse_expression(precedence);
 
     return expr;
+}
+
+bool Parser::peek_statement()
+{
+    return peek_code_block() ||
+           peek_expression();
+}
+
+Statement Parser::parse_statement(ptr<Scope> scope)
+{
+    // FIXME: Do not allow singleton code blocks to also be statements
+
+    Statement stmt;
+    if (peek_code_block())
+        stmt = parse_code_block(scope);
+    else if (peek_expression())
+        stmt = parse_expression();
+    else
+        throw Error("Expected statement", tokens.at(current_token));
+
+    eat(Token::Line);
+    return stmt;
 }
