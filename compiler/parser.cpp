@@ -352,7 +352,12 @@ Type Parser::parse_type(ptr<Scope> scope)
 
 bool Parser::peek_expression()
 {
-    return peek_paren_expr() || peek_unary() || peek_literal();
+    return peek_paren_expr() ||
+           peek_match() ||
+           peek_unary() ||
+           peek(Token::Identity) ||
+           peek_literal() ||
+           peek_list_value();
 }
 
 // Parses any expression of the given precedence or higher
