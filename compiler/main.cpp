@@ -33,13 +33,12 @@ void output_program(ptr<Program> program, string file_name)
 
 int main(int argc, char *argv[])
 {
-    // FIXME: Allow the path to the source project to be passed directly, rather than infered.
-    //        I've just made it easier this way for now to make testing easier for myself.
+    // FIXME: Allow for compilation of multiple source files.
 
-    // FIXME: Allow for generation of multiple source files.
-
-    string game = (argc == 2) ? (string)argv[1] : "tic-tac-toe";
-    string src_path = "game/" + game + "/main.gambit";
+    // FIXME: Remove this default value! I only have it for now for ease of testing
+    string src_path = (argc == 2)
+                          ? (string)argv[1] + ".gambit"
+                          : "local/main.gambit";
 
     // File loading
 
