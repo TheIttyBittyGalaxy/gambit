@@ -1,0 +1,7 @@
+entity Token
+
+fn bool (Token a, Token b).can_win:
+    a.powered and b.powered and (a, b).linked
+
+state bool (Token a).powered = false
+state bool (Token a, Token b).linked = false
