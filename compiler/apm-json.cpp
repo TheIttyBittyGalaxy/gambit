@@ -253,6 +253,25 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PropertyIndex"));
+
+    STRUCT_PTR_FIELD(expr);
+
+    if (IS_PTR(node->property, UnresolvedIdentity))
+        json.add("property", AS_PTR(node->property, UnresolvedIdentity));
+    else if (IS_PTR(node->property, StateProperty))
+        json.add("property", AS_PTR(node->property, StateProperty));
+    else if (IS_PTR(node->property, FunctionProperty))
+        json.add("property", AS_PTR(node->property, FunctionProperty));
+
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Match::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -291,6 +310,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(EnumValue);
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
+    VARIANT_PTR(PropertyIndex);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
 

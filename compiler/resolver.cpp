@@ -194,6 +194,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         resolve_unary(AS_PTR(expression, Unary), scope, type_hint);
     else if (IS_PTR(expression, Binary))
         resolve_binary(AS_PTR(expression, Binary), scope, type_hint);
+    else if (IS_PTR(expression, PropertyIndex))
+        resolve_property_index(AS_PTR(expression, PropertyIndex), scope, type_hint);
     else if (IS_PTR(expression, Match))
         resolve_match(AS_PTR(expression, Match), scope, type_hint);
     else
@@ -228,6 +230,12 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Type> 
 
         rule.result = resolve_expression(rule.result, scope, type_hint);
     }
+}
+
+void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Type> type_hint)
+{
+    property_index->expr = resolve_expression(property_index->expr, scope);
+    // TODO: Resolve property
 }
 
 void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Type> type_hint)

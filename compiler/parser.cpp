@@ -418,6 +418,8 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_factor(lhs);
         else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
             lhs = parse_infix_term(lhs);
+        else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
+            lhs = parse_infix_property_index(lhs);
         else
             break;
     }
@@ -586,6 +588,20 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
     expr->rhs = parse_expression(Precedence::Factor);
 
     return expr;
+}
+
+bool Parser::peek_infix_property_index()
+{
+    return peek(Token::Dot);
+}
+
+ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
+{
+    auto property_index = CREATE(PropertyIndex);
+    property_index->expr = lhs;
+    eat(Token::Dot);
+    property_index->property = parse_unresolved_identity();
+    return property_index;
 }
 
 bool Parser::peek_statement()

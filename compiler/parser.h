@@ -75,6 +75,8 @@ private:
     ptr<Binary> parse_infix_term(Expression lhs);
     bool peek_infix_factor();
     ptr<Binary> parse_infix_factor(Expression lhs);
+    bool peek_infix_property_index();
+    ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
 
     bool peek_statement();
     Statement parse_statement(ptr<Scope> scope);
