@@ -57,9 +57,9 @@ private:
     bool peek_type();
     Type parse_type(ptr<Scope> scope);
 
+    bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
     bool peek_expression();
     Expression parse_expression(Precedence precedence = Precedence::None);
-
     bool peek_paren_expr();
     Expression parse_paren_expr();
     bool peek_match();
@@ -71,11 +71,10 @@ private:
     bool peek_list_value();
     ptr<ListValue> parse_list_value();
 
-    bool peek_term();
-    ptr<Binary> parse_term(Expression lhs);
-    bool peek_factor();
-    ptr<Binary> parse_factor(Expression lhs);
-    ptr<Binary> parse_binary(Expression lhs, Precedence precedence);
+    bool peek_infix_term();
+    ptr<Binary> parse_infix_term(Expression lhs);
+    bool peek_infix_factor();
+    ptr<Binary> parse_infix_factor(Expression lhs);
 
     bool peek_statement();
     Statement parse_statement(ptr<Scope> scope);

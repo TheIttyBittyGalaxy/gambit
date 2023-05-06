@@ -1,8 +1,6 @@
 #include "errors.h"
 #include "parser.h"
 
-#include <iostream>
-
 class Error : public std::exception
 {
 public:
@@ -44,7 +42,7 @@ bool Parser::peek(Token::Kind kind)
     // Look ahead of line tokens if we are attempting to peek a non-line token
     if (kind != Token::Line && token.kind != Token::EndOfFile)
     {
-        size_t i = current_token_index + 1;
+        size_t i = current_token_index;
         while (tokens.at(i).kind == Token::Line)
             i++;
         return tokens.at(i).kind == kind;
@@ -376,39 +374,55 @@ bool Parser::peek_expression()
            peek_list_value();
 }
 
-// Parses any expression of the given precedence or higher
-// FIXME: This does not correctly handle associativity.
-//        e.g. 1/2/3 is interpreted as 1/(2/3), not (1/2)/3
-Expression Parser::parse_expression(Precedence precedence)
+bool Parser::operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative)
+{
+    if (left_associative)
+        return operator_precedence > caller_precedence;
+    else
+        return operator_precedence >= caller_precedence;
+}
+
+Expression Parser::parse_expression(Precedence caller_precedence)
 {
     // Prefix expressions
-    Expression expr;
-    if (peek_paren_expr())
-        expr = parse_paren_expr();
+    Expression lhs;
+
+    // FIXME: Are `operator_should_bind` checks required for any of these 'nud' nodes?
+    //
+    //        I've added it to the unary check, as this way it is made left-associative,
+    //        making expressions such as `--1` illegal. I think this is a good way to go?
+    //
+    //        I think most of the remaining nuds can be left without a check, as they all
+    //        represent values, and so defacto have the highest precedence. Only one I
+    //        have no idea about is `match`.
+    if (peek_unary() && operator_should_bind(Precedence::Unary, caller_precedence))
+        lhs = parse_unary();
     else if (peek_match())
-        expr = parse_match();
-    else if (peek_unary())
-        expr = parse_unary();
+        lhs = parse_match();
+
     else if (peek(Token::Identity))
-        expr = parse_unresolved_identity();
+        lhs = parse_unresolved_identity();
+    else if (peek_paren_expr())
+        lhs = parse_paren_expr();
     else if (peek_literal())
-        expr = parse_literal();
+        lhs = parse_literal();
     else if (peek_list_value())
-        expr = parse_list_value();
+        lhs = parse_list_value();
+
     else
         throw Error("Expected expression", current_token());
 
     while (true)
     {
-        if (peek_factor() && precedence <= Precedence::Factor)
-            expr = parse_factor(expr);
-        else if (peek_term() && precedence <= Precedence::Term)
-            expr = parse_term(expr);
+        if (peek_infix_factor() && operator_should_bind(Precedence::Factor, caller_precedence))
+            lhs = parse_infix_factor(lhs);
+        else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
+            lhs = parse_infix_term(lhs);
         else
             break;
     }
 
-    return expr;
+    return lhs;
 }
 
 bool Parser::peek_paren_expr()
@@ -528,45 +542,48 @@ ptr<ListValue> Parser::parse_list_value()
     return list;
 }
 
-bool Parser::peek_term()
+bool Parser::peek_infix_term()
 {
     return peek(Token::Add) ||
            peek(Token::Sub);
 }
 
-ptr<Binary> Parser::parse_term(Expression lhs)
+ptr<Binary> Parser::parse_infix_term(Expression lhs)
 {
-    return parse_binary(lhs, Precedence::Term);
+    auto expr = CREATE(Binary);
+    expr->lhs = lhs;
+
+    if (peek(Token::Add))
+        expr->op = eat(Token::Add).str;
+    else if (peek(Token::Sub))
+        expr->op = eat(Token::Sub).str;
+    else
+        throw Error("Expected infix term expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
+
+    expr->rhs = parse_expression(Precedence::Term);
+
+    return expr;
 }
 
-bool Parser::peek_factor()
+bool Parser::peek_infix_factor()
 {
     return peek(Token::Mul) ||
            peek(Token::Div);
 }
 
-ptr<Binary> Parser::parse_factor(Expression lhs)
-{
-    return parse_binary(lhs, Precedence::Factor);
-}
-
-ptr<Binary> Parser::parse_binary(Expression lhs, Precedence precedence)
+ptr<Binary> Parser::parse_infix_factor(Expression lhs)
 {
     auto expr = CREATE(Binary);
     expr->lhs = lhs;
 
-    if (peek(Token::Add) && precedence <= Precedence::Term)
-        expr->op = eat(Token::Add).str;
-    else if (peek(Token::Sub) && precedence <= Precedence::Term)
-        expr->op = eat(Token::Sub).str;
-    else if (peek(Token::Mul) && precedence <= Precedence::Factor)
+    if (peek(Token::Mul))
         expr->op = eat(Token::Mul).str;
-    else if (peek(Token::Div) && precedence <= Precedence::Factor)
+    else if (peek(Token::Div))
         expr->op = eat(Token::Div).str;
     else
-        throw Error("Expected binary expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
+        throw Error("Expected infix factor expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
 
-    expr->rhs = parse_expression(precedence);
+    expr->rhs = parse_expression(Precedence::Factor);
 
     return expr;
 }
