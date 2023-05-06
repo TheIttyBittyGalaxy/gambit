@@ -1,6 +1,8 @@
 #include "errors.h"
 #include "parser.h"
 
+#include <iostream>
+
 class Error : public std::exception
 {
 public:
@@ -18,74 +20,87 @@ public:
 ptr<Program> Parser::parse(vector<Token> new_tokens)
 {
     tokens = new_tokens;
-    current_token = 0;
-    current_depth = 0;
+    current_token_index = 0;
+    current_block_nesting = 0;
 
     parse_program();
     return program;
 }
 
-bool Parser::end_of_file()
+Token Parser::current_token()
 {
-    return current_token >= tokens.size();
+    if (current_token_index >= tokens.size())
+        return tokens.back();
+    return tokens.at(current_token_index);
 }
 
 bool Parser::peek(Token::Kind kind)
 {
-    if (end_of_file())
-        return false;
+    Token token = current_token();
 
-    if (kind == Token::Line)
-        return tokens.at(current_token).kind == kind;
+    if (token.kind == kind)
+        return true;
 
-    size_t i = current_token;
-    while (tokens.at(i).kind == Token::Line)
-        i++;
-    return tokens.at(i).kind == kind;
+    // Look ahead of line tokens if we are attempting to peek a non-line token
+    if (kind != Token::Line && token.kind != Token::EndOfFile)
+    {
+        size_t i = current_token_index + 1;
+        while (tokens.at(i).kind == Token::Line)
+            i++;
+        return tokens.at(i).kind == kind;
+    }
+
+    return false;
 }
 
 Token Parser::eat(Token::Kind kind)
 {
-    if (end_of_file())
-    {
-        Token token = tokens.at(tokens.size() - 1);
-        throw Error("Expected " + token_name.at(kind) + ", got end of file", token);
-    }
-
-    Token token = tokens.at(current_token);
-
     if (!peek(kind))
     {
-        Token::Kind other = token.kind;
-        throw Error("Expected " + token_name.at(kind) + ", got " + token_name.at(other), token);
+        Token token = current_token();
+        throw Error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
     }
 
+    // Skip line tokens if we are attempting to eat a non-line token
     if (kind != Token::Line)
-    {
-        while (token.kind == Token::Line)
-        {
-            current_token++;
-            token = tokens.at(current_token);
-        }
-    }
+        while (current_token().kind == Token::Line)
+            current_token_index++;
+
+    Token token = current_token();
 
     if (kind == Token::CurlyL)
-        current_depth++;
-    else if (kind == Token::CurlyR && current_depth > 0)
-        current_depth--;
+        current_block_nesting++;
+    else if (kind == Token::CurlyR && current_block_nesting > 0)
+        current_block_nesting--;
 
-    current_token++;
+    current_token_index++;
     return token;
+}
+
+void Parser::skip()
+{
+    Token::Kind kind = current_token().kind;
+
+    if (kind == Token::CurlyL)
+        current_block_nesting++;
+    else if (kind == Token::CurlyR && current_block_nesting > 0)
+        current_block_nesting--;
+
+    current_token_index++;
 }
 
 bool Parser::match(Token::Kind kind)
 {
-    if (peek(kind))
-    {
-        eat(kind);
-        return true;
-    }
-    return false;
+    if (!peek(kind))
+        return false;
+
+    eat(kind);
+    return true;
+}
+
+bool Parser::end_of_file()
+{
+    return peek(Token::EndOfFile);
 }
 
 void Parser::skip_whitespace()
@@ -97,18 +112,18 @@ void Parser::skip_whitespace()
 void Parser::skip_to_end_of_line()
 {
     while (!end_of_file() && !match(Token::Line))
-        eat(tokens.at(current_token).kind);
+        skip();
 }
 
-void Parser::skip_to_depth(size_t target_depth)
+void Parser::skip_to_block_nesting(size_t target_nesting)
 {
-    while (!end_of_file() && current_depth != target_depth)
-        eat(tokens.at(current_token).kind);
+    while (!end_of_file() && current_block_nesting != target_nesting)
+        skip();
 }
 
-void Parser::skip_to_end_of_current_depth()
+void Parser::skip_to_end_of_current_block()
 {
-    skip_to_depth(current_depth - 1);
+    skip_to_block_nesting(current_block_nesting - 1);
 }
 
 void Parser::parse_program()
@@ -138,14 +153,13 @@ void Parser::parse_program()
         declare(program->global_scope, gambit_string);
     }
 
-    while (!end_of_file())
+    while (true)
     {
+        if (match(Token::EndOfFile))
+            break;
+
         try
         {
-            skip_whitespace();
-            if (end_of_file())
-                break;
-
             if (peek_entity_definition())
                 parse_entity_definition(program->global_scope);
             else if (peek_enum_definition())
@@ -155,13 +169,16 @@ void Parser::parse_program()
             else if (peek_function_property_definition())
                 parse_function_property_definition(program->global_scope);
             else
-                throw Error("Unexpected '" + tokens.at(current_token).str + "' in global scope.", tokens.at(current_token));
+            {
+                skip_whitespace();
+                throw Error("Unexpected '" + current_token().str + "' in global scope.", current_token());
+            }
         }
         catch (Error err)
         {
             emit_error(err.msg, err.token);
             skip_to_end_of_line();
-            skip_to_depth(0);
+            skip_to_block_nesting(0);
         }
     }
 }
@@ -181,7 +198,6 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     if (match(Token::Colon))
     {
         // FIXME: Do not allow the statement of a singleton code block to another code block
-        skip_whitespace();
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
@@ -189,9 +205,9 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     else
     {
         eat(Token::CurlyL);
+        eat(Token::Line);
         while (!match(Token::CurlyR))
         {
-            skip_whitespace();
             auto statement = parse_statement(code_block->scope);
             code_block->statements.emplace_back(statement);
         }
@@ -380,7 +396,7 @@ Expression Parser::parse_expression(Precedence precedence)
     else if (peek_list_value())
         expr = parse_list_value();
     else
-        throw Error("Expected expression", tokens.at(current_token));
+        throw Error("Expected expression", current_token());
 
     while (true)
     {
@@ -451,7 +467,7 @@ ptr<Unary> Parser::parse_unary()
     else if (peek(Token::KeyNot))
         expr->op = eat(Token::KeyNot).str;
     else
-        throw Error("Expected unary expression", tokens.at(current_token)); // FIXME: Should this be a compiler error rather than a language error?
+        throw Error("Expected unary expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
 
     expr->value = parse_expression(Precedence::Unary);
 
@@ -486,7 +502,7 @@ ptr<Literal> Parser::parse_literal()
     }
     else
     {
-        throw Error("Expected literal", tokens.at(current_token));
+        throw Error("Expected literal", current_token());
     }
 
     return literal;
@@ -548,7 +564,7 @@ ptr<Binary> Parser::parse_binary(Expression lhs, Precedence precedence)
     else if (peek(Token::Div) && precedence <= Precedence::Factor)
         expr->op = eat(Token::Div).str;
     else
-        throw Error("Expected binary expression", tokens.at(current_token)); // FIXME: Should this be a compiler error rather than a language error?
+        throw Error("Expected binary expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
 
     expr->rhs = parse_expression(precedence);
 
@@ -571,7 +587,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else if (peek_expression())
         stmt = parse_expression();
     else
-        throw Error("Expected statement", tokens.at(current_token));
+        throw Error("Expected statement", current_token());
 
     eat(Token::Line);
     return stmt;

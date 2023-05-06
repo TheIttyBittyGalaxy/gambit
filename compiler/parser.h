@@ -16,18 +16,20 @@ public:
 private:
     vector<Token> tokens;
     ptr<Program> program = nullptr;
-    size_t current_token;
-    size_t current_depth;
+    size_t current_token_index;
+    size_t current_block_nesting;
 
-    bool end_of_file();
+    Token current_token();
     bool peek(Token::Kind kind);
     Token eat(Token::Kind kind);
+    void skip();
     bool match(Token::Kind kind);
 
+    bool end_of_file();
     void skip_whitespace();
     void skip_to_end_of_line();
-    void skip_to_depth(size_t target_depth);
-    void skip_to_end_of_current_depth();
+    void skip_to_block_nesting(size_t target_nesting);
+    void skip_to_end_of_current_block();
 
     void parse_program();
 

@@ -13,6 +13,7 @@ struct Token
         InvalidToken,
 
         Line,
+        EndOfFile,
 
         Equal,
         NotEqual,

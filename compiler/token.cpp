@@ -7,6 +7,8 @@ string to_string(Token t)
         return "[INVALID]";
     if (t.kind == Token::Line)
         return "[" + to_string(t.line) + ":" + to_string(t.column) + " /]";
+    if (t.kind == Token::EndOfFile)
+        return "[" + to_string(t.line) + ":" + to_string(t.column) + " /EOF]";
     return "[" + to_string(t.line) + ":" + to_string(t.column) + " " + token_name.at(t.kind) + " " + t.str + "]";
 }
 
@@ -14,6 +16,7 @@ const map<Token::Kind, string> token_name = {
     {Token::InvalidToken, "InvalidToken"},
 
     {Token::Line, "Line"},
+    {Token::EndOfFile, "EndOfFile"},
 
     {Token::Equal, "Equal"},
     {Token::NotEqual, "NotEqual"},

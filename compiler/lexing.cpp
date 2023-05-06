@@ -131,5 +131,7 @@ vector<Token> generate_tokens(string src)
         panic_mode = error_occurred;
     }
 
+    tokens.emplace_back(Token::EndOfFile, "", line, column);
+
     return tokens;
 }
