@@ -87,6 +87,30 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
     throw runtime_error("Cannot fetch " + identity + " in scope, as it does not exist.");
 }
 
+vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity)
+{
+    vector<Scope::LookupValue> overloads;
+
+    while (true)
+    {
+        if (directly_declared_in_scope(scope, identity))
+        {
+            auto fetched = scope->lookup.at(identity);
+            if (IS_PTR(fetched, Scope::OverloadedIdentity))
+            {
+                auto overloaded_identity = AS_PTR(fetched, Scope::OverloadedIdentity);
+                for (auto overload : overloaded_identity->overloads)
+                    overloads.emplace_back(overload);
+            }
+        }
+
+        if (scope->parent.expired())
+            return overloads;
+
+        scope = ptr<Scope>(scope->parent);
+    }
+}
+
 Pattern determine_expression_pattern(Expression expression)
 {
     // TODO: Complete implementation of all expression variants

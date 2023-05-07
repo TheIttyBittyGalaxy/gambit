@@ -251,10 +251,62 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
     }
 }
 
+// NOTE: Currently when resolving which property is being used in a property index
+//       we look at all overloads that could match, and throw an error unless there
+//       is exactly one match. That is to say, we ignore the specifity of the match.
 void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     property_index->expr = resolve_expression(property_index->expr, scope);
-    // TODO: Resolve property
+
+    if (IS_PTR(property_index->property, UnresolvedIdentity))
+    {
+        auto identity = AS_PTR(property_index->property, UnresolvedIdentity)->identity;
+        auto instance_list = AS_PTR(property_index->expr, InstanceList);
+        auto all_overloads = fetch_all_overloads(scope, identity);
+
+        if (all_overloads.size() == 0)
+            throw runtime_error("Property '" + identity + "' does not exist."); // FIXME: Use an appropriate exception type
+
+        vector<variant<ptr<UnresolvedIdentity>, ptr<StateProperty>, ptr<FunctionProperty>>> valid_overloads;
+        for (auto overload : all_overloads)
+        {
+            if (IS_PTR(overload, StateProperty))
+            {
+                auto state_property = AS_PTR(overload, StateProperty);
+                auto pattern_list = state_property->pattern_list;
+
+                // FIXME: It is currently possible for a PropertyIndex to be resolved before all
+                //        property overloads have been resolved. In this case, this is my hack
+                //        to make sure that pattern matching on property pattern lists can still
+                //        happen. I'm not sure however how long this hack will hold!
+                resolve_pattern_list(pattern_list, scope);
+
+                if (does_instance_list_match_pattern_list(instance_list, pattern_list))
+                    valid_overloads.emplace_back(state_property);
+            }
+            else if (IS_PTR(overload, FunctionProperty))
+            {
+                auto function_property = AS_PTR(overload, FunctionProperty);
+                auto pattern_list = function_property->pattern_list;
+
+                // FIXME: It is currently possible for a PropertyIndex to be resolved before all
+                //        property overloads have been resolved. In this case, this is my hack
+                //        to make sure that pattern matching on property pattern lists can still
+                //        happen. I'm not sure however how long this hack will hold!
+                resolve_pattern_list(pattern_list, scope);
+
+                if (does_instance_list_match_pattern_list(instance_list, pattern_list))
+                    valid_overloads.emplace_back(function_property);
+            }
+        }
+
+        if (valid_overloads.size() == 0)
+            throw runtime_error("No version of the property '" + identity + "' applies to these arguments."); // FIXME: Use an appropriate exception type
+        else if (valid_overloads.size() > 1)
+            throw runtime_error("Which version of the property '" + identity + "' applies to these arguments is ambiguous."); // FIXME: Use an appropriate exception type
+
+        property_index->property = valid_overloads[0];
+    }
 }
 
 void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint)

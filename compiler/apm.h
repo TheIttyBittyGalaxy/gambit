@@ -263,6 +263,7 @@ bool is_overloadable(Scope::LookupValue value);
 
 void declare(ptr<Scope> scope, Scope::LookupValue value);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);
+vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
 
 Pattern determine_expression_pattern(Expression expr);
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
