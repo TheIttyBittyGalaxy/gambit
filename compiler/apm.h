@@ -3,9 +3,9 @@
 
 #include "token.h"
 #include "utilty.h"
-#include <map>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 using namespace std;
@@ -95,7 +95,7 @@ struct Scope
     };
 
     wptr<Scope> parent;
-    map<string, LookupValue> lookup;
+    unordered_map<string, LookupValue> lookup;
 };
 
 // Unresolved Identity

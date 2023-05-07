@@ -5,6 +5,7 @@
 #include <optional>
 #include <stack>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 using namespace std;
@@ -36,6 +37,9 @@ string to_json(const vector<T> &value, const size_t &depth = 0);
 
 template <typename T>
 string to_json(const map<string, T> &value, const size_t &depth = 0);
+
+template <typename T>
+string to_json(const unordered_map<string, T> &value, const size_t &depth = 0);
 
 // Json container
 
@@ -201,6 +205,17 @@ string to_json(const vector<T> &value, const size_t &depth)
 
 template <typename T>
 string to_json(const map<string, T> &value, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    for (auto entry : value)
+        json.add(entry.first, entry.second);
+    json.close();
+    return (string)json;
+}
+
+template <typename T>
+string to_json(const unordered_map<string, T> &value, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
