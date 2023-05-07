@@ -196,6 +196,7 @@ struct PatternList
 
 // Expressions
 
+// FIXME: Literals should contain a reference to their pattern
 struct Literal
 {
     variant<double, int, bool, string> value;
@@ -262,6 +263,10 @@ bool is_overloadable(Scope::LookupValue value);
 
 void declare(ptr<Scope> scope, Scope::LookupValue value);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);
+
+Pattern determine_expression_pattern(Expression expr);
+bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
+bool does_instance_list_match_pattern_list(ptr<InstanceList> instance_list, ptr<PatternList> pattern_list);
 
 // JSON Serialisation
 

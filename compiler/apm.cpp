@@ -86,3 +86,122 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
     // FIXME: Throw an appropriate error object
     throw runtime_error("Cannot fetch " + identity + " in scope, as it does not exist.");
 }
+
+Pattern determine_expression_pattern(Expression expression)
+{
+    // TODO: Complete implementation of all expression variants
+
+    if (IS_PTR(expression, UnresolvedIdentity))
+    {
+        // FIXME: Throw an appropriate error object
+        throw runtime_error("Cannot determine pattern of expression before unresolved identities have been resolved.");
+    }
+    else if (IS_PTR(expression, Variable))
+    {
+        auto variable = AS_PTR(expression, Variable);
+        return variable->pattern;
+    }
+    // else if (IS_PTR(expression, Literal))
+    // else if (IS_PTR(expression, ListValue))
+    // else if (IS_PTR(expression, InstanceList))
+    // else if (IS_PTR(expression, EnumValue))
+    // else if (IS_PTR(expression, Unary))
+    // else if (IS_PTR(expression, Binary))
+    else if (IS_PTR(expression, PropertyIndex))
+    {
+        auto property_index = AS_PTR(expression, PropertyIndex);
+        auto property = property_index->property;
+        if (IS_PTR(property, StateProperty))
+            return AS_PTR(property, StateProperty)->pattern;
+        if (IS_PTR(property, FunctionProperty))
+            return AS_PTR(property, FunctionProperty)->pattern;
+        if (IS_PTR(property, UnresolvedIdentity))
+            // FIXME: Throw an appropriate error object
+            throw runtime_error("Cannot determine pattern of PropertyIndex expression before unresolved identities have been resolved.");
+
+        throw runtime_error("Cannot determine pattern of Property variant in PropertyIndex expression.");
+    }
+    // else if (IS_PTR(expression, Match))
+
+    throw runtime_error("Cannot determine pattern of Expression variant."); // FIXME: Use an appropriate exception type
+}
+
+bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
+{
+    // Cannot determine result if either pattern is invalid or unresolved
+    if (
+        IS_PTR(subset, UnresolvedIdentity) ||
+        IS_PTR(superset, UnresolvedIdentity))
+        // FIXME: Throw an appropriate error object
+        throw runtime_error("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns");
+
+    if (
+        IS_PTR(subset, InvalidPattern) ||
+        IS_PTR(superset, InvalidPattern))
+        return false;
+
+    // Unpack named patterns
+    bool subset_named = IS_PTR(subset, NamedPattern);
+    bool superset_named = IS_PTR(superset, NamedPattern);
+
+    if (subset_named && superset_named)
+        return is_pattern_subset_of_superset(AS_PTR(subset, NamedPattern), AS_PTR(superset, NamedPattern));
+
+    if (subset_named)
+        return is_pattern_subset_of_superset(AS_PTR(subset, NamedPattern), superset);
+
+    if (superset_named)
+        return is_pattern_subset_of_superset(subset, AS_PTR(superset, NamedPattern));
+
+    // If patterns are the same, subset is confirmed
+    if (subset == superset)
+        return true;
+
+    // Optional patterns
+    // FIXME: I'm not certian that these comparisons will work correctly if multiple
+    //        OptionalPattern nodes get nested inside each other. Once more complex
+    //        patterns are possible, further testing and examination may be needed!
+
+    bool subset_optional = IS_PTR(subset, OptionalPattern);
+    bool superset_optional = IS_PTR(superset, OptionalPattern);
+
+    if (subset_optional && superset_optional)
+        return is_pattern_subset_of_superset(AS_PTR(subset, OptionalPattern)->pattern, AS_PTR(superset, OptionalPattern)->pattern);
+
+    if (subset_optional && !superset_optional)
+        return false;
+
+    if (!subset_optional && superset_optional)
+        return is_pattern_subset_of_superset(subset, AS_PTR(superset, OptionalPattern)->pattern);
+
+    return false;
+}
+
+bool does_instance_list_match_pattern_list(ptr<InstanceList> instance_list, ptr<PatternList> pattern_list)
+{
+    auto values = instance_list->values;
+    auto patterns = pattern_list->patterns;
+
+    if (values.size() > patterns.size())
+        return false;
+
+    for (size_t i = 0; i < patterns.size(); i++)
+    {
+        auto pattern = patterns[i]->pattern;
+
+        // If there are more patterns than values, the patterns without corresponding values must be optional
+        if (i >= values.size())
+        {
+            if (!IS_PTR(pattern, OptionalPattern))
+                return false;
+            continue;
+        }
+
+        auto value = values[i];
+        auto value_pattern = determine_expression_pattern(value);
+        if (!is_pattern_subset_of_superset(value_pattern, pattern))
+            return false;
+    }
+
+    return true;
+}
