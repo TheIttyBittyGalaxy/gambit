@@ -1,6 +1,5 @@
 #include "apm.h"
 #include "json.h"
-#include <exception>
 
 // Macros
 
@@ -50,7 +49,7 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(FunctionProperty);
     VARIANT_PTR(Scope::OverloadedIdentity);
 
-    throw runtime_error("Could not serialise Scope::LookupValue"); // FIXME: Use a proper exception type
+    throw json_serialisation_error("Could not serialise Scope::LookupValue variant.");
 }
 
 string to_json(const ptr<Scope::OverloadedIdentity> &node, const size_t &depth)
@@ -204,7 +203,7 @@ string to_json(const Pattern &node, const size_t &depth)
     VARIANT_PTR(Entity);
     VARIANT_PTR(NativeType);
 
-    throw runtime_error("Could not serialise Pattern node"); // FIXME: Use a proper exception type
+    throw json_serialisation_error("Could not serialise Pattern variant.");
 }
 
 string to_json(const ptr<PatternList> &node, const size_t &depth)
@@ -340,7 +339,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
 
-    throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
+    throw json_serialisation_error("Could not serialise Expression variant.");
 };
 
 string to_json(const Statement &node, const size_t &depth)
@@ -348,5 +347,5 @@ string to_json(const Statement &node, const size_t &depth)
     VARIANT(Expression);
     VARIANT_PTR(CodeBlock);
 
-    throw runtime_error("Could not serialise Expression node"); // FIXME: Use a proper exception type
+    throw json_serialisation_error("Could not serialise Statement variant.");
 };

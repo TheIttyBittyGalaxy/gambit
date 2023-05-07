@@ -1,20 +1,6 @@
 #include "errors.h"
 #include "parser.h"
 
-class Error : public std::exception
-{
-public:
-    string msg;
-    Token token;
-
-    Error(string msg, Token token) : msg(msg), token(token){};
-
-    string what()
-    {
-        return msg;
-    }
-};
-
 ptr<Program> Parser::parse(vector<Token> new_tokens)
 {
     tokens = new_tokens;
@@ -56,7 +42,7 @@ Token Parser::eat(Token::Kind kind)
     if (!peek(kind))
     {
         Token token = current_token();
-        throw Error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
+        throw GambitError("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
     }
 
     // Skip line tokens if we are attempting to eat a non-line token
@@ -169,12 +155,11 @@ void Parser::parse_program()
             else
             {
                 skip_whitespace();
-                throw Error("Unexpected '" + current_token().str + "' in global scope.", current_token());
+                throw GambitError("Unexpected '" + current_token().str + "' in global scope.", current_token());
             }
         }
-        catch (Error err)
+        catch (GambitError err)
         {
-            emit_error(err.msg, err.token);
             skip_to_end_of_line();
             skip_to_block_nesting(0);
         }
@@ -410,7 +395,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         lhs = parse_list_value();
 
     else
-        throw Error("Expected expression", current_token());
+        throw GambitError("Expected expression", current_token());
 
     while (true)
     {
@@ -500,7 +485,7 @@ ptr<Unary> Parser::parse_unary()
     else if (peek(Token::KeyNot))
         expr->op = eat(Token::KeyNot).str;
     else
-        throw Error("Expected unary expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
+        throw CompilerError("Expected unary expression", current_token());
 
     expr->value = parse_expression(Precedence::Unary);
 
@@ -535,7 +520,7 @@ ptr<Literal> Parser::parse_literal()
     }
     else
     {
-        throw Error("Expected literal", current_token());
+        throw GambitError("Expected literal", current_token());
     }
 
     return literal;
@@ -605,7 +590,7 @@ ptr<Binary> Parser::parse_infix_term(Expression lhs)
     else if (peek(Token::Sub))
         expr->op = eat(Token::Sub).str;
     else
-        throw Error("Expected infix term expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
+        throw CompilerError("Expected infix term expression", current_token());
 
     expr->rhs = parse_expression(Precedence::Term);
 
@@ -628,7 +613,7 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
     else if (peek(Token::Div))
         expr->op = eat(Token::Div).str;
     else
-        throw Error("Expected infix factor expression", current_token()); // FIXME: Should this be a compiler error rather than a language error?
+        throw CompilerError("Expected infix factor expression", current_token());
 
     expr->rhs = parse_expression(Precedence::Factor);
 
@@ -678,7 +663,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else if (peek_expression())
         stmt = parse_expression();
     else
-        throw Error("Expected statement", current_token());
+        throw GambitError("Expected statement", current_token());
 
     eat(Token::Line);
     return stmt;

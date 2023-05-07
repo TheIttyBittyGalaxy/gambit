@@ -1,5 +1,5 @@
-#include <stdexcept>
 #include "apm.h"
+#include "errors.h"
 
 string identity_of(Scope::LookupValue value)
 {
@@ -21,8 +21,7 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
 
-    // FIXME: Throw an appropriate error object
-    throw runtime_error("Cannot get identity of Scope::LookupValue");
+    throw CompilerError("Cannot get identity of Scope::LookupValue variant");
 }
 
 bool directly_declared_in_scope(ptr<Scope> scope, string identity)
@@ -58,8 +57,7 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
         }
         else
         {
-            // FIXME: Throw an appropriate error object
-            throw runtime_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.");
+            throw GambitError("Cannot declare " + identity + " in scope, as " + identity + " already exists.", Token()); // FIXME: Retrieve the correct token to put in the error message
         }
     }
     else if (is_overloadable(value))
@@ -83,8 +81,7 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
     if (directly_declared_in_scope(scope, identity))
         return scope->lookup.at(identity);
 
-    // FIXME: Throw an appropriate error object
-    throw runtime_error("Cannot fetch " + identity + " in scope, as it does not exist.");
+    throw GambitError("'" + identity + "' does not exist.", Token()); // FIXME: Retrieve the correct token to put in the error message
 }
 
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity)
@@ -117,8 +114,8 @@ Pattern determine_expression_pattern(Expression expression)
 
     if (IS_PTR(expression, UnresolvedIdentity))
     {
-        // FIXME: Throw an appropriate error object
-        throw runtime_error("Cannot determine pattern of expression before unresolved identities have been resolved.");
+        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->token);
     }
     else if (IS_PTR(expression, Variable))
     {
@@ -140,14 +137,16 @@ Pattern determine_expression_pattern(Expression expression)
         if (IS_PTR(property, FunctionProperty))
             return AS_PTR(property, FunctionProperty)->pattern;
         if (IS_PTR(property, UnresolvedIdentity))
-            // FIXME: Throw an appropriate error object
-            throw runtime_error("Cannot determine pattern of PropertyIndex expression before unresolved identities have been resolved.");
+        {
+            auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->token);
+        }
 
-        throw runtime_error("Cannot determine pattern of Property variant in PropertyIndex expression.");
+        throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.");
     }
     // else if (IS_PTR(expression, Match))
 
-    throw runtime_error("Cannot determine pattern of Expression variant."); // FIXME: Use an appropriate exception type
+    throw CompilerError("Cannot determine pattern of Expression variant.");
 }
 
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
@@ -156,8 +155,7 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     if (
         IS_PTR(subset, UnresolvedIdentity) ||
         IS_PTR(superset, UnresolvedIdentity))
-        // FIXME: Throw an appropriate error object
-        throw runtime_error("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns");
+        throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns");
 
     if (
         IS_PTR(subset, InvalidPattern) ||

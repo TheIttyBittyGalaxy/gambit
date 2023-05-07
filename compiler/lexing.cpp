@@ -121,7 +121,7 @@ vector<Token> generate_tokens(string src)
             if (!character_parsed)
             {
                 if (!panic_mode)
-                    emit_error("Unrecognised character " + next, line, column); // FIXME: Make this a proper error message.}
+                    emit_gambit_error("Could not parse character '" + next + "', syntax not recognised.", line, column);
                 advance(1);
                 panic_mode = true;
                 error_occurred = true;

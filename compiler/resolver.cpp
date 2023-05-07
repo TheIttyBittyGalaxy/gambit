@@ -111,116 +111,130 @@ void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, p
 
 Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 {
-    if (IS_PTR(pattern, InvalidPattern))
-        ; // pass
-
-    else if (IS_PTR(pattern, NativeType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
-        ; // pass
-
-    else if (IS_PTR(pattern, NamedPattern))
-        resolve_named_pattern(AS_PTR(pattern, NamedPattern), scope);
-
-    else if (IS_PTR(pattern, OptionalPattern))
-        resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
-
-    else if (IS_PTR(pattern, UnresolvedIdentity))
+    try
     {
-        auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-        string id = unresolved_identity->identity;
+        if (IS_PTR(pattern, InvalidPattern))
+            ; // pass
 
-        if (declared_in_scope(scope, id))
+        else if (IS_PTR(pattern, NativeType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
+            ; // pass
+
+        else if (IS_PTR(pattern, NamedPattern))
+            resolve_named_pattern(AS_PTR(pattern, NamedPattern), scope);
+
+        else if (IS_PTR(pattern, OptionalPattern))
+            resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
+
+        else if (IS_PTR(pattern, UnresolvedIdentity))
         {
-            auto resolved = fetch(scope, id);
-
-            if (IS_PTR(resolved, NativeType))
-                return AS_PTR(resolved, NativeType);
-            if (IS_PTR(resolved, EnumType))
-                return AS_PTR(resolved, EnumType);
-            if (IS_PTR(resolved, Entity))
-                return AS_PTR(resolved, Entity);
-
             auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-            emit_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
+            string id = unresolved_identity->identity;
+
+            if (declared_in_scope(scope, id))
+            {
+                auto resolved = fetch(scope, id);
+
+                if (IS_PTR(resolved, NativeType))
+                    return AS_PTR(resolved, NativeType);
+                if (IS_PTR(resolved, EnumType))
+                    return AS_PTR(resolved, EnumType);
+                if (IS_PTR(resolved, Entity))
+                    return AS_PTR(resolved, Entity);
+
+                auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
+                throw GambitError("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
+            }
+            else
+            {
+                throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
+            }
+
+            return CREATE(InvalidPattern);
         }
+
         else
-        {
-            emit_error("'" + id + "' is not defined.", unresolved_identity->token);
-        }
-
-        return CREATE(InvalidPattern);
+            throw CompilerError("Cannot resolve Pattern variant.");
     }
-
-    else
-        throw runtime_error("Cannot resolve Pattern variant."); // FIXME: Use an appropriate exception type
+    catch (GambitError err)
+    {
+        ; // pass
+    }
 
     return pattern;
 }
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    if (IS_PTR(expression, UnresolvedIdentity))
+    try
     {
-        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-        string id = unresolved_identity->identity;
-
-        if (declared_in_scope(scope, id)) // Resolve identity from scope
+        if (IS_PTR(expression, UnresolvedIdentity))
         {
-            auto resolved = fetch(scope, id);
+            auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+            string id = unresolved_identity->identity;
 
-            if (IS_PTR(resolved, Variable))
-                return AS_PTR(resolved, Variable);
+            if (declared_in_scope(scope, id)) // Resolve identity from scope
+            {
+                auto resolved = fetch(scope, id);
 
-            // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-            emit_error("Expected value, got '" + id + "'", unresolved_identity->token);
+                if (IS_PTR(resolved, Variable))
+                    return AS_PTR(resolved, Variable);
 
+                // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
+                throw GambitError("Expected value, got '" + id + "'", unresolved_identity->token);
+
+                return CREATE(InvalidValue);
+            }
+
+            if (pattern_hint.has_value()) // Resolve identity from pattern hint
+            {
+                auto the_pattern_hint = pattern_hint.value();
+                optional<ptr<EnumType>> enum_type = {};
+
+                if (IS_PTR(the_pattern_hint, EnumType)) // Pattern hint is enum type
+                {
+                    enum_type = AS_PTR(the_pattern_hint, EnumType);
+                }
+                else if (IS_PTR(the_pattern_hint, OptionalPattern)) // Pattern hint is optional enum type
+                {
+                    auto optional_pattern = AS_PTR(the_pattern_hint, OptionalPattern);
+                    if (IS_PTR(optional_pattern->pattern, EnumType))
+                        enum_type = AS_PTR(optional_pattern->pattern, EnumType);
+                }
+
+                if (enum_type.has_value())
+                    for (const auto &value : enum_type.value()->values)
+                        if (value->identity == unresolved_identity->identity)
+                            return value;
+            }
+
+            throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
             return CREATE(InvalidValue);
         }
-
-        if (pattern_hint.has_value()) // Resolve identity from pattern hint
-        {
-            auto the_pattern_hint = pattern_hint.value();
-            optional<ptr<EnumType>> enum_type = {};
-
-            if (IS_PTR(the_pattern_hint, EnumType)) // Pattern hint is enum type
-            {
-                enum_type = AS_PTR(the_pattern_hint, EnumType);
-            }
-            else if (IS_PTR(the_pattern_hint, OptionalPattern)) // Pattern hint is optional enum type
-            {
-                auto optional_pattern = AS_PTR(the_pattern_hint, OptionalPattern);
-                if (IS_PTR(optional_pattern->pattern, EnumType))
-                    enum_type = AS_PTR(optional_pattern->pattern, EnumType);
-            }
-
-            if (enum_type.has_value())
-                for (const auto &value : enum_type.value()->values)
-                    if (value->identity == unresolved_identity->identity)
-                        return value;
-        }
-
-        emit_error("'" + id + "' is not defined.", unresolved_identity->token);
-        return CREATE(InvalidValue);
+        else if (IS_PTR(expression, Variable))
+            ; // pass
+        else if (IS_PTR(expression, Literal))
+            ; // pass
+        else if (IS_PTR(expression, ListValue))
+            resolve_list_value(AS_PTR(expression, ListValue), scope, pattern_hint);
+        else if (IS_PTR(expression, InstanceList))
+            resolve_instance_list(AS_PTR(expression, InstanceList), scope, pattern_hint);
+        else if (IS_PTR(expression, EnumValue))
+            ; // pass
+        else if (IS_PTR(expression, Unary))
+            resolve_unary(AS_PTR(expression, Unary), scope, pattern_hint);
+        else if (IS_PTR(expression, Binary))
+            resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
+        else if (IS_PTR(expression, PropertyIndex))
+            resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
+        else if (IS_PTR(expression, Match))
+            resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
+        else
+            throw CompilerError("Cannot resolve Expression variant.");
     }
-    else if (IS_PTR(expression, Variable))
+    catch (GambitError err)
+    {
         ; // pass
-    else if (IS_PTR(expression, Literal))
-        ; // pass
-    else if (IS_PTR(expression, ListValue))
-        resolve_list_value(AS_PTR(expression, ListValue), scope, pattern_hint);
-    else if (IS_PTR(expression, InstanceList))
-        resolve_instance_list(AS_PTR(expression, InstanceList), scope, pattern_hint);
-    else if (IS_PTR(expression, EnumValue))
-        ; // pass
-    else if (IS_PTR(expression, Unary))
-        resolve_unary(AS_PTR(expression, Unary), scope, pattern_hint);
-    else if (IS_PTR(expression, Binary))
-        resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
-    else if (IS_PTR(expression, PropertyIndex))
-        resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
-    else if (IS_PTR(expression, Match))
-        resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
-    else
-        throw runtime_error("Cannot resolve Expression variant."); // FIXME: Use an appropriate exception type
+    }
 
     return expression;
 }
@@ -260,12 +274,13 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 
     if (IS_PTR(property_index->property, UnresolvedIdentity))
     {
-        auto identity = AS_PTR(property_index->property, UnresolvedIdentity)->identity;
+        auto unresolved_identity = AS_PTR(property_index->property, UnresolvedIdentity);
+        auto identity = unresolved_identity->identity;
         auto instance_list = AS_PTR(property_index->expr, InstanceList);
         auto all_overloads = fetch_all_overloads(scope, identity);
 
         if (all_overloads.size() == 0)
-            throw runtime_error("Property '" + identity + "' does not exist."); // FIXME: Use an appropriate exception type
+            throw GambitError("Property '" + identity + "' does not exist.", unresolved_identity->token);
 
         vector<variant<ptr<UnresolvedIdentity>, ptr<StateProperty>, ptr<FunctionProperty>>> valid_overloads;
         for (auto overload : all_overloads)
@@ -301,9 +316,9 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         }
 
         if (valid_overloads.size() == 0)
-            throw runtime_error("No version of the property '" + identity + "' applies to these arguments."); // FIXME: Use an appropriate exception type
+            throw GambitError("No version of the property '" + identity + "' applies to these arguments.", unresolved_identity->token);
         else if (valid_overloads.size() > 1)
-            throw runtime_error("Which version of the property '" + identity + "' applies to these arguments is ambiguous."); // FIXME: Use an appropriate exception type
+            throw GambitError("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", unresolved_identity->token);
 
         property_index->property = valid_overloads[0];
     }
@@ -324,12 +339,19 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
 
 Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    if (IS_PTR(stmt, CodeBlock))
-        resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
-    else if (IS(stmt, Expression))
-        return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
-    else
-        throw runtime_error("Cannot resolve Expression variant."); // FIXME: Use an appropriate exception type
+    try
+    {
+        if (IS_PTR(stmt, CodeBlock))
+            resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
+        else if (IS(stmt, Expression))
+            return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
+        else
+            throw CompilerError("Cannot resolve Statement variant.");
+    }
+    catch (GambitError err)
+    {
+        ; // pass
+    }
 
     return stmt;
 }

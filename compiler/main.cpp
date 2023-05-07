@@ -6,6 +6,7 @@
 #include "resolver.h"
 #include "token.h"
 #include "utilty.h"
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -55,29 +56,45 @@ int main(int argc, char *argv[])
 
     // Compile
 
-    cout << "\nLEXING" << endl;
-    auto tokens = generate_tokens(src);
+    try
+    {
+        cout << "\nLEXING" << endl;
+        auto tokens = generate_tokens(src);
 
-    // for (auto t : tokens)
-    //     cout << to_string(t) << endl;
-    // cout << endl;
+        // for (auto t : tokens)
+        //     cout << to_string(t) << endl;
+        // cout << endl;
 
-    // for (auto t : tokens)
-    //     cout << t.str << " ";
-    // cout << endl;
+        // for (auto t : tokens)
+        //     cout << t.str << " ";
+        // cout << endl;
 
-    cout << "\nPARSING" << endl;
-    Parser parser;
-    auto program = parser.parse(tokens);
-    output_program(program, "parser_output");
+        cout << "\nPARSING" << endl;
+        Parser parser;
+        auto program = parser.parse(tokens);
+        output_program(program, "parser_output");
 
-    cout << "\nRESOLVER" << endl;
-    Resolver resolver;
-    resolver.resolve(program);
-    output_program(program, "resolver_output");
+        cout << "\nRESOLVER" << endl;
+        Resolver resolver;
+        resolver.resolve(program);
+        output_program(program, "resolver_output");
+    }
+    catch (GambitError err)
+    {
+        cout << "\nUNCAUGHT GAMBIT ERROR: " << endl;
+        cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
+        cout << to_string(err.token) << endl;
+        cout << err.what() << endl;
+    }
+    catch (CompilerError err)
+    {
+        cout << "\nCOMPILER ERROR: " << endl;
+        cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
+        cout << err.what() << endl;
+    }
 
     cout << "\nERRORS" << endl;
-    for (auto err : errors)
+    for (auto err : gambit_errors)
         cout << err << endl;
     cout << endl;
 
