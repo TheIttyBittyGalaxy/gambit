@@ -42,6 +42,7 @@ using Type = variant<
 
 struct Literal;
 struct ListValue;
+struct InstanceList;
 struct Unary;
 struct Binary;
 struct PropertyIndex;
@@ -52,6 +53,7 @@ using Expression = variant<
     ptr<EnumValue>,
     ptr<Literal>,
     ptr<ListValue>,
+    ptr<InstanceList>,
     ptr<Unary>,
     ptr<Binary>,
     ptr<PropertyIndex>,
@@ -187,6 +189,14 @@ struct ListValue
     vector<Expression> values;
 };
 
+// FIXME: For now I've named value lists (lists of values that correspond to patterns)
+//        `InstanceLists` to avoid confusion with 'list' values. Go in and fix the
+//        terminology at some point. (perhaps 'lists' need to be called arrays?)
+struct InstanceList
+{
+    vector<Expression> values;
+};
+
 struct Unary
 {
     string op;
@@ -262,6 +272,7 @@ string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0
 string to_json(const ptr<Match> &match, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
+string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 string to_json(const Statement &statement, const size_t &depth = 0);

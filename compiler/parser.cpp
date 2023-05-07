@@ -440,8 +440,21 @@ Expression Parser::parse_paren_expr()
 {
     eat(Token::ParenL);
     auto expr = parse_expression();
+    if (!peek(Token::Comma))
+    {
+        eat(Token::ParenR);
+        return expr;
+    }
+
+    auto instance_list = CREATE(InstanceList);
+    instance_list->values.emplace_back(expr);
+
+    while (match(Token::Comma))
+        instance_list->values.emplace_back(parse_expression());
     eat(Token::ParenR);
-    return expr;
+
+    auto property_index = parse_infix_property_index(instance_list);
+    return property_index;
 }
 
 bool Parser::peek_match()
@@ -629,6 +642,19 @@ bool Parser::peek_infix_property_index()
 
 ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 {
+    // TODO: As of writing, InstanceLists are only used to collect values that will become the
+    //       lhs of a PropertyIndex. If that remains the case, maybe it would be worth (at this
+    //       point in the code) transfering all of the elements of instance_list->values into a
+    //       'lhs' ('subjects'?) vector<Expression> on the PropertyList? This way there isn't a
+    //       reduntant InstanceList node just hanging around in the program model on each index?
+
+    if (!IS_PTR(lhs, InstanceList))
+    {
+        auto instance_list = CREATE(InstanceList);
+        instance_list->values.emplace_back(lhs);
+        lhs = instance_list;
+    }
+
     auto property_index = CREATE(PropertyIndex);
     property_index->expr = lhs;
     eat(Token::Dot);

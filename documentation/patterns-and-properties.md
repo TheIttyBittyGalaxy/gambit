@@ -11,6 +11,8 @@
 
 As it currently stands, I don't _think_ there are any 'patterns' that match multiple values, e.g. `(foo1, foo2).bar`, and I think we can get away with not having them. We'll have to see how that evolves with the language though.
 
+So far as I can tell, patterns also do not appear in expressions (or if they do, it's in very specific situations where there won't be an ambiguity as to if we're parsing a pattern or a value, e.g. `a is Type`). If patterns _can_ appear in expressions, some serious thought needs to be given as to how that should work!
+
 ## Overlaps
 
 Given two patterns, A and B, their overlap will be one of the following
@@ -42,4 +44,14 @@ card.tokens
 // COMPILE TIME ERROR! Ace of spades matches both patterns, so it is unclear which of the two `tokens` states could be accessed.
 // Note: In this case, it would likely make the most sense to simply replace both states with:
 // state int (Card card).tokens
+```
+
+# Property Access
+
+```gambit
+foo               // VALID:   is just a value
+foo.bar           // VALID:   indexes the `bar` property of `foo`
+(foo).bar         // VALID:   indexes the `bar` property of `foo`
+(foo1, foo2).bar  // VALID:   indexes the `bar` property of `(foo1, foo2)`
+(foo1, foo2)      // INVALID: this syntax does not mean anything. must be followed by an index to have meaning
 ```

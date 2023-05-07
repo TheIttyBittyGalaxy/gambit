@@ -188,6 +188,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         ; // pass
     else if (IS_PTR(expression, ListValue))
         resolve_list_value(AS_PTR(expression, ListValue), scope, type_hint);
+    else if (IS_PTR(expression, InstanceList))
+        resolve_instance_list(AS_PTR(expression, InstanceList), scope, type_hint);
     else if (IS_PTR(expression, EnumValue))
         ; // pass
     else if (IS_PTR(expression, Unary))
@@ -205,6 +207,12 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
 }
 
 void Resolver::resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Type> type_hint)
+{
+    for (size_t i = 0; i < list->values.size(); i++)
+        list->values[i] = resolve_expression(list->values[i], scope, type_hint);
+}
+
+void Resolver::resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Type> type_hint)
 {
     for (size_t i = 0; i < list->values.size(); i++)
         list->values[i] = resolve_expression(list->values[i], scope, type_hint);
