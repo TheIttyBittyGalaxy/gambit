@@ -90,7 +90,37 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     json.object();
     json.add("node", string("Variable"));
     STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(pattern);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<NamedPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("NamedPattern"));
+    STRUCT_PTR_FIELD(pattern);
+    STRUCT_PTR_FIELD(name);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<OptionalPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("OptionalPattern"));
+    STRUCT_PTR_FIELD(pattern);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<InvalidPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidPattern"));
     json.close();
     return (string)json;
 }
@@ -132,7 +162,7 @@ string to_json(const ptr<StateProperty> &node, const size_t &depth)
     json.object();
     json.add("node", string("StateProperty"));
     STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(pattern);
     STRUCT_PTR_FIELD(pattern_list);
     STRUCT_PTR_FIELD(initial_value);
     json.close();
@@ -145,30 +175,9 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     json.object();
     json.add("node", string("FunctionProperty"));
     STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(type);
+    STRUCT_PTR_FIELD(pattern);
     STRUCT_PTR_FIELD(pattern_list);
     STRUCT_PTR_FIELD(body);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<Pattern> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("Pattern"));
-    STRUCT_PTR_FIELD(type);
-    STRUCT_PTR_FIELD(name);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<PatternList> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("PatternList"));
-    STRUCT_PTR_FIELD(patterns);
     json.close();
     return (string)json;
 }
@@ -184,35 +193,28 @@ string to_json(const ptr<NativeType> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<OptionalType> &node, const size_t &depth)
+string to_json(const Pattern &node, const size_t &depth)
 {
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("OptionalType"));
-    STRUCT_PTR_FIELD(type);
-    json.close();
-    return (string)json;
-}
 
-string to_json(const ptr<InvalidType> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("InvalidType"));
-    json.close();
-    return (string)json;
-}
-
-string to_json(const Type &node, const size_t &depth)
-{
-    VARIANT_PTR(NativeType);
-    VARIANT_PTR(OptionalType);
-    VARIANT_PTR(InvalidType);
     VARIANT_PTR(UnresolvedIdentity);
+    VARIANT_PTR(NamedPattern);
+    VARIANT_PTR(OptionalPattern);
+    VARIANT_PTR(InvalidPattern);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
+    VARIANT_PTR(NativeType);
 
-    throw runtime_error("Could not serialise Type node"); // FIXME: Use a proper exception type
+    throw runtime_error("Could not serialise Pattern node"); // FIXME: Use a proper exception type
+}
+
+string to_json(const ptr<PatternList> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PatternList"));
+    STRUCT_PTR_FIELD(patterns);
+    json.close();
+    return (string)json;
 }
 
 string to_json(const ptr<Literal> &node, const size_t &depth)

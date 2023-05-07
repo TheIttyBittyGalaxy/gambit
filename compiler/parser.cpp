@@ -274,7 +274,7 @@ ptr<StateProperty> Parser::parse_state_property_definition(ptr<Scope> scope)
     auto state = CREATE(StateProperty);
 
     eat(Token::KeyState);
-    state->type = parse_type(scope);
+    state->pattern = parse_pattern(scope);
     state->pattern_list = parse_pattern_list(scope);
     eat(Token::Dot);
     state->identity = eat(Token::Identity).str;
@@ -297,7 +297,7 @@ ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scop
     auto funct = CREATE(FunctionProperty);
 
     eat(Token::KeyFn);
-    funct->type = parse_type(scope);
+    funct->pattern = parse_pattern(scope);
     funct->pattern_list = parse_pattern_list(scope);
     eat(Token::Dot);
     funct->identity = eat(Token::Identity).str;
@@ -310,19 +310,19 @@ ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scop
     return funct;
 }
 
-bool Parser::peek_pattern()
+bool Parser::peek_named_pattern()
 {
-    return peek_type();
+    return peek_pattern();
 }
 
-ptr<Pattern> Parser::parse_pattern(ptr<Scope> scope)
+ptr<NamedPattern> Parser::parse_named_pattern(ptr<Scope> scope)
 {
-    auto pattern = CREATE(Pattern);
+    auto named_pattern = CREATE(NamedPattern);
 
-    pattern->type = parse_type(scope);
-    pattern->name = eat(Token::Identity).str;
+    named_pattern->pattern = parse_pattern(scope);
+    named_pattern->name = eat(Token::Identity).str;
 
-    return pattern;
+    return named_pattern;
 }
 
 bool Parser::peek_pattern_list()
@@ -337,7 +337,7 @@ ptr<PatternList> Parser::parse_pattern_list(ptr<Scope> scope)
     eat(Token::ParenL);
     do
     {
-        auto pattern = parse_pattern(scope);
+        auto pattern = parse_named_pattern(scope);
         pattern_list->patterns.emplace_back(pattern);
     } while (match(Token::Comma));
     eat(Token::ParenR);
@@ -345,23 +345,23 @@ ptr<PatternList> Parser::parse_pattern_list(ptr<Scope> scope)
     return pattern_list;
 }
 
-bool Parser::peek_type()
+bool Parser::peek_pattern()
 {
     return peek(Token::Identity);
 }
 
-Type Parser::parse_type(ptr<Scope> scope)
+Pattern Parser::parse_pattern(ptr<Scope> scope)
 {
-    Type type = parse_unresolved_identity();
+    Pattern pattern = parse_unresolved_identity();
 
     if (match(Token::Question))
     {
-        auto opt = CREATE(OptionalType);
-        opt->type = type;
-        type = opt;
+        auto optional_pattern = CREATE(OptionalPattern);
+        optional_pattern->pattern = pattern;
+        pattern = optional_pattern;
     }
 
-    return type;
+    return pattern;
 }
 
 bool Parser::peek_expression()

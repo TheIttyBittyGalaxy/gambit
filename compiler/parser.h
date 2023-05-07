@@ -49,13 +49,13 @@ private:
     bool peek_function_property_definition();
     ptr<FunctionProperty> parse_function_property_definition(ptr<Scope> scope);
 
-    bool peek_pattern();
-    ptr<Pattern> parse_pattern(ptr<Scope> scope);
+    bool peek_named_pattern();
+    ptr<NamedPattern> parse_named_pattern(ptr<Scope> scope);
     bool peek_pattern_list();
     ptr<PatternList> parse_pattern_list(ptr<Scope> scope);
 
-    bool peek_type();
-    Type parse_type(ptr<Scope> scope);
+    bool peek_pattern();
+    Pattern parse_pattern(ptr<Scope> scope);
 
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
     bool peek_expression();
