@@ -18,6 +18,8 @@ struct Scope;
 
 struct UnresolvedIdentity;
 
+struct Variable;
+
 struct EnumType;
 struct EnumValue;
 
@@ -50,6 +52,7 @@ struct Match;
 struct InvalidValue;
 using Expression = variant<
     ptr<UnresolvedIdentity>,
+    ptr<Variable>,
     ptr<EnumValue>,
     ptr<Literal>,
     ptr<ListValue>,
@@ -83,6 +86,7 @@ struct Scope
     struct OverloadedIdentity;
 
     using LookupValue = variant<
+        ptr<Variable>,
         ptr<NativeType>,
         ptr<EnumType>,
         ptr<Entity>,
@@ -106,6 +110,14 @@ struct UnresolvedIdentity
 {
     string identity;
     Token token;
+};
+
+// Variables
+
+struct Variable
+{
+    string identity;
+    Type type;
 };
 
 // Enums
@@ -254,6 +266,7 @@ string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
 string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
+string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);

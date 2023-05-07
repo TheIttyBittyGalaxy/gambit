@@ -42,6 +42,7 @@ string to_json(const ptr<CodeBlock> &node, const size_t &depth)
 
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
+    VARIANT_PTR(Variable);
     VARIANT_PTR(NativeType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
@@ -79,6 +80,17 @@ string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
     json.object();
     json.add("node", string("UnresolvedIdentity"));
     STRUCT_PTR_FIELD(identity);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<Variable> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Variable"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(type);
     json.close();
     return (string)json;
 }
@@ -314,6 +326,7 @@ string to_json(const ptr<InvalidValue> &node, const size_t &depth)
 
 string to_json(const Expression &node, const size_t &depth)
 {
+    VARIANT_PTR(Variable);
     VARIANT_PTR(Literal);
     VARIANT_PTR(ListValue);
     VARIANT_PTR(InstanceList);

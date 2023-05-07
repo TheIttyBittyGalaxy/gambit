@@ -3,6 +3,9 @@
 
 string identity_of(Scope::LookupValue value)
 {
+    if (IS_PTR(value, Variable))
+        return AS_PTR(value, Variable)->identity;
+
     if (IS_PTR(value, NativeType))
         return AS_PTR(value, NativeType)->identity;
 

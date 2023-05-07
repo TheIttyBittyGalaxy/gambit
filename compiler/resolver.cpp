@@ -79,7 +79,19 @@ void Resolver::resolve_function_property(ptr<FunctionProperty> funct, ptr<Scope>
     resolve_pattern_list(funct->pattern_list, scope);
 
     if (funct->body.has_value())
-        resolve_code_block(funct->body.value(), funct->type);
+    {
+        auto body = funct->body.value();
+
+        for (auto pattern : funct->pattern_list->patterns)
+        {
+            auto parameter = CREATE(Variable);
+            parameter->identity = pattern->name;
+            parameter->type = pattern->type;
+            declare(body->scope, parameter);
+        }
+
+        resolve_code_block(body, funct->type);
+    }
 }
 
 void Resolver::resolve_pattern(ptr<Pattern> pattern, ptr<Scope> scope)
@@ -151,7 +163,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         {
             auto resolved = fetch(scope, id);
 
-            // FIXME: Return resolved value if it makes for a valid expression
+            if (IS_PTR(resolved, Variable))
+                return AS_PTR(resolved, Variable);
 
             // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
             emit_error("Expected value, got '" + id + "'", unresolved_identity->token);
@@ -184,6 +197,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         emit_error("'" + id + "' is not defined.", unresolved_identity->token);
         return CREATE(InvalidValue);
     }
+    else if (IS_PTR(expression, Variable))
+        ; // pass
     else if (IS_PTR(expression, Literal))
         ; // pass
     else if (IS_PTR(expression, ListValue))
