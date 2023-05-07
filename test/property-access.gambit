@@ -1,7 +1,12 @@
+entity Squad
+
+state bool (Squad a).powered = true
+state bool (Squad a, Squad b).linked = true
+
 entity Token
 
 fn bool (Token a, Token b).can_win:
-    a.powered and b.powered and (a, b).linked
+    (a.powered or b.powered) and (a, b).linked
 
 state bool (Token a).powered = false
 state bool (Token a, Token b).linked = false
