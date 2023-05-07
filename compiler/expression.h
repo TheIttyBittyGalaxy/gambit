@@ -4,6 +4,8 @@
 enum class Precedence
 { // Happens last
     None,
+    LogicalOr,
+    LogicalAnd,
     Term,
     Factor,
     Unary,

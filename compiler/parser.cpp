@@ -420,6 +420,10 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_term(lhs);
         else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_property_index(lhs);
+        if (peek_infix_logical_and() && operator_should_bind(Precedence::LogicalAnd, caller_precedence))
+            lhs = parse_infix_logical_and(lhs);
+        else if (peek_infix_logical_or() && operator_should_bind(Precedence::LogicalOr, caller_precedence))
+            lhs = parse_infix_logical_or(lhs);
         else
             break;
     }
@@ -542,6 +546,34 @@ ptr<ListValue> Parser::parse_list_value()
     }
     eat(Token::SquareR);
     return list;
+}
+
+bool Parser::peek_infix_logical_or()
+{
+    return peek(Token::KeyOr);
+}
+
+ptr<Binary> Parser::parse_infix_logical_or(Expression lhs)
+{
+    auto expr = CREATE(Binary);
+    expr->lhs = lhs;
+    expr->op = eat(Token::KeyOr).str;
+    expr->rhs = parse_expression(Precedence::LogicalOr);
+    return expr;
+}
+
+bool Parser::peek_infix_logical_and()
+{
+    return peek(Token::KeyAnd);
+}
+
+ptr<Binary> Parser::parse_infix_logical_and(Expression lhs)
+{
+    auto expr = CREATE(Binary);
+    expr->lhs = lhs;
+    expr->op = eat(Token::KeyAnd).str;
+    expr->rhs = parse_expression(Precedence::LogicalAnd);
+    return expr;
 }
 
 bool Parser::peek_infix_term()

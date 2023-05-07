@@ -71,6 +71,10 @@ private:
     bool peek_list_value();
     ptr<ListValue> parse_list_value();
 
+    bool peek_infix_logical_or();
+    ptr<Binary> parse_infix_logical_or(Expression lhs);
+    bool peek_infix_logical_and();
+    ptr<Binary> parse_infix_logical_and(Expression lhs);
     bool peek_infix_term();
     ptr<Binary> parse_infix_term(Expression lhs);
     bool peek_infix_factor();
