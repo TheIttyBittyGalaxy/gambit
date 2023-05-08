@@ -1,4 +1,4 @@
-> 🚧 FIXME: These are just some rough notes I've made for my own reference. Tidy up and incorporate into the formal documentation at some point.
+> // FIXME: Work through these notes, getting rid of things that aren't useful any more, and turning things that are useful into proper documentation.
 
 # Patterns
 
