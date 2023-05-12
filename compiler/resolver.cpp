@@ -76,7 +76,7 @@ void Resolver::resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope
 
     if (state->initial_value.has_value())
     {
-        state->initial_value = resolve_expression(state->initial_value.value(), scope, state->pattern);
+        state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
         // FIXME: Pattern check the default value
     }
 }
