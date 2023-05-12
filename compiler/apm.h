@@ -20,7 +20,6 @@ struct UnresolvedIdentity;
 
 struct Variable;
 
-struct NamedPattern;
 struct OptionalPattern;
 
 struct EnumType;
@@ -36,14 +35,11 @@ struct InvalidPattern;
 
 using Pattern = variant<
     ptr<UnresolvedIdentity>,
-    ptr<NamedPattern>,
     ptr<OptionalPattern>,
     ptr<InvalidPattern>,
     ptr<EnumType>,
     ptr<Entity>,
     ptr<NativeType>>;
-
-struct PatternList;
 
 struct Literal;
 struct ListValue;
@@ -125,12 +121,6 @@ struct Variable
 
 // Patterns
 
-struct NamedPattern
-{
-    Pattern pattern;
-    string name;
-};
-
 struct OptionalPattern
 {
     Pattern pattern;
@@ -167,7 +157,8 @@ struct StateProperty
 {
     string identity;
     Pattern pattern;
-    ptr<PatternList> pattern_list;
+    ptr<Scope> scope;
+    vector<ptr<Variable>> parameters;
     optional<Expression> initial_value;
 };
 
@@ -175,7 +166,8 @@ struct FunctionProperty
 {
     string identity;
     Pattern pattern;
-    ptr<PatternList> pattern_list;
+    ptr<Scope> scope;
+    vector<ptr<Variable>> parameters;
     optional<ptr<CodeBlock>> body;
 };
 
@@ -185,13 +177,6 @@ struct NativeType
 {
     string identity;
     string cpp_identity;
-};
-
-// Pattern Lists
-
-struct PatternList
-{
-    vector<ptr<NamedPattern>> patterns;
 };
 
 // Expressions
@@ -267,7 +252,7 @@ vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity
 
 Pattern determine_expression_pattern(Expression expr);
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
-bool does_instance_list_match_pattern_list(ptr<InstanceList> instance_list, ptr<PatternList> pattern_list);
+bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters);
 
 // JSON Serialisation
 
@@ -278,7 +263,6 @@ string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t 
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
-string to_json(const ptr<NamedPattern> &named_pattern, const size_t &depth = 0);
 string to_json(const ptr<OptionalPattern> &optional_pattern, const size_t &depth = 0);
 string to_json(const ptr<InvalidPattern> &invalid_type, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
@@ -288,7 +272,6 @@ string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
 string to_json(const Pattern &pattern, const size_t &depth = 0);
-string to_json(const ptr<PatternList> &pattern_list, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
 string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
 string to_json(const Match::Rule &rule, const size_t &depth = 0);

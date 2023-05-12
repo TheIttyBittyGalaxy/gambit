@@ -49,11 +49,6 @@ private:
     bool peek_function_property_definition();
     ptr<FunctionProperty> parse_function_property_definition(ptr<Scope> scope);
 
-    bool peek_named_pattern();
-    ptr<NamedPattern> parse_named_pattern(ptr<Scope> scope);
-    bool peek_pattern_list();
-    ptr<PatternList> parse_pattern_list(ptr<Scope> scope);
-
     bool peek_pattern();
     Pattern parse_pattern(ptr<Scope> scope);
 

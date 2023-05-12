@@ -13,4 +13,3 @@ There are various different kinds of patterns.
     -   [Entities](entity.md)
         -   [Entity selectors](entity-selector.md)
 -   [Optional patterns](optional-pattern.md)
--   [Named patterns](named-pattern.md)

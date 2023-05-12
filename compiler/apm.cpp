@@ -162,19 +162,6 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
         IS_PTR(superset, InvalidPattern))
         return false;
 
-    // Unpack named patterns
-    bool subset_named = IS_PTR(subset, NamedPattern);
-    bool superset_named = IS_PTR(superset, NamedPattern);
-
-    if (subset_named && superset_named)
-        return is_pattern_subset_of_superset(AS_PTR(subset, NamedPattern), AS_PTR(superset, NamedPattern));
-
-    if (subset_named)
-        return is_pattern_subset_of_superset(AS_PTR(subset, NamedPattern), superset);
-
-    if (superset_named)
-        return is_pattern_subset_of_superset(subset, AS_PTR(superset, NamedPattern));
-
     // If patterns are the same, subset is confirmed
     if (subset == superset)
         return true;
@@ -199,17 +186,16 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     return false;
 }
 
-bool does_instance_list_match_pattern_list(ptr<InstanceList> instance_list, ptr<PatternList> pattern_list)
+bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters)
 {
     auto values = instance_list->values;
-    auto patterns = pattern_list->patterns;
 
-    if (values.size() > patterns.size())
+    if (values.size() > parameters.size())
         return false;
 
-    for (size_t i = 0; i < patterns.size(); i++)
+    for (size_t i = 0; i < parameters.size(); i++)
     {
-        auto pattern = patterns[i]->pattern;
+        auto pattern = parameters[i]->pattern;
 
         // If there are more patterns than values, the patterns without corresponding values must be optional
         if (i >= values.size())

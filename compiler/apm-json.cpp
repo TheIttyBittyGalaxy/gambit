@@ -94,17 +94,6 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<NamedPattern> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("NamedPattern"));
-    STRUCT_PTR_FIELD(pattern);
-    STRUCT_PTR_FIELD(name);
-    json.close();
-    return (string)json;
-}
-
 string to_json(const ptr<OptionalPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -162,7 +151,8 @@ string to_json(const ptr<StateProperty> &node, const size_t &depth)
     json.add("node", string("StateProperty"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(pattern);
-    STRUCT_PTR_FIELD(pattern_list);
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(parameters);
     STRUCT_PTR_FIELD(initial_value);
     json.close();
     return (string)json;
@@ -175,7 +165,8 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     json.add("node", string("FunctionProperty"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(pattern);
-    STRUCT_PTR_FIELD(pattern_list);
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(parameters);
     STRUCT_PTR_FIELD(body);
     json.close();
     return (string)json;
@@ -196,7 +187,6 @@ string to_json(const Pattern &node, const size_t &depth)
 {
 
     VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR(NamedPattern);
     VARIANT_PTR(OptionalPattern);
     VARIANT_PTR(InvalidPattern);
     VARIANT_PTR(EnumType);
@@ -204,16 +194,6 @@ string to_json(const Pattern &node, const size_t &depth)
     VARIANT_PTR(NativeType);
 
     throw json_serialisation_error("Could not serialise Pattern variant.");
-}
-
-string to_json(const ptr<PatternList> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("PatternList"));
-    STRUCT_PTR_FIELD(patterns);
-    json.close();
-    return (string)json;
 }
 
 string to_json(const ptr<Literal> &node, const size_t &depth)

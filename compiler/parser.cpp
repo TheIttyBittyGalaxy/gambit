@@ -257,10 +257,24 @@ bool Parser::peek_state_property_definition()
 ptr<StateProperty> Parser::parse_state_property_definition(ptr<Scope> scope)
 {
     auto state = CREATE(StateProperty);
+    state->scope = CREATE(Scope);
+    state->scope->parent = scope;
 
     eat(Token::KeyState);
     state->pattern = parse_pattern(scope);
-    state->pattern_list = parse_pattern_list(scope);
+
+    eat(Token::ParenL);
+    do
+    {
+        auto parameter = CREATE(Variable);
+        parameter->pattern = parse_pattern(scope);
+        parameter->identity = eat(Token::Identity).str;
+
+        state->parameters.emplace_back(parameter);
+        declare(state->scope, parameter);
+    } while (match(Token::Comma));
+    eat(Token::ParenR);
+
     eat(Token::Dot);
     state->identity = eat(Token::Identity).str;
 
@@ -280,54 +294,33 @@ bool Parser::peek_function_property_definition()
 ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scope)
 {
     auto funct = CREATE(FunctionProperty);
+    funct->scope = CREATE(Scope);
+    funct->scope->parent = scope;
 
     eat(Token::KeyFn);
     funct->pattern = parse_pattern(scope);
-    funct->pattern_list = parse_pattern_list(scope);
+
+    eat(Token::ParenL);
+    do
+    {
+        auto parameter = CREATE(Variable);
+        parameter->pattern = parse_pattern(scope);
+        parameter->identity = eat(Token::Identity).str;
+
+        funct->parameters.emplace_back(parameter);
+        declare(funct->scope, parameter);
+    } while (match(Token::Comma));
+    eat(Token::ParenR);
+
     eat(Token::Dot);
     funct->identity = eat(Token::Identity).str;
 
     declare(scope, funct);
 
     if (peek_code_block())
-        funct->body = parse_code_block(scope);
+        funct->body = parse_code_block(funct->scope);
 
     return funct;
-}
-
-bool Parser::peek_named_pattern()
-{
-    return peek_pattern();
-}
-
-ptr<NamedPattern> Parser::parse_named_pattern(ptr<Scope> scope)
-{
-    auto named_pattern = CREATE(NamedPattern);
-
-    named_pattern->pattern = parse_pattern(scope);
-    named_pattern->name = eat(Token::Identity).str;
-
-    return named_pattern;
-}
-
-bool Parser::peek_pattern_list()
-{
-    return peek(Token::ParenL);
-}
-
-ptr<PatternList> Parser::parse_pattern_list(ptr<Scope> scope)
-{
-    auto pattern_list = CREATE(PatternList);
-
-    eat(Token::ParenL);
-    do
-    {
-        auto pattern = parse_named_pattern(scope);
-        pattern_list->patterns.emplace_back(pattern);
-    } while (match(Token::Comma));
-    eat(Token::ParenR);
-
-    return pattern_list;
 }
 
 bool Parser::peek_pattern()

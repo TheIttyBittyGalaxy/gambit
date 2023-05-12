@@ -19,11 +19,11 @@ private:
     void resolve_scope(ptr<Scope> scope);
     void resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope);
 
+    void resolve_variable(ptr<Variable> variable, ptr<Scope> scope);
+
     void resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope);
     void resolve_function_property(ptr<FunctionProperty> function, ptr<Scope> scope);
 
-    void resolve_named_pattern(ptr<NamedPattern> named_pattern, ptr<Scope> scope);
-    void resolve_pattern_list(ptr<PatternList> pattern_list, ptr<Scope> scope);
     void resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope);
     Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);
 

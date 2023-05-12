@@ -2,11 +2,10 @@
 
 # Patterns
 
-| Pattern       | Description                                                                                                | Syntax           |
-| ------------- | ---------------------------------------------------------------------------------------------------------- | ---------------- |
-| Named Pattern | Is the same as the given pattern, but also gives a name that refers to the value that matched that pattern | `Pattern : name` |
-| Type\*        | Matches all values of that type.                                                                           |                  |
-| Optional      | Matches all values in a pattern or `none`                                                                  | `Pattern?`       |
+| Pattern  | Description                               | Syntax     |
+| -------- | ----------------------------------------- | ---------- |
+| Type\*   | Matches all values of that type.          |            |
+| Optional | Matches all values in a pattern or `none` | `Pattern?` |
 
 \* Types are implemented in the forms `NativeType`, `EnumType`, and `InvalidType`
 

@@ -43,6 +43,9 @@ void Resolver::resolve_scope(ptr<Scope> scope)
 
 void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
 {
+    if (IS_PTR(value, Variable))
+        resolve_variable(AS_PTR(value, Variable), scope);
+
     if (IS_PTR(value, StateProperty))
         resolve_state_property(AS_PTR(value, StateProperty), scope);
 
@@ -57,11 +60,19 @@ void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> s
     }
 }
 
+// FIXME: Resolving a variable in any scope other than the scope it was declared
+//        is a semantic error - surely? With that in mind, perhaps it's best to
+//        just include this code directly into resolve_scope_lookup_value? The
+//        same may even be true of every other look up value?
+void Resolver::resolve_variable(ptr<Variable> variable, ptr<Scope> scope)
+{
+    variable->pattern = resolve_pattern(variable->pattern, scope);
+}
+
 void Resolver::resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope)
 {
     state->pattern = resolve_pattern(state->pattern, scope);
-
-    resolve_pattern_list(state->pattern_list, scope);
+    resolve_scope(state->scope); // This will resolve the parameters
 
     if (state->initial_value.has_value())
     {
@@ -73,35 +84,10 @@ void Resolver::resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope
 void Resolver::resolve_function_property(ptr<FunctionProperty> funct, ptr<Scope> scope)
 {
     funct->pattern = resolve_pattern(funct->pattern, scope);
-
-    resolve_pattern_list(funct->pattern_list, scope);
+    resolve_scope(funct->scope); // This will resolve the parameters
 
     if (funct->body.has_value())
-    {
-        auto body = funct->body.value();
-
-        for (auto parameter_pattern : funct->pattern_list->patterns)
-        {
-            auto parameter = CREATE(Variable);
-            parameter->identity = parameter_pattern->name;
-            parameter->pattern = parameter_pattern->pattern;
-            declare(body->scope, parameter);
-        }
-
-        resolve_code_block(body, funct->pattern);
-    }
-}
-
-void Resolver::resolve_named_pattern(ptr<NamedPattern> named_pattern, ptr<Scope> scope)
-{
-    // FIXME: Should named patterns be responsible for declaring their own variables?
-    named_pattern->pattern = resolve_pattern(named_pattern->pattern, scope);
-}
-
-void Resolver::resolve_pattern_list(ptr<PatternList> pattern_list, ptr<Scope> scope)
-{
-    for (auto pattern : pattern_list->patterns)
-        resolve_named_pattern(pattern, scope);
+        resolve_code_block(funct->body.value(), funct->pattern);
 }
 
 void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope)
@@ -118,9 +104,6 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 
         else if (IS_PTR(pattern, NativeType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
             ; // pass
-
-        else if (IS_PTR(pattern, NamedPattern))
-            resolve_named_pattern(AS_PTR(pattern, NamedPattern), scope);
 
         else if (IS_PTR(pattern, OptionalPattern))
             resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
@@ -288,29 +271,29 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
             if (IS_PTR(overload, StateProperty))
             {
                 auto state_property = AS_PTR(overload, StateProperty);
-                auto pattern_list = state_property->pattern_list;
 
                 // FIXME: It is currently possible for a PropertyIndex to be resolved before all
-                //        property overloads have been resolved. In this case, this is my hack
-                //        to make sure that pattern matching on property pattern lists can still
-                //        happen. I'm not sure however how long this hack will hold!
-                resolve_pattern_list(pattern_list, scope);
+                //        property overloads have been resolved. This is a hack that allows
+                //        pattern matching on the property's parameters to _not crash_, but it
+                //        means that the parameters are resolved in the wrong scope!!
+                for (auto parameter : state_property->parameters)
+                    resolve_variable(parameter, scope);
 
-                if (does_instance_list_match_pattern_list(instance_list, pattern_list))
+                if (does_instance_list_match_parameters(instance_list, state_property->parameters))
                     valid_overloads.emplace_back(state_property);
             }
             else if (IS_PTR(overload, FunctionProperty))
             {
                 auto function_property = AS_PTR(overload, FunctionProperty);
-                auto pattern_list = function_property->pattern_list;
 
                 // FIXME: It is currently possible for a PropertyIndex to be resolved before all
-                //        property overloads have been resolved. In this case, this is my hack
-                //        to make sure that pattern matching on property pattern lists can still
-                //        happen. I'm not sure however how long this hack will hold!
-                resolve_pattern_list(pattern_list, scope);
+                //        property overloads have been resolved. This is a hack that allows
+                //        pattern matching on the property's parameters to _not crash_, but it
+                //        means that the parameters are resolved in the wrong scope!!
+                for (auto parameter : function_property->parameters)
+                    resolve_variable(parameter, scope);
 
-                if (does_instance_list_match_pattern_list(instance_list, pattern_list))
+                if (does_instance_list_match_parameters(instance_list, function_property->parameters))
                     valid_overloads.emplace_back(function_property);
             }
         }
