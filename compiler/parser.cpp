@@ -318,7 +318,9 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else
         throw GambitError("Expected statement", current_token());
 
-    eat(Token::Line);
+    if (!match(Token::EndOfFile))
+        eat(Token::Line);
+
     return stmt;
 }
 
