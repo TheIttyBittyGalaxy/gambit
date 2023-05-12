@@ -126,6 +126,9 @@ void Parser::parse_program()
     declare(program->global_scope, Intrinsic::type_amt);
     declare(program->global_scope, Intrinsic::type_bool);
 
+    declare(program->global_scope, Intrinsic::entity_player);
+    declare(program->global_scope, Intrinsic::state_player_number);
+
     while (true)
     {
         if (match(Token::EndOfFile))
