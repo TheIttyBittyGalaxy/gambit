@@ -17,7 +17,8 @@ private:
     void resolve_program(ptr<Program> program);
     void resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> pattern_hint = {});
     void resolve_scope(ptr<Scope> scope);
-    void resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope);
+    void resolve_scope_lookup_value_property_signatures_pass(Scope::LookupValue value, ptr<Scope> scope);
+    void resolve_scope_lookup_value_final_pass(Scope::LookupValue value, ptr<Scope> scope);
 
     void resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope);
     Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);

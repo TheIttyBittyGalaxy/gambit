@@ -37,11 +37,41 @@ void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> p
 
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
+    // Property signatures need to be resolved before property and procedure
+    // bodies, so that PropertyIndex expressions can correctly resolve which
+    // overload of the property they should use.
     for (auto index : scope->lookup)
-        resolve_scope_lookup_value(index.second, scope);
+        resolve_scope_lookup_value_property_signatures_pass(index.second, scope);
+
+    for (auto index : scope->lookup)
+        resolve_scope_lookup_value_final_pass(index.second, scope);
 }
 
-void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
+void Resolver::resolve_scope_lookup_value_property_signatures_pass(Scope::LookupValue value, ptr<Scope> scope)
+{
+    if (IS_PTR(value, StateProperty))
+    {
+        auto state = AS_PTR(value, StateProperty);
+        state->pattern = resolve_pattern(state->pattern, scope);
+        resolve_scope(state->scope); // This will resolve the parameters
+    }
+
+    else if (IS_PTR(value, FunctionProperty))
+    {
+        auto funct = AS_PTR(value, FunctionProperty);
+        funct->pattern = resolve_pattern(funct->pattern, scope);
+        resolve_scope(funct->scope); // This will resolve the parameters
+    }
+
+    else if (IS_PTR(value, Scope::OverloadedIdentity))
+    {
+        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
+        for (auto overload : overloaded_identity->overloads)
+            resolve_scope_lookup_value_property_signatures_pass(overload, scope);
+    }
+}
+
+void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, ptr<Scope> scope)
 {
     if (IS_PTR(value, Variable))
     {
@@ -52,9 +82,6 @@ void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> s
     else if (IS_PTR(value, StateProperty))
     {
         auto state = AS_PTR(value, StateProperty);
-        state->pattern = resolve_pattern(state->pattern, scope);
-        resolve_scope(state->scope); // This will resolve the parameters
-
         if (state->initial_value.has_value())
         {
             state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
@@ -65,9 +92,6 @@ void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> s
     else if (IS_PTR(value, FunctionProperty))
     {
         auto funct = AS_PTR(value, FunctionProperty);
-        funct->pattern = resolve_pattern(funct->pattern, scope);
-        resolve_scope(funct->scope); // This will resolve the parameters
-
         if (funct->body.has_value())
             resolve_code_block(funct->body.value(), funct->pattern);
     }
@@ -76,7 +100,7 @@ void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> s
     {
         auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
         for (auto overload : overloaded_identity->overloads)
-            resolve_scope_lookup_value(overload, scope);
+            resolve_scope_lookup_value_final_pass(overload, scope);
     }
 }
 
