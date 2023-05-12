@@ -254,7 +254,7 @@ bool Parser::peek_state_property_definition()
     return peek(Token::KeyState);
 }
 
-ptr<StateProperty> Parser::parse_state_property_definition(ptr<Scope> scope)
+void Parser::parse_state_property_definition(ptr<Scope> scope)
 {
     auto state = CREATE(StateProperty);
     state->scope = CREATE(Scope);
@@ -282,8 +282,6 @@ ptr<StateProperty> Parser::parse_state_property_definition(ptr<Scope> scope)
 
     if (match(Token::Assign))
         state->initial_value = parse_expression();
-
-    return state;
 }
 
 bool Parser::peek_function_property_definition()
@@ -291,7 +289,7 @@ bool Parser::peek_function_property_definition()
     return peek(Token::KeyFn);
 }
 
-ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scope)
+void Parser::parse_function_property_definition(ptr<Scope> scope)
 {
     auto funct = CREATE(FunctionProperty);
     funct->scope = CREATE(Scope);
@@ -319,8 +317,6 @@ ptr<FunctionProperty> Parser::parse_function_property_definition(ptr<Scope> scop
 
     if (peek_code_block())
         funct->body = parse_code_block(funct->scope);
-
-    return funct;
 }
 
 bool Parser::peek_pattern()
