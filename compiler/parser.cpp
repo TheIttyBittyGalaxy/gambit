@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "intrinsic.h"
 #include "parser.h"
 
 ptr<Program> Parser::parse(vector<Token> new_tokens)
@@ -115,27 +116,11 @@ void Parser::parse_program()
     program = CREATE(Program);
     program->global_scope = CREATE(Scope);
 
-    {
-        auto gambit_bool = CREATE(IntrinsicType);
-        gambit_bool->identity = "bool";
-        gambit_bool->cpp_identity = "bool";
-        declare(program->global_scope, gambit_bool);
-
-        auto gambit_int = CREATE(IntrinsicType);
-        gambit_int->identity = "int";
-        gambit_int->cpp_identity = "int";
-        declare(program->global_scope, gambit_int);
-
-        auto gambit_num = CREATE(IntrinsicType);
-        gambit_num->identity = "num";
-        gambit_num->cpp_identity = "num";
-        declare(program->global_scope, gambit_num);
-
-        auto gambit_string = CREATE(IntrinsicType);
-        gambit_string->identity = "string";
-        gambit_string->cpp_identity = "string";
-        declare(program->global_scope, gambit_string);
-    }
+    declare(program->global_scope, Intrinsic::type_str);
+    declare(program->global_scope, Intrinsic::type_num);
+    declare(program->global_scope, Intrinsic::type_int);
+    declare(program->global_scope, Intrinsic::type_amt);
+    declare(program->global_scope, Intrinsic::type_bool);
 
     while (true)
     {
