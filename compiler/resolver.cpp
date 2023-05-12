@@ -63,8 +63,12 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
         auto state = AS_PTR(value, StateProperty);
         if (state->initial_value.has_value())
         {
-            state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
-            // FIXME: Pattern check the default value
+            auto resolved = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
+            state->initial_value = resolved;
+
+            auto resolved_pattern = determine_expression_pattern(resolved);
+            if (!is_pattern_subset_of_superset(resolved_pattern, state->pattern))
+                throw GambitError("Default value for state is the incorrect type.", Token()); // FIXME: Include a relevant span instead of an invalid token
         }
     }
 
