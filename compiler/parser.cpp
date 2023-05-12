@@ -268,7 +268,7 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
 
     declare(scope, state);
 
-    if (match(Token::Assign))
+    if (match(Token::Colon))
         state->initial_value = parse_expression();
 }
 
