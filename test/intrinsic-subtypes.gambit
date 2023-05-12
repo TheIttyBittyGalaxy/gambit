@@ -1,0 +1,8 @@
+fn bool (num n).test_1_num: true
+fn bool (int i).test_1_int: i.test_1_num
+
+fn bool (num n).test_2_num: true
+fn bool (amt a).test_2_amt: a.test_2_num
+
+fn bool (int n).test_3_int: true
+fn bool (amt a).test_3_amt: a.test_3_int

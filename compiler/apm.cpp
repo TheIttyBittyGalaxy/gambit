@@ -1,5 +1,6 @@
 #include "apm.h"
 #include "errors.h"
+#include "intrinsic.h"
 
 string identity_of(Scope::LookupValue value)
 {
@@ -182,6 +183,22 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 
     if (!subset_optional && superset_optional)
         return is_pattern_subset_of_superset(subset, AS_PTR(superset, OptionalPattern)->pattern);
+
+    // Intrinsic sub types
+    if (IS_PTR(subset, IntrinsicType) && IS_PTR(superset, IntrinsicType))
+    {
+        auto subtype = AS_PTR(subset, IntrinsicType);
+        auto supertype = AS_PTR(superset, IntrinsicType);
+
+        if (subtype == Intrinsic::type_amt && (supertype == Intrinsic::type_int ||
+                                               supertype == Intrinsic::type_num))
+            return true;
+
+        if (subtype == Intrinsic::type_int && supertype == Intrinsic::type_num)
+            return true;
+
+        return false;
+    }
 
     return false;
 }
