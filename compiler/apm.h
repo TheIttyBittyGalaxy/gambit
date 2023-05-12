@@ -31,7 +31,7 @@ struct Entity;
 struct StateProperty;
 struct FunctionProperty;
 
-struct NativeType;
+struct IntrinsicType;
 struct InvalidPattern;
 
 using Pattern = variant<
@@ -40,7 +40,7 @@ using Pattern = variant<
     ptr<InvalidPattern>,
     ptr<EnumType>,
     ptr<Entity>,
-    ptr<NativeType>>;
+    ptr<IntrinsicType>>;
 
 struct Literal;
 struct ListValue;
@@ -87,7 +87,7 @@ struct Scope
 
     using LookupValue = variant<
         ptr<Variable>,
-        ptr<NativeType>,
+        ptr<IntrinsicType>,
         ptr<EnumType>,
         ptr<Entity>,
         ptr<StateProperty>,
@@ -174,7 +174,7 @@ struct FunctionProperty
 
 // Types
 
-struct NativeType
+struct IntrinsicType
 {
     string identity;
     string cpp_identity;
@@ -271,7 +271,7 @@ string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
-string to_json(const ptr<NativeType> &native_type, const size_t &depth = 0);
+string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0);
 string to_json(const Pattern &pattern, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
 string to_json(const ptr<Binary> &binary, const size_t &depth = 0);

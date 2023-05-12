@@ -116,7 +116,7 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
         if (IS_PTR(pattern, InvalidPattern))
             ; // pass
 
-        else if (IS_PTR(pattern, NativeType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
+        else if (IS_PTR(pattern, IntrinsicType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
             ; // pass
 
         else if (IS_PTR(pattern, OptionalPattern))
@@ -131,8 +131,8 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
             {
                 auto resolved = fetch(scope, id);
 
-                if (IS_PTR(resolved, NativeType))
-                    return AS_PTR(resolved, NativeType);
+                if (IS_PTR(resolved, IntrinsicType))
+                    return AS_PTR(resolved, IntrinsicType);
                 if (IS_PTR(resolved, EnumType))
                     return AS_PTR(resolved, EnumType);
                 if (IS_PTR(resolved, Entity))

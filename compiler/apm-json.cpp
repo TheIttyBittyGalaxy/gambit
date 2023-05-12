@@ -42,7 +42,7 @@ string to_json(const ptr<CodeBlock> &node, const size_t &depth)
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
     VARIANT_PTR(Variable);
-    VARIANT_PTR(NativeType);
+    VARIANT_PTR(IntrinsicType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
     VARIANT_PTR(StateProperty);
@@ -172,11 +172,11 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<NativeType> &node, const size_t &depth)
+string to_json(const ptr<IntrinsicType> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("NativeType"));
+    json.add("node", string("IntrinsicType"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(cpp_identity);
     json.close();
@@ -191,7 +191,7 @@ string to_json(const Pattern &node, const size_t &depth)
     VARIANT_PTR(InvalidPattern);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
-    VARIANT_PTR(NativeType);
+    VARIANT_PTR(IntrinsicType);
 
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }

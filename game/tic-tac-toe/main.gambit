@@ -1,4 +1,4 @@
-// FIXME: These should be natively defined by Gambit
+// FIXME: These should be intrinsics
 entity Game
 
 entity Player

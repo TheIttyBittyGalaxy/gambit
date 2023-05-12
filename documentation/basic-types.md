@@ -2,6 +2,8 @@
 
 > ⚙️ **Development Status:** Partially implemented in the compiler, but much work is needed.
 
+> 🔎 **Implementation Detail:** Internally, the compiler refers to the basic types as 'intrinsic types'.
+
 > // TODO: Complete this documentation
 
 | Type   | Description                                                                                                  |

@@ -1,4 +1,4 @@
-/* Defined natively by Gambit
+/* Gambit intrinsics
     entity Game
     
     entity Player

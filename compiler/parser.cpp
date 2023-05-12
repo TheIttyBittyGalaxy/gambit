@@ -116,22 +116,22 @@ void Parser::parse_program()
     program->global_scope = CREATE(Scope);
 
     {
-        auto gambit_bool = CREATE(NativeType);
+        auto gambit_bool = CREATE(IntrinsicType);
         gambit_bool->identity = "bool";
         gambit_bool->cpp_identity = "bool";
         declare(program->global_scope, gambit_bool);
 
-        auto gambit_int = CREATE(NativeType);
+        auto gambit_int = CREATE(IntrinsicType);
         gambit_int->identity = "int";
         gambit_int->cpp_identity = "int";
         declare(program->global_scope, gambit_int);
 
-        auto gambit_num = CREATE(NativeType);
+        auto gambit_num = CREATE(IntrinsicType);
         gambit_num->identity = "num";
         gambit_num->cpp_identity = "num";
         declare(program->global_scope, gambit_num);
 
-        auto gambit_string = CREATE(NativeType);
+        auto gambit_string = CREATE(IntrinsicType);
         gambit_string->identity = "string";
         gambit_string->cpp_identity = "string";
         declare(program->global_scope, gambit_string);
