@@ -20,6 +20,7 @@ private:
     size_t current_token_index;
     size_t current_block_nesting;
 
+    // UTILITY //
     Token current_token();
     bool peek(Token::Kind kind);
     Token eat(Token::Kind kind);
@@ -32,12 +33,11 @@ private:
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
+    // PROGRAM STRUCTURE //
     void parse_program();
 
     bool peek_code_block();
     [[nodiscard]] ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
-
-    [[nodiscard]] ptr<UnresolvedIdentity> parse_unresolved_identity();
 
     bool peek_enum_definition();
     void parse_enum_definition(ptr<Scope> scope);
@@ -47,15 +47,21 @@ private:
 
     bool peek_state_property_definition();
     void parse_state_property_definition(ptr<Scope> scope);
+
     bool peek_function_property_definition();
     void parse_function_property_definition(ptr<Scope> scope);
 
-    bool peek_pattern();
-    Pattern parse_pattern(ptr<Scope> scope);
+    // STATEMENTS //
+    bool peek_statement();
+    [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
 
+    // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
+    [[nodiscard]] ptr<UnresolvedIdentity> parse_unresolved_identity();
+
     bool peek_expression();
     Expression parse_expression(Precedence precedence = Precedence::None);
+
     bool peek_paren_expr();
     Expression parse_paren_expr();
     bool peek_match();
@@ -78,8 +84,9 @@ private:
     bool peek_infix_property_index();
     [[nodiscard]] ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
 
-    bool peek_statement();
-    [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
+    // PATTERNS //
+    bool peek_pattern();
+    Pattern parse_pattern(ptr<Scope> scope);
 };
 
 #endif

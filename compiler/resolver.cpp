@@ -7,32 +7,11 @@ void Resolver::resolve(ptr<Program> program)
     resolve_program(program);
 }
 
+// PROGRAM STRUCTURE //
+
 void Resolver::resolve_program(ptr<Program> program)
 {
     resolve_scope(program->global_scope);
-}
-
-void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> pattern_hint)
-{
-    resolve_scope(code_block->scope);
-
-    if (code_block->singleton_block)
-    {
-        // The statement of a singleton code block is given the pattern hint,
-        // whereas statements in a regular code block are not.
-        auto stmt = code_block->statements[0];
-        stmt = resolve_statement(stmt, code_block->scope, pattern_hint);
-        code_block->statements[0] = stmt;
-    }
-    else
-    {
-        for (size_t i = 0; i < code_block->statements.size(); i++)
-        {
-            auto stmt = code_block->statements[i];
-            stmt = resolve_statement(stmt, code_block->scope);
-            code_block->statements[i] = stmt;
-        }
-    }
 }
 
 void Resolver::resolve_scope(ptr<Scope> scope)
@@ -104,61 +83,51 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
     }
 }
 
-void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope)
+void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> pattern_hint)
 {
-    optional_pattern->pattern = resolve_pattern(optional_pattern->pattern, scope);
+    resolve_scope(code_block->scope);
+
+    if (code_block->singleton_block)
+    {
+        // The statement of a singleton code block is given the pattern hint,
+        // whereas statements in a regular code block are not.
+        auto stmt = code_block->statements[0];
+        stmt = resolve_statement(stmt, code_block->scope, pattern_hint);
+        code_block->statements[0] = stmt;
+    }
+    else
+    {
+        for (size_t i = 0; i < code_block->statements.size(); i++)
+        {
+            auto stmt = code_block->statements[i];
+            stmt = resolve_statement(stmt, code_block->scope);
+            code_block->statements[i] = stmt;
+        }
+    }
 }
 
-Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
+// STATEMENTS //
+
+Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     try
     {
-        if (IS_PTR(pattern, InvalidPattern))
-            ; // pass
-
-        else if (IS_PTR(pattern, IntrinsicType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
-            ; // pass
-
-        else if (IS_PTR(pattern, OptionalPattern))
-            resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
-
-        else if (IS_PTR(pattern, UnresolvedIdentity))
-        {
-            auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-            string id = unresolved_identity->identity;
-
-            if (declared_in_scope(scope, id))
-            {
-                auto resolved = fetch(scope, id);
-
-                if (IS_PTR(resolved, IntrinsicType))
-                    return AS_PTR(resolved, IntrinsicType);
-                if (IS_PTR(resolved, EnumType))
-                    return AS_PTR(resolved, EnumType);
-                if (IS_PTR(resolved, Entity))
-                    return AS_PTR(resolved, Entity);
-
-                auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-                throw GambitError("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
-            }
-            else
-            {
-                throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
-            }
-
-            return CREATE(InvalidPattern);
-        }
-
+        if (IS_PTR(stmt, CodeBlock))
+            resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
+        else if (IS(stmt, Expression))
+            return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
         else
-            throw CompilerError("Cannot resolve Pattern variant.");
+            throw CompilerError("Cannot resolve Statement variant.");
     }
     catch (GambitError err)
     {
         ; // pass
     }
 
-    return pattern;
+    return stmt;
 }
+
+// EXPRESSIONS //
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
@@ -320,21 +289,60 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
     // FIXME: Implement pattern checking on the operands
 }
 
-Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
+// PATTERNS //
+
+void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope)
+{
+    optional_pattern->pattern = resolve_pattern(optional_pattern->pattern, scope);
+}
+
+Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 {
     try
     {
-        if (IS_PTR(stmt, CodeBlock))
-            resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
-        else if (IS(stmt, Expression))
-            return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
+        if (IS_PTR(pattern, InvalidPattern))
+            ; // pass
+
+        else if (IS_PTR(pattern, IntrinsicType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
+            ; // pass
+
+        else if (IS_PTR(pattern, OptionalPattern))
+            resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
+
+        else if (IS_PTR(pattern, UnresolvedIdentity))
+        {
+            auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
+            string id = unresolved_identity->identity;
+
+            if (declared_in_scope(scope, id))
+            {
+                auto resolved = fetch(scope, id);
+
+                if (IS_PTR(resolved, IntrinsicType))
+                    return AS_PTR(resolved, IntrinsicType);
+                if (IS_PTR(resolved, EnumType))
+                    return AS_PTR(resolved, EnumType);
+                if (IS_PTR(resolved, Entity))
+                    return AS_PTR(resolved, Entity);
+
+                auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
+                throw GambitError("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
+            }
+            else
+            {
+                throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
+            }
+
+            return CREATE(InvalidPattern);
+        }
+
         else
-            throw CompilerError("Cannot resolve Statement variant.");
+            throw CompilerError("Cannot resolve Pattern variant.");
     }
     catch (GambitError err)
     {
         ; // pass
     }
 
-    return stmt;
+    return pattern;
 }

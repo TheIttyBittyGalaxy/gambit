@@ -15,15 +15,17 @@ public:
 private:
     ptr<Program> program = nullptr;
 
+    // PROGRAM STRUCTURE //
     void resolve_program(ptr<Program> program);
-    void resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> pattern_hint = {});
     void resolve_scope(ptr<Scope> scope);
     void resolve_scope_lookup_value_property_signatures_pass(Scope::LookupValue value, ptr<Scope> scope);
     void resolve_scope_lookup_value_final_pass(Scope::LookupValue value, ptr<Scope> scope);
+    void resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> pattern_hint = {});
 
-    void resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope);
-    [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);
+    // STATEMENTS //
+    [[nodiscard]] Statement resolve_statement(Statement statement, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
 
+    // EXPRESSIONS //
     [[nodiscard]] Expression resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
@@ -32,7 +34,9 @@ private:
     void resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
 
-    [[nodiscard]] Statement resolve_statement(Statement statement, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    // PATTERNS //
+    [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);
+    void resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope);
 };
 
 #endif

@@ -19,6 +19,8 @@ Token Parser::current_token()
     return tokens.at(current_token_index);
 }
 
+// UTILITY //
+
 bool Parser::peek(Token::Kind kind)
 {
     Token token = current_token();
@@ -111,6 +113,8 @@ void Parser::skip_to_end_of_current_block()
     skip_to_block_nesting(current_block_nesting - 1);
 }
 
+// PROGRAM STRUCTURE //
+
 void Parser::parse_program()
 {
     program = CREATE(Program);
@@ -182,16 +186,6 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     }
 
     return code_block;
-}
-
-ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
-{
-    auto identity = CREATE(UnresolvedIdentity);
-    Token token = eat(Token::Identity);
-    identity->token = token;
-    identity->identity = token.str;
-
-    return identity;
 }
 
 bool Parser::peek_enum_definition()
@@ -304,23 +298,48 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
         funct->body = parse_code_block(funct->scope);
 }
 
-bool Parser::peek_pattern()
+// STATEMENTS //
+
+bool Parser::peek_statement()
 {
-    return peek(Token::Identity);
+    return peek_code_block() ||
+           peek_expression();
 }
 
-Pattern Parser::parse_pattern(ptr<Scope> scope)
+Statement Parser::parse_statement(ptr<Scope> scope)
 {
-    Pattern pattern = parse_unresolved_identity();
+    // FIXME: Do not allow singleton code blocks to also be statements
 
-    if (match(Token::Question))
-    {
-        auto optional_pattern = CREATE(OptionalPattern);
-        optional_pattern->pattern = pattern;
-        pattern = optional_pattern;
-    }
+    Statement stmt;
+    if (peek_code_block())
+        stmt = parse_code_block(scope);
+    else if (peek_expression())
+        stmt = parse_expression();
+    else
+        throw GambitError("Expected statement", current_token());
 
-    return pattern;
+    eat(Token::Line);
+    return stmt;
+}
+
+// EXPRESSIONS //
+
+bool Parser::operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative)
+{
+    if (left_associative)
+        return operator_precedence > caller_precedence;
+    else
+        return operator_precedence >= caller_precedence;
+}
+
+ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
+{
+    auto identity = CREATE(UnresolvedIdentity);
+    Token token = eat(Token::Identity);
+    identity->token = token;
+    identity->identity = token.str;
+
+    return identity;
 }
 
 bool Parser::peek_expression()
@@ -331,14 +350,6 @@ bool Parser::peek_expression()
            peek(Token::Identity) ||
            peek_literal() ||
            peek_list_value();
-}
-
-bool Parser::operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative)
-{
-    if (left_associative)
-        return operator_precedence > caller_precedence;
-    else
-        return operator_precedence >= caller_precedence;
 }
 
 Expression Parser::parse_expression(Precedence caller_precedence)
@@ -624,24 +635,23 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
     return property_index;
 }
 
-bool Parser::peek_statement()
+// PATTERNS
+
+bool Parser::peek_pattern()
 {
-    return peek_code_block() ||
-           peek_expression();
+    return peek(Token::Identity);
 }
 
-Statement Parser::parse_statement(ptr<Scope> scope)
+Pattern Parser::parse_pattern(ptr<Scope> scope)
 {
-    // FIXME: Do not allow singleton code blocks to also be statements
+    Pattern pattern = parse_unresolved_identity();
 
-    Statement stmt;
-    if (peek_code_block())
-        stmt = parse_code_block(scope);
-    else if (peek_expression())
-        stmt = parse_expression();
-    else
-        throw GambitError("Expected statement", current_token());
+    if (match(Token::Question))
+    {
+        auto optional_pattern = CREATE(OptionalPattern);
+        optional_pattern->pattern = pattern;
+        pattern = optional_pattern;
+    }
 
-    eat(Token::Line);
-    return stmt;
+    return pattern;
 }
