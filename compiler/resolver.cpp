@@ -44,50 +44,40 @@ void Resolver::resolve_scope(ptr<Scope> scope)
 void Resolver::resolve_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
 {
     if (IS_PTR(value, Variable))
-        resolve_variable(AS_PTR(value, Variable), scope);
+    {
+        auto variable = AS_PTR(value, Variable);
+        variable->pattern = resolve_pattern(variable->pattern, scope);
+    }
 
-    if (IS_PTR(value, StateProperty))
-        resolve_state_property(AS_PTR(value, StateProperty), scope);
+    else if (IS_PTR(value, StateProperty))
+    {
+        auto state = AS_PTR(value, StateProperty);
+        state->pattern = resolve_pattern(state->pattern, scope);
+        resolve_scope(state->scope); // This will resolve the parameters
 
-    if (IS_PTR(value, FunctionProperty))
-        resolve_function_property(AS_PTR(value, FunctionProperty), scope);
+        if (state->initial_value.has_value())
+        {
+            state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
+            // FIXME: Pattern check the default value
+        }
+    }
 
-    if (IS_PTR(value, Scope::OverloadedIdentity))
+    else if (IS_PTR(value, FunctionProperty))
+    {
+        auto funct = AS_PTR(value, FunctionProperty);
+        funct->pattern = resolve_pattern(funct->pattern, scope);
+        resolve_scope(funct->scope); // This will resolve the parameters
+
+        if (funct->body.has_value())
+            resolve_code_block(funct->body.value(), funct->pattern);
+    }
+
+    else if (IS_PTR(value, Scope::OverloadedIdentity))
     {
         auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
         for (auto overload : overloaded_identity->overloads)
             resolve_scope_lookup_value(overload, scope);
     }
-}
-
-// FIXME: Resolving a variable in any scope other than the scope it was declared
-//        is a semantic error - surely? With that in mind, perhaps it's best to
-//        just include this code directly into resolve_scope_lookup_value? The
-//        same may even be true of every other look up value?
-void Resolver::resolve_variable(ptr<Variable> variable, ptr<Scope> scope)
-{
-    variable->pattern = resolve_pattern(variable->pattern, scope);
-}
-
-void Resolver::resolve_state_property(ptr<StateProperty> state, ptr<Scope> scope)
-{
-    state->pattern = resolve_pattern(state->pattern, scope);
-    resolve_scope(state->scope); // This will resolve the parameters
-
-    if (state->initial_value.has_value())
-    {
-        state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
-        // FIXME: Pattern check the default value
-    }
-}
-
-void Resolver::resolve_function_property(ptr<FunctionProperty> funct, ptr<Scope> scope)
-{
-    funct->pattern = resolve_pattern(funct->pattern, scope);
-    resolve_scope(funct->scope); // This will resolve the parameters
-
-    if (funct->body.has_value())
-        resolve_code_block(funct->body.value(), funct->pattern);
 }
 
 void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope)
@@ -272,26 +262,12 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
             {
                 auto state_property = AS_PTR(overload, StateProperty);
 
-                // FIXME: It is currently possible for a PropertyIndex to be resolved before all
-                //        property overloads have been resolved. This is a hack that allows
-                //        pattern matching on the property's parameters to _not crash_, but it
-                //        means that the parameters are resolved in the wrong scope!!
-                for (auto parameter : state_property->parameters)
-                    resolve_variable(parameter, scope);
-
                 if (does_instance_list_match_parameters(instance_list, state_property->parameters))
                     valid_overloads.emplace_back(state_property);
             }
             else if (IS_PTR(overload, FunctionProperty))
             {
                 auto function_property = AS_PTR(overload, FunctionProperty);
-
-                // FIXME: It is currently possible for a PropertyIndex to be resolved before all
-                //        property overloads have been resolved. This is a hack that allows
-                //        pattern matching on the property's parameters to _not crash_, but it
-                //        means that the parameters are resolved in the wrong scope!!
-                for (auto parameter : function_property->parameters)
-                    resolve_variable(parameter, scope);
 
                 if (does_instance_list_match_parameters(instance_list, function_property->parameters))
                     valid_overloads.emplace_back(function_property);
