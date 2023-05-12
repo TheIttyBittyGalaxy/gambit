@@ -1,17 +1,14 @@
-// FIXME: These should be intrinsics
-entity Game
-
-entity Player
-state int (Player player).number // Really this should be static / read-only / something to that effect
-
-Game game
-List<Player> players
+/* Gambit intrinsics
+    entity Player
+    static amt (Player player).number
+    List<Player> players
+*/
 
 // Naughts and crosses
 
 enum Mark { NAUGHT, CROSS }
 
-state Mark (Player player).mark = match player.number {
+state Mark (Player player).mark: match player.number {
     1: NAUGHT
     2: CROSS
 }
@@ -21,7 +18,7 @@ state Mark (Player player).mark = match player.number {
 entity Square
 state int (Square square).index // Really this should be static / read-only / something to that effect
 state Mark? (Square square).mark
-fn string (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
+fn str (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
 
 entity Board
 state List<Mark, 9> (Board board).squares
@@ -49,7 +46,7 @@ fn Mark? (Board board).winner {
 }
 
 // Game implementation
-state Board (Game game).board
+Board board
 
 main() {
     current_player = game.players[1] // Infer type `Player`

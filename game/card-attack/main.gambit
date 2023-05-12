@@ -1,10 +1,6 @@
 /* Gambit intrinsics
-    entity Game
-    
     entity Player
-    static int (Player player).number
-
-    Game game
+    static amt (Player player).number
     List<Player> players
 */
 
@@ -69,7 +65,7 @@ main() {
     player_one.tokens = 10
     player_two.tokens = 10
 
-    List<Card, 52> deck;
+    List<Card, 52> deck
     for suit in Suit:
         for rank in Rank:
             deck insert Card(suit: suit, rank: rank)
