@@ -500,8 +500,16 @@ ptr<Literal> Parser::parse_literal()
     {
         // FIXME: Treat num and int literals differently
         Token t = eat(Token::Number);
-        literal->value = stod(t.str);
-        literal->pattern = Intrinsic::type_num;
+        if (t.str.find(".") != std::string::npos)
+        {
+            literal->value = stod(t.str);
+            literal->pattern = Intrinsic::type_num;
+        }
+        else
+        {
+            literal->value = stoi(t.str);
+            literal->pattern = Intrinsic::type_amt; // We can use `amt` and not `int` as number literals cannot be negative
+        }
     }
     else if (peek(Token::String))
     {
