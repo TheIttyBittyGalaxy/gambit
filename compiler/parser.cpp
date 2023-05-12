@@ -169,10 +169,19 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
 
     if (match(Token::Colon))
     {
-        // FIXME: Do not allow the statement of a singleton code block to another code block
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
+
+        if (IS_PTR(statement, CodeBlock))
+        {
+            // FIXME: Include a relevant span instead of an invalid token
+            auto code_block_statement = AS_PTR(statement, CodeBlock);
+            if (code_block_statement->singleton_block)
+                throw GambitError("Too many colons.", Token());
+            else
+                throw GambitError("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", Token());
+        }
     }
     else
     {
