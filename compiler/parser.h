@@ -34,9 +34,9 @@ private:
     void parse_program();
 
     bool peek_code_block();
-    ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
+    [[nodiscard]] ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
 
-    ptr<UnresolvedIdentity> parse_unresolved_identity();
+    [[nodiscard]] ptr<UnresolvedIdentity> parse_unresolved_identity();
 
     bool peek_enum_definition();
     void parse_enum_definition(ptr<Scope> scope);
@@ -58,27 +58,27 @@ private:
     bool peek_paren_expr();
     Expression parse_paren_expr();
     bool peek_match();
-    ptr<Match> parse_match();
+    [[nodiscard]] ptr<Match> parse_match();
     bool peek_unary();
-    ptr<Unary> parse_unary();
+    [[nodiscard]] ptr<Unary> parse_unary();
     bool peek_literal();
-    ptr<Literal> parse_literal();
+    [[nodiscard]] ptr<Literal> parse_literal();
     bool peek_list_value();
-    ptr<ListValue> parse_list_value();
+    [[nodiscard]] ptr<ListValue> parse_list_value();
 
     bool peek_infix_logical_or();
-    ptr<Binary> parse_infix_logical_or(Expression lhs);
+    [[nodiscard]] ptr<Binary> parse_infix_logical_or(Expression lhs);
     bool peek_infix_logical_and();
-    ptr<Binary> parse_infix_logical_and(Expression lhs);
+    [[nodiscard]] ptr<Binary> parse_infix_logical_and(Expression lhs);
     bool peek_infix_term();
-    ptr<Binary> parse_infix_term(Expression lhs);
+    [[nodiscard]] ptr<Binary> parse_infix_term(Expression lhs);
     bool peek_infix_factor();
-    ptr<Binary> parse_infix_factor(Expression lhs);
+    [[nodiscard]] ptr<Binary> parse_infix_factor(Expression lhs);
     bool peek_infix_property_index();
-    ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
+    [[nodiscard]] ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
 
     bool peek_statement();
-    Statement parse_statement(ptr<Scope> scope);
+    [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
 };
 
 #endif
