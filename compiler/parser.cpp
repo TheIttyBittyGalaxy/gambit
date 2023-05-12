@@ -155,10 +155,10 @@ void Parser::parse_program()
     }
 }
 
-bool Parser::peek_code_block()
+bool Parser::peek_code_block(bool singleton_allowed)
 {
     return peek(Token::CurlyL) ||
-           peek(Token::Colon);
+           peek(Token::Colon) && singleton_allowed;
 }
 
 ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
@@ -317,10 +317,8 @@ bool Parser::peek_statement()
 
 Statement Parser::parse_statement(ptr<Scope> scope)
 {
-    // FIXME: Do not allow singleton code blocks to also be statements
-
     Statement stmt;
-    if (peek_code_block())
+    if (peek_code_block(false))
         stmt = parse_code_block(scope);
     else if (peek_expression())
         stmt = parse_expression();

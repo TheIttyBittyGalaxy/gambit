@@ -36,7 +36,7 @@ private:
     // PROGRAM STRUCTURE //
     void parse_program();
 
-    bool peek_code_block();
+    bool peek_code_block(bool singleton_allowed = true);
     [[nodiscard]] ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
 
     bool peek_enum_definition();
