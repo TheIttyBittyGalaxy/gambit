@@ -123,7 +123,11 @@ Pattern determine_expression_pattern(Expression expression)
         auto variable = AS_PTR(expression, Variable);
         return variable->pattern;
     }
-    // else if (IS_PTR(expression, Literal))
+    else if (IS_PTR(expression, Literal))
+    {
+        auto literal = AS_PTR(expression, Literal);
+        return literal->pattern;
+    }
     // else if (IS_PTR(expression, ListValue))
     // else if (IS_PTR(expression, InstanceList))
     // else if (IS_PTR(expression, EnumValue))

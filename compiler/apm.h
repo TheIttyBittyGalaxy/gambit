@@ -182,10 +182,10 @@ struct IntrinsicType
 
 // Expressions
 
-// FIXME: Literals should contain a reference to their pattern
 struct Literal
 {
     variant<double, int, bool, string> value;
+    Pattern pattern;
 };
 
 struct ListValue

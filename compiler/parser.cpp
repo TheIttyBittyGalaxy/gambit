@@ -481,16 +481,19 @@ ptr<Literal> Parser::parse_literal()
         // FIXME: Treat num and int literals differently
         Token t = eat(Token::Number);
         literal->value = stod(t.str);
+        literal->pattern = Intrinsic::type_num;
     }
     else if (peek(Token::String))
     {
         Token t = eat(Token::String);
         literal->value = t.str;
+        literal->pattern = Intrinsic::type_str;
     }
     else if (peek(Token::Boolean))
     {
         Token t = eat(Token::Boolean);
         literal->value = t.str == "true";
+        literal->pattern = Intrinsic::type_bool;
     }
     else
     {

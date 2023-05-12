@@ -209,6 +209,7 @@ string to_json(const ptr<Literal> &node, const size_t &depth)
         json.add("value", AS(node->value, bool));
     else if (IS(node->value, string))
         json.add("value", AS(node->value, string));
+    STRUCT_PTR_FIELD(pattern);
     json.close();
     return (string)json;
 }
