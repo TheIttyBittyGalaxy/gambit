@@ -1,3 +1,4 @@
+#pragma once
 #ifndef RESOLVER_H
 #define RESOLVER_H
 

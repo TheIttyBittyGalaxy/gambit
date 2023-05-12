@@ -1,3 +1,4 @@
+#pragma once
 #ifndef APM_H
 #define APM_H
 
