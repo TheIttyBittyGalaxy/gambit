@@ -1,7 +1,7 @@
 #include "errors.h"
 #include "lexing.h"
 
-vector<Token> generate_tokens(const Source &source)
+vector<Token> generate_tokens(Source &source)
 {
     vector<Token> tokens;
     size_t line = 1;

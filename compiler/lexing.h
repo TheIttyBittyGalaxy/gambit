@@ -7,6 +7,6 @@
 #include <vector>
 using namespace std;
 
-vector<Token> generate_tokens(const Source &src);
+vector<Token> generate_tokens(Source &src);
 
 #endif
