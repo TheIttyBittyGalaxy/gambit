@@ -135,6 +135,12 @@ void Parser::start_span(Span start)
 
 Span Parser::end_span()
 {
+    if (differed_span_stack_spans > 0)
+        throw CompilerError("Attempt to end a differed span that has not been started yet");
+
+    if (span_stack.size() == 0)
+        throw CompilerError("Attempt to end a span that wasn't started");
+
     Span span = span_stack.back();
     span_stack.pop_back();
     span.length = current_token().position - span.position;
