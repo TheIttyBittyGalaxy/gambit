@@ -150,7 +150,7 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
                     return AS_PTR(resolved, Variable);
 
                 // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-                throw GambitError("Expected value, got '" + id + "'", unresolved_identity->token);
+                throw GambitError("Expected value, got '" + id + "'", Token()); // FIXME: Provide a valid span
 
                 return CREATE(InvalidValue);
             }
@@ -177,7 +177,7 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
                             return value;
             }
 
-            throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
+            throw GambitError("'" + id + "' is not defined.", Token()); // FIXME: Provide a valid span
             return CREATE(InvalidValue);
         }
         else if (IS_PTR(expression, Variable))
@@ -250,7 +250,7 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         auto all_overloads = fetch_all_overloads(scope, identity);
 
         if (all_overloads.size() == 0)
-            throw GambitError("Property '" + identity + "' does not exist.", unresolved_identity->token);
+            throw GambitError("Property '" + identity + "' does not exist.", Token()); // FIXME: Provide a valid span
 
         vector<variant<ptr<UnresolvedIdentity>, ptr<StateProperty>, ptr<FunctionProperty>>> valid_overloads;
         for (auto overload : all_overloads)
@@ -272,9 +272,9 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         }
 
         if (valid_overloads.size() == 0)
-            throw GambitError("No version of the property '" + identity + "' applies to these arguments.", unresolved_identity->token);
+            throw GambitError("No version of the property '" + identity + "' applies to these arguments.", Token()); // FIXME: Provide a valid span
         else if (valid_overloads.size() > 1)
-            throw GambitError("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", unresolved_identity->token);
+            throw GambitError("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", Token()); // FIXME: Provide a valid span
 
         property_index->property = valid_overloads[0];
     }
@@ -330,11 +330,11 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
                     return AS_PTR(resolved, Entity);
 
                 auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-                throw GambitError("'" + identity_of(resolved) + "' is not a type", unresolved_identity->token);
+                throw GambitError("'" + identity_of(resolved) + "' is not a type", Token()); // FIXME: Provide a valid span
             }
             else
             {
-                throw GambitError("'" + id + "' is not defined.", unresolved_identity->token);
+                throw GambitError("'" + id + "' is not defined.", Token()); // FIXME: Provide a valid span
             }
 
             return CREATE(InvalidPattern);

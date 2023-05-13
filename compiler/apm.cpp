@@ -44,6 +44,63 @@ bool is_overloadable(Scope::LookupValue value)
            IS_PTR(value, FunctionProperty);
 }
 
+Span get_span(Statement stmt)
+{
+    if (IS(stmt, Expression))
+        return get_span(AS(stmt, Expression));
+    if (IS_PTR(stmt, CodeBlock))
+        return AS_PTR(stmt, CodeBlock)->span;
+
+    throw CompilerError("Could not get span of Expression variant.");
+}
+
+Span get_span(Expression expr)
+{
+    if (IS_PTR(expr, UnresolvedIdentity))
+        return AS_PTR(expr, UnresolvedIdentity)->span;
+    if (IS_PTR(expr, Variable))
+        return AS_PTR(expr, Variable)->span;
+    if (IS_PTR(expr, EnumValue))
+        return AS_PTR(expr, EnumValue)->span;
+    if (IS_PTR(expr, Literal))
+        return AS_PTR(expr, Literal)->span;
+    if (IS_PTR(expr, ListValue))
+        return AS_PTR(expr, ListValue)->span;
+    if (IS_PTR(expr, InstanceList))
+        return AS_PTR(expr, InstanceList)->span;
+    if (IS_PTR(expr, Unary))
+        return AS_PTR(expr, Unary)->span;
+    if (IS_PTR(expr, Binary))
+        return AS_PTR(expr, Binary)->span;
+    if (IS_PTR(expr, PropertyIndex))
+        return AS_PTR(expr, PropertyIndex)->span;
+    if (IS_PTR(expr, Match))
+        return AS_PTR(expr, Match)->span;
+    if (IS_PTR(expr, InvalidValue))
+        return AS_PTR(expr, InvalidValue)->span;
+
+    throw CompilerError("Could not get span of Expression variant.");
+}
+
+Span get_span(Pattern pattern)
+{
+    if (IS_PTR(pattern, UnresolvedIdentity))
+        return AS_PTR(pattern, UnresolvedIdentity)->span;
+    if (IS_PTR(pattern, OptionalPattern))
+        return AS_PTR(pattern, OptionalPattern)->span;
+    if (IS_PTR(pattern, InvalidPattern))
+        return AS_PTR(pattern, InvalidPattern)->span;
+    if (IS_PTR(pattern, EnumType))
+        return AS_PTR(pattern, EnumType)->span;
+    if (IS_PTR(pattern, Entity))
+        return AS_PTR(pattern, Entity)->span;
+
+    if (IS_PTR(pattern, IntrinsicType))
+        throw CompilerError("Attempt to get the span of an intrinsic type.");
+
+    throw CompilerError("Could not get span of Expression variant.");
+}
+
 void declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
@@ -116,7 +173,7 @@ Pattern determine_expression_pattern(Expression expression)
     if (IS_PTR(expression, UnresolvedIdentity))
     {
         auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->token);
+        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", Token()); // FIXME: Provide a valid span
     }
     else if (IS_PTR(expression, Variable))
     {
@@ -144,7 +201,7 @@ Pattern determine_expression_pattern(Expression expression)
         if (IS_PTR(property, UnresolvedIdentity))
         {
             auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->token);
+            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", Token()); // FIXME: Provide a valid span
         }
 
         throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.");

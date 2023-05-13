@@ -2,7 +2,7 @@
 #ifndef APM_H
 #define APM_H
 
-#include "token.h"
+#include "span.h"
 #include "utilty.h"
 #include <optional>
 #include <string>
@@ -76,6 +76,7 @@ struct Program
 
 struct CodeBlock
 {
+    Span span;
     bool singleton_block = false;
     ptr<Scope> scope;
     vector<Statement> statements;
@@ -100,6 +101,7 @@ struct Scope
         vector<LookupValue> overloads;
     };
 
+    Span span;
     wptr<Scope> parent;
     unordered_map<string, LookupValue> lookup;
 };
@@ -108,14 +110,15 @@ struct Scope
 
 struct UnresolvedIdentity
 {
+    Span span;
     string identity;
-    Token token;
 };
 
 // Variables
 
 struct Variable
 {
+    Span span;
     string identity;
     Pattern pattern;
 };
@@ -124,24 +127,27 @@ struct Variable
 
 struct OptionalPattern
 {
+    Span span;
     Pattern pattern;
 };
 
 struct InvalidPattern
 {
-    // FIXME: Include the token of node that eventually became this invalid pattern
+    Span span;
 };
 
 // Enums
 
 struct EnumType
 {
+    Span span;
     string identity;
     vector<ptr<EnumValue>> values;
 };
 
 struct EnumValue
 {
+    Span span;
     string identity;
 };
 
@@ -149,6 +155,7 @@ struct EnumValue
 
 struct Entity
 {
+    Span span;
     string identity;
 };
 
@@ -156,6 +163,7 @@ struct Entity
 
 struct StateProperty
 {
+    Span span;
     string identity;
     Pattern pattern;
     ptr<Scope> scope;
@@ -165,6 +173,7 @@ struct StateProperty
 
 struct FunctionProperty
 {
+    Span span;
     string identity;
     Pattern pattern;
     ptr<Scope> scope;
@@ -184,12 +193,14 @@ struct IntrinsicType
 
 struct Literal
 {
+    Span span;
     variant<double, int, bool, string> value;
     Pattern pattern;
 };
 
 struct ListValue
 {
+    Span span;
     vector<Expression> values;
 };
 
@@ -198,17 +209,20 @@ struct ListValue
 //        terminology at some point. (perhaps 'lists' need to be called arrays?)
 struct InstanceList
 {
+    Span span;
     vector<Expression> values;
 };
 
 struct Unary
 {
+    Span span;
     string op;
     Expression value;
 };
 
 struct Binary
 {
+    Span span;
     string op;
     Expression lhs;
     Expression rhs;
@@ -216,6 +230,7 @@ struct Binary
 
 struct PropertyIndex
 {
+    Span span;
     Expression expr;
     variant<
         ptr<UnresolvedIdentity>,
@@ -226,8 +241,10 @@ struct PropertyIndex
 
 struct Match
 {
+    Span span;
     struct Rule
     {
+        Span span;
         Expression pattern;
         Expression result;
     };
@@ -237,7 +254,7 @@ struct Match
 
 struct InvalidValue
 {
-    // FIXME: Include the token of node that eventually became this invalid value
+    Span span;
 };
 
 // Methods
@@ -246,6 +263,9 @@ string identity_of(Scope::LookupValue value);
 bool directly_declared_in_scope(ptr<Scope> scope, string identity);
 bool declared_in_scope(ptr<Scope> scope, string identity);
 bool is_overloadable(Scope::LookupValue value);
+Span get_span(Statement stmt);
+Span get_span(Expression expr);
+Span get_span(Pattern pattern);
 
 void declare(ptr<Scope> scope, Scope::LookupValue value);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);

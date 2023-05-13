@@ -38,16 +38,16 @@ int main(int argc, char *argv[])
     // FIXME: Allow for compilation of multiple source files.
 
     // FIXME: Remove this default value! I only have it for now for ease of testing
-    string src_path = (argc == 2)
-                          ? (string)argv[1] + ".gambit"
-                          : "local/main.gambit";
+    string source_path = (argc == 2)
+                             ? (string)argv[1] + ".gambit"
+                             : "local/main.gambit";
 
     try
     {
-        Source src(src_path);
+        Source source(source_path);
 
         cout << "\nLEXING" << endl;
-        auto tokens = generate_tokens(src);
+        auto tokens = generate_tokens(source);
 
         // for (auto t : tokens)
         //     cout << to_string(t) << endl;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
         cout << "\nPARSING" << endl;
         Parser parser;
-        auto program = parser.parse(tokens);
+        auto program = parser.parse(tokens, &source);
         output_program(program, "parser_output");
 
         cout << "\nRESOLVER" << endl;

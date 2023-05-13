@@ -4,6 +4,7 @@
 
 #include "apm.h"
 #include "expression.h"
+#include "span.h"
 #include "token.h"
 #include "utilty.h"
 #include <vector>
@@ -12,13 +13,18 @@ using namespace std;
 class Parser
 {
 public:
-    ptr<Program> parse(vector<Token> new_tokens);
+    ptr<Program> parse(vector<Token> new_tokens, Source *new_source);
 
 private:
     vector<Token> tokens;
     ptr<Program> program = nullptr;
+    Source *source;
+
     size_t current_token_index;
     size_t current_block_nesting;
+
+    vector<Span> span_stack;
+    bool start_span_on_next_eat = false;
 
     // UTILITY //
     Token current_token();
@@ -32,6 +38,10 @@ private:
     void skip_to_end_of_line();
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
+
+    void start_span();
+    void start_span(Span start);
+    [[nodiscard]] Span end_span();
 
     // PROGRAM STRUCTURE //
     void parse_program();

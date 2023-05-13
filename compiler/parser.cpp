@@ -2,9 +2,10 @@
 #include "intrinsic.h"
 #include "parser.h"
 
-ptr<Program> Parser::parse(vector<Token> new_tokens)
+ptr<Program> Parser::parse(vector<Token> new_tokens, Source *new_source)
 {
     tokens = new_tokens;
+    source = new_source;
     current_token_index = 0;
     current_block_nesting = 0;
 
@@ -60,6 +61,12 @@ Token Parser::eat(Token::Kind kind)
     else if (kind == Token::CurlyR && current_block_nesting > 0)
         current_block_nesting--;
 
+    if (start_span_on_next_eat)
+    {
+        span_stack.emplace_back(Span(token.line, token.column, token.position, 0, source));
+        start_span_on_next_eat = false;
+    }
+
     current_token_index++;
     return token;
 }
@@ -111,6 +118,27 @@ void Parser::skip_to_block_nesting(size_t target_nesting)
 void Parser::skip_to_end_of_current_block()
 {
     skip_to_block_nesting(current_block_nesting - 1);
+}
+
+void Parser::start_span()
+{
+    // Starting the span is differed, as the current token at this point may be a newline,
+    // that could potentially be skipped over by eat. If this token were part of the span,
+    // it and any subsequent new lines and comments would be included in the span.
+    start_span_on_next_eat = true;
+}
+
+void Parser::start_span(Span start)
+{
+    span_stack.emplace_back(Span(start.line, start.column, start.position, 0, source));
+}
+
+Span Parser::end_span()
+{
+    Span span = span_stack.back();
+    span_stack.pop_back();
+    span.length = current_token().position - span.position;
+    return span;
 }
 
 // PROGRAM STRUCTURE //
@@ -166,6 +194,7 @@ bool Parser::peek_code_block(bool singleton_allowed)
 
 ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
 {
+    start_span();
     auto code_block = CREATE(CodeBlock);
     code_block->scope = CREATE(Scope);
     code_block->scope->parent = scope;
@@ -197,6 +226,7 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
         }
     }
 
+    code_block->span = end_span();
     return code_block;
 }
 
@@ -207,6 +237,7 @@ bool Parser::peek_enum_definition()
 
 void Parser::parse_enum_definition(ptr<Scope> scope)
 {
+    start_span();
     auto enum_type = CREATE(EnumType);
 
     eat(Token::KeyEnum);
@@ -222,6 +253,7 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     } while (match(Token::Comma));
 
     eat(Token::CurlyR);
+    enum_type->span = end_span();
 }
 
 bool Parser::peek_entity_definition()
@@ -231,12 +263,14 @@ bool Parser::peek_entity_definition()
 
 void Parser::parse_entity_definition(ptr<Scope> scope)
 {
+    start_span();
     auto entity = CREATE(Entity);
 
     eat(Token::KeyEntity);
     entity->identity = eat(Token::Identity).str;
     declare(scope, entity);
 
+    entity->span = end_span();
     eat(Token::Line);
 }
 
@@ -247,6 +281,7 @@ bool Parser::peek_state_property_definition()
 
 void Parser::parse_state_property_definition(ptr<Scope> scope)
 {
+    start_span();
     auto state = CREATE(StateProperty);
     state->scope = CREATE(Scope);
     state->scope->parent = scope;
@@ -271,6 +306,8 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
 
     declare(scope, state);
 
+    state->span = end_span();
+
     if (match(Token::Colon))
         state->initial_value = parse_expression();
 }
@@ -282,6 +319,7 @@ bool Parser::peek_function_property_definition()
 
 void Parser::parse_function_property_definition(ptr<Scope> scope)
 {
+    start_span();
     auto funct = CREATE(FunctionProperty);
     funct->scope = CREATE(Scope);
     funct->scope->parent = scope;
@@ -305,6 +343,8 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     funct->identity = eat(Token::Identity).str;
 
     declare(scope, funct);
+
+    funct->span = end_span();
 
     if (peek_code_block())
         funct->body = parse_code_block(funct->scope);
@@ -348,7 +388,7 @@ ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
     Token token = eat(Token::Identity);
-    identity->token = token;
+    identity->span = Span(token);
     identity->identity = token.str;
 
     return identity;
@@ -420,7 +460,7 @@ bool Parser::peek_paren_expr()
 
 Expression Parser::parse_paren_expr()
 {
-    eat(Token::ParenL);
+    Token start_token = eat(Token::ParenL);
     auto expr = parse_expression();
     if (!peek(Token::Comma))
     {
@@ -428,12 +468,15 @@ Expression Parser::parse_paren_expr()
         return expr;
     }
 
+    start_span(Span(start_token));
     auto instance_list = CREATE(InstanceList);
     instance_list->values.emplace_back(expr);
 
     while (match(Token::Comma))
         instance_list->values.emplace_back(parse_expression());
+
     eat(Token::ParenR);
+    instance_list->span = end_span();
 
     auto property_index = parse_infix_property_index(instance_list);
     return property_index;
@@ -446,6 +489,7 @@ bool Parser::peek_match()
 
 ptr<Match> Parser::parse_match()
 {
+    start_span();
     auto match = CREATE(Match);
 
     eat(Token::KeyMatch);
@@ -454,13 +498,19 @@ ptr<Match> Parser::parse_match()
     eat(Token::CurlyL);
     while (peek_expression())
     {
+        start_span();
+
         auto pattern = parse_expression();
         eat(Token::Colon);
         auto result = parse_expression();
-        match->rules.emplace_back(Match::Rule{pattern, result});
+
+        auto span = end_span();
+
+        match->rules.emplace_back(Match::Rule{span, pattern, result});
     }
     eat(Token::CurlyR);
 
+    match->span = end_span();
     return match;
 }
 
@@ -473,6 +523,7 @@ bool Parser::peek_unary()
 
 ptr<Unary> Parser::parse_unary()
 {
+    start_span();
     auto expr = CREATE(Unary);
 
     if (peek(Token::Add))
@@ -486,6 +537,7 @@ ptr<Unary> Parser::parse_unary()
 
     expr->value = parse_expression(Precedence::Unary);
 
+    expr->span = end_span();
     return expr;
 }
 
@@ -498,6 +550,7 @@ bool Parser::peek_literal()
 
 ptr<Literal> Parser::parse_literal()
 {
+    start_span();
     auto literal = CREATE(Literal);
     if (peek(Token::Number))
     {
@@ -531,6 +584,7 @@ ptr<Literal> Parser::parse_literal()
         throw GambitError("Expected literal", current_token());
     }
 
+    literal->span = end_span();
     return literal;
 }
 
@@ -541,7 +595,9 @@ bool Parser::peek_list_value()
 
 ptr<ListValue> Parser::parse_list_value()
 {
+    start_span();
     auto list = CREATE(ListValue);
+
     eat(Token::SquareL);
     if (peek_expression())
     {
@@ -551,6 +607,8 @@ ptr<ListValue> Parser::parse_list_value()
         } while (match(Token::Comma));
     }
     eat(Token::SquareR);
+
+    list->span = end_span();
     return list;
 }
 
@@ -561,10 +619,14 @@ bool Parser::peek_infix_logical_or()
 
 ptr<Binary> Parser::parse_infix_logical_or(Expression lhs)
 {
+    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
+
     expr->lhs = lhs;
     expr->op = eat(Token::KeyOr).str;
     expr->rhs = parse_expression(Precedence::LogicalOr);
+
+    expr->span = end_span();
     return expr;
 }
 
@@ -575,10 +637,14 @@ bool Parser::peek_infix_logical_and()
 
 ptr<Binary> Parser::parse_infix_logical_and(Expression lhs)
 {
+    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
+
     expr->lhs = lhs;
     expr->op = eat(Token::KeyAnd).str;
     expr->rhs = parse_expression(Precedence::LogicalAnd);
+
+    expr->span = end_span();
     return expr;
 }
 
@@ -590,6 +656,7 @@ bool Parser::peek_infix_term()
 
 ptr<Binary> Parser::parse_infix_term(Expression lhs)
 {
+    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
     expr->lhs = lhs;
 
@@ -602,6 +669,7 @@ ptr<Binary> Parser::parse_infix_term(Expression lhs)
 
     expr->rhs = parse_expression(Precedence::Term);
 
+    expr->span = end_span();
     return expr;
 }
 
@@ -613,6 +681,7 @@ bool Parser::peek_infix_factor()
 
 ptr<Binary> Parser::parse_infix_factor(Expression lhs)
 {
+    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
     expr->lhs = lhs;
 
@@ -625,6 +694,7 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
 
     expr->rhs = parse_expression(Precedence::Factor);
 
+    expr->span = end_span();
     return expr;
 }
 
@@ -645,13 +715,18 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
     {
         auto instance_list = CREATE(InstanceList);
         instance_list->values.emplace_back(lhs);
+        instance_list->span = get_span(lhs);
         lhs = instance_list;
     }
 
+    start_span(get_span(lhs));
     auto property_index = CREATE(PropertyIndex);
+
     property_index->expr = lhs;
     eat(Token::Dot);
     property_index->property = parse_unresolved_identity();
+
+    property_index->span = end_span();
     return property_index;
 }
 
@@ -668,8 +743,10 @@ Pattern Parser::parse_pattern(ptr<Scope> scope)
 
     if (match(Token::Question))
     {
+        start_span(get_span(pattern));
         auto optional_pattern = CREATE(OptionalPattern);
         optional_pattern->pattern = pattern;
+        optional_pattern->span = end_span();
         pattern = optional_pattern;
     }
 
