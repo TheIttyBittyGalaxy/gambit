@@ -70,6 +70,7 @@ struct Token
 
     Kind kind;
     string str;
+    size_t position;
     size_t line;
     size_t column;
 
@@ -81,13 +82,19 @@ struct Token
     //        on the source object itself?
     const Source *source;
 
-    Token() : kind(Token::InvalidToken), str(""), line(0), column(0), source(nullptr){};
+    Token() : kind(Token::InvalidToken),
+              str(""),
+              line(0),
+              column(0),
+              position(0),
+              source(nullptr){};
 
-    Token(Kind kind, string str, size_t line, size_t column, const Source *source) : kind(kind),
-                                                                                     str(str),
-                                                                                     line(line),
-                                                                                     column(column),
-                                                                                     source(source) {}
+    Token(Kind kind, string str, size_t line, size_t column, size_t position, const Source *source) : kind(kind),
+                                                                                                      str(str),
+                                                                                                      line(line),
+                                                                                                      column(column),
+                                                                                                      position(position),
+                                                                                                      source(source) {}
 };
 
 string to_string(Token t);

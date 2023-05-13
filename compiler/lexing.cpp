@@ -38,7 +38,7 @@ vector<Token> generate_tokens(const Source &source)
         {
             if (next == "\n")
             {
-                tokens.emplace_back(Token(Token::Line, "\n", line, column, &source));
+                tokens.emplace_back(Token(Token::Line, "\n", line, column, position, &source));
                 advance_line();
                 is_line_comment = false;
             }
@@ -79,7 +79,7 @@ vector<Token> generate_tokens(const Source &source)
 
         else if (next == "\n")
         {
-            tokens.emplace_back(Token(Token::Line, "\n", line, column, &source));
+            tokens.emplace_back(Token(Token::Line, "\n", line, column, position, &source));
             advance_line();
         }
 
@@ -111,7 +111,7 @@ vector<Token> generate_tokens(const Source &source)
                         }
                     }
 
-                    tokens.emplace_back(Token(kind, str, line, column, &source));
+                    tokens.emplace_back(Token(kind, str, line, column, position, &source));
                     advance(info.length());
                     character_parsed = true;
                     break;
@@ -131,7 +131,7 @@ vector<Token> generate_tokens(const Source &source)
         panic_mode = error_occurred;
     }
 
-    tokens.emplace_back(Token(Token::EndOfFile, "", line, column, &source));
+    tokens.emplace_back(Token(Token::EndOfFile, "", line, column, position, &source));
 
     return tokens;
 }
