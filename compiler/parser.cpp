@@ -292,9 +292,11 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
     eat(Token::ParenL);
     do
     {
+        start_span();
         auto parameter = CREATE(Variable);
         parameter->pattern = parse_pattern(scope);
         parameter->identity = eat(Token::Identity).str;
+        parameter->span = end_span();
 
         state->parameters.emplace_back(parameter);
         declare(state->scope, parameter);
@@ -330,9 +332,11 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     eat(Token::ParenL);
     do
     {
+        start_span();
         auto parameter = CREATE(Variable);
         parameter->pattern = parse_pattern(scope);
         parameter->identity = eat(Token::Identity).str;
+        parameter->span = end_span();
 
         funct->parameters.emplace_back(parameter);
         declare(funct->scope, parameter);
