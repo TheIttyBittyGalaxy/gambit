@@ -1,19 +1,19 @@
 #include "errors.h"
 #include "lexing.h"
 
-vector<Token> generate_tokens(string src)
+vector<Token> generate_tokens(const Source &source)
 {
     vector<Token> tokens;
     size_t line = 1;
     size_t column = 1;
     size_t position = 0;
-    string sub = src;
+    string sub = source.get_content();
 
     auto advance = [&](int amt)
     {
         column += amt;
         position += amt;
-        sub = src.substr(position);
+        sub = source.substr(position);
     };
 
     auto advance_line = [&]()
@@ -21,14 +21,14 @@ vector<Token> generate_tokens(string src)
         line += 1;
         column = 1;
         position += 1;
-        sub = src.substr(position);
+        sub = source.substr(position);
     };
 
     size_t multi_line_comment_nesting = 0;
     bool is_line_comment = false;
     bool panic_mode = false;
 
-    while (position < src.length())
+    while (position < source.get_length())
     {
         bool error_occurred = false;
         string next = sub.substr(0, 1);
@@ -38,7 +38,7 @@ vector<Token> generate_tokens(string src)
         {
             if (next == "\n")
             {
-                tokens.emplace_back(Token::Line, "\n", line, column);
+                tokens.emplace_back(Token(Token::Line, "\n", line, column, &source));
                 advance_line();
                 is_line_comment = false;
             }
@@ -79,7 +79,7 @@ vector<Token> generate_tokens(string src)
 
         else if (next == "\n")
         {
-            tokens.emplace_back(Token::Line, "\n", line, column);
+            tokens.emplace_back(Token(Token::Line, "\n", line, column, &source));
             advance_line();
         }
 
@@ -111,7 +111,7 @@ vector<Token> generate_tokens(string src)
                         }
                     }
 
-                    tokens.emplace_back(kind, str, line, column);
+                    tokens.emplace_back(Token(kind, str, line, column, &source));
                     advance(info.length());
                     character_parsed = true;
                     break;
@@ -131,7 +131,7 @@ vector<Token> generate_tokens(string src)
         panic_mode = error_occurred;
     }
 
-    tokens.emplace_back(Token::EndOfFile, "", line, column);
+    tokens.emplace_back(Token(Token::EndOfFile, "", line, column, &source));
 
     return tokens;
 }

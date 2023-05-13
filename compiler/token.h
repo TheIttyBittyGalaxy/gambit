@@ -2,6 +2,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include "source.h"
 #include <map>
 #include <regex>
 #include <string>
@@ -72,12 +73,21 @@ struct Token
     size_t line;
     size_t column;
 
-    Token() : kind(Token::InvalidToken), str(""), line(0), column(0){};
+    // FIXME: As it currently stands, every token contains a reference to the source
+    //        so that when we convert them into spans later, it's easy for the merge
+    //        function to reference the original source code. Storing the same pointer
+    //        on every token individually does feel like a waste of space though -
+    //        could this be done better? Perhaps the list of tokens could be included
+    //        on the source object itself?
+    const Source *source;
 
-    Token(Kind kind, string str, size_t line, size_t column) : kind(kind),
-                                                               str(str),
-                                                               line(line),
-                                                               column(column) {}
+    Token() : kind(Token::InvalidToken), str(""), line(0), column(0), source(nullptr){};
+
+    Token(Kind kind, string str, size_t line, size_t column, const Source *source) : kind(kind),
+                                                                                     str(str),
+                                                                                     line(line),
+                                                                                     column(column),
+                                                                                     source(source) {}
 };
 
 string to_string(Token t);

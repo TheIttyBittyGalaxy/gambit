@@ -4,6 +4,7 @@
 #include "lexing.h"
 #include "parser.h"
 #include "resolver.h"
+#include "source.h"
 #include "token.h"
 #include "utilty.h"
 #include <exception>
@@ -41,23 +42,10 @@ int main(int argc, char *argv[])
                           ? (string)argv[1] + ".gambit"
                           : "local/main.gambit";
 
-    // File loading
-
-    ifstream src_file;
-    src_file.open(src_path, ios::in);
-    if (!src_file)
-    {
-        cout << "Source file " << src_path << " could not be loaded" << endl;
-        return 0;
-    }
-
-    string src((istreambuf_iterator<char>(src_file)), istreambuf_iterator<char>());
-    src_file.close();
-
-    // Compile
-
     try
     {
+        Source src(src_path);
+
         cout << "\nLEXING" << endl;
         auto tokens = generate_tokens(src);
 
