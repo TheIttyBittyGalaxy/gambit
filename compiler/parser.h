@@ -24,7 +24,7 @@ private:
     size_t current_block_nesting;
 
     vector<Span> span_stack;
-    bool start_span_on_next_eat = false;
+    size_t differed_span_stack_spans = 0;
 
     // UTILITY //
     Token current_token();

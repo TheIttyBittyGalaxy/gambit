@@ -61,10 +61,10 @@ Token Parser::eat(Token::Kind kind)
     else if (kind == Token::CurlyR && current_block_nesting > 0)
         current_block_nesting--;
 
-    if (start_span_on_next_eat)
+    while (differed_span_stack_spans > 0)
     {
         span_stack.emplace_back(Span(token.line, token.column, token.position, 0, source));
-        start_span_on_next_eat = false;
+        differed_span_stack_spans--;
     }
 
     current_token_index++;
@@ -125,7 +125,7 @@ void Parser::start_span()
     // Starting the span is differed, as the current token at this point may be a newline,
     // that could potentially be skipped over by eat. If this token were part of the span,
     // it and any subsequent new lines and comments would be included in the span.
-    start_span_on_next_eat = true;
+    differed_span_stack_spans++;
 }
 
 void Parser::start_span(Span start)
