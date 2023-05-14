@@ -32,7 +32,7 @@ public:
     optional<Span> span_two;
 
     GambitError(string msg, size_t line, size_t column, Source *source);
-    GambitError(string msg, Token token);
+    GambitError(string msg, Token token, Source *source);
     GambitError(string msg, Span span_one, optional<Span> span_two = {});
     string what();
 };

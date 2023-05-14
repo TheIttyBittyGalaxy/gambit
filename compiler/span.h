@@ -44,13 +44,13 @@ struct Span
           multiline(multiline),
           source(source){};
 
-    Span(Token t)
+    Span(Token t, Source *source)
         : line(t.line),
           column(t.column),
           position(t.position),
           length(t.str.length()),
           multiline(t.kind == Token::Line),
-          source(t.source){};
+          source(source){};
 
     Span(Span start, Span end);
 

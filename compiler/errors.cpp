@@ -9,7 +9,7 @@ GambitError::GambitError(string msg, size_t line, size_t column, Source *source)
     gambit_errors.push_back(*this);
 };
 
-GambitError::GambitError(string msg, Token token) : GambitError(msg, token.line, token.column, token.source){};
+GambitError::GambitError(string msg, Token token, Source *source) : GambitError(msg, token.line, token.column, source){};
 
 GambitError::GambitError(string msg, Span span_one, optional<Span> span_two)
     : msg(msg),

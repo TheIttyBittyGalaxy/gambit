@@ -53,7 +53,7 @@ Token Parser::eat(Token::Kind kind)
     if (!peek(kind))
     {
         Token token = current_token();
-        throw GambitError("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
+        throw GambitError("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token, source);
     }
 
     // Skip line tokens if we are attempting to eat a non-line token
@@ -70,7 +70,7 @@ Token Parser::eat(Token::Kind kind)
 
     while (differed_span_stack_spans > 0)
     {
-        span_stack.emplace_back(Span(token));
+        span_stack.emplace_back(Span(token, source));
         differed_span_stack_spans--;
     }
 
@@ -189,7 +189,7 @@ void Parser::parse_program()
             else
             {
                 skip_whitespace();
-                throw GambitError("Unexpected '" + current_token().str + "' in global scope.", current_token());
+                throw GambitError("Unexpected '" + current_token().str + "' in global scope.", current_token(), source);
             }
         }
         catch (GambitError err)
@@ -390,7 +390,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else if (peek_expression())
         stmt = parse_expression();
     else
-        throw GambitError("Expected statement", current_token());
+        throw GambitError("Expected statement", current_token(), source);
 
     if (!match(Token::EndOfFile))
         eat(Token::Line);
@@ -412,7 +412,7 @@ ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
     Token token = eat(Token::Identity);
-    identity->span = Span(token);
+    identity->span = Span(token, source);
     identity->identity = token.str;
 
     return identity;
@@ -456,7 +456,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         lhs = parse_list_value();
 
     else
-        throw GambitError("Expected expression", current_token());
+        throw GambitError("Expected expression", current_token(), source);
 
     while (true)
     {
@@ -492,7 +492,7 @@ Expression Parser::parse_paren_expr()
         return expr;
     }
 
-    start_span(Span(start_token));
+    start_span(Span(start_token, source));
     auto instance_list = CREATE(InstanceList);
     instance_list->values.emplace_back(expr);
 
@@ -605,7 +605,7 @@ ptr<Literal> Parser::parse_literal()
     }
     else
     {
-        throw GambitError("Expected literal", current_token());
+        throw GambitError("Expected literal", current_token(), source);
     }
 
     literal->span = end_span();
