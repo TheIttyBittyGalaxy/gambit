@@ -92,7 +92,7 @@ private:
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
     bool peek_literal();
-    [[nodiscard]] ptr<Literal> parse_literal();
+    [[nodiscard]] Expression parse_literal();
     bool peek_list_value();
     [[nodiscard]] ptr<ListValue> parse_list_value();
 

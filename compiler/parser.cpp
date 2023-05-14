@@ -55,7 +55,11 @@ Token Parser::eat(Token::Kind kind)
     {
         Token token = current_token();
         gambit_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
-        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+        // FIXME: Currently we're returning the current token just so that decent spans can still be
+        //        formed. However, this will cause strange behaviour in cases where the string of a
+        //        token is stored on the APM node itself.
+        return token;
     }
 
     // Skip line tokens if we are attempting to eat a non-line token
@@ -178,7 +182,15 @@ void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
         else
         {
             gambit_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.", {get_span(value), get_span(existing)});
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+            // As this is not a syntax error, we do not need to enter panic mode
+
+            // FIXME: Currently, this function is included in the parser and not the APM utility,
+            //        under the assumption that the APM util shouldn't have side-effects, because
+            //        each part of the compiler will want to handle those side effects differently.
+            //        Once the compiler has matured more, reassess if that is still true?
+
+            panic_mode = false;
         }
     }
     else if (is_overloadable(value))
@@ -227,6 +239,14 @@ void Parser::gambit_error(string msg, initializer_list<Span> spans)
     source->log_error(msg, spans);
     panic_mode = true;
 }
+
+// FIXME: APM nodes that are generated during panic mode should be annotated as such.
+//        This way, later stages of the compiler can identity parts of the APM that
+//        are malformed, and that it should therefore ignore. (this same flag can
+//        probably be shared by the different stages).
+//
+//        Though, think this through before you implement it, as I haven't actually
+//        thought it through all the way. There may be a better solution?
 
 // PROGRAM STRUCTURE //
 
@@ -280,50 +300,45 @@ bool Parser::peek_code_block(bool singleton_allowed)
 
 ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
 {
-    start_span();
     auto code_block = CREATE(CodeBlock);
     code_block->scope = CREATE(Scope);
     code_block->scope->parent = scope;
 
-    if (match(Token::Colon))
+    // Singleton code blocks
+    if (peek(Token::Colon))
     {
-        auto start_span = end_span();
+        auto colon = eat(Token::Colon);
 
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
+        code_block->span = merge(to_span(colon), get_span(statement));
 
-        // STABILISE: If we were to use `end_span` after `parse_statement`, the generated span would
-        // include the new line (and potentially other comments and whitespace) at the end
-        // of the statement. We don't want this, so generate the span this way instead.
-        code_block->span = merge(start_span, get_span(statement));
-
+        // Code block statements are not allowed inside of singleton blocks
         if (IS_PTR(statement, CodeBlock))
         {
             auto code_block_statement = AS_PTR(statement, CodeBlock);
             if (code_block_statement->singleton_block)
-            {
                 gambit_error("Too many colons.", code_block->span);
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
             else
-            {
                 gambit_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
         }
+
+        return code_block;
     }
-    else
+
+    // Regular code blocks
+    auto curly_l = eat(Token::CurlyL);
+    eat(Token::Line);
+
+    while (!peek(Token::CurlyR))
     {
-        eat(Token::CurlyL);
-        eat(Token::Line);
-        while (!match(Token::CurlyR))
-        {
-            auto statement = parse_statement(code_block->scope);
-            code_block->statements.emplace_back(statement);
-        }
-        code_block->span = end_span();
+        auto statement = parse_statement(code_block->scope);
+        code_block->statements.emplace_back(statement);
     }
+
+    auto curly_r = eat(Token::CurlyR);
+    code_block->span = merge(to_span(curly_l), to_span(curly_r));
 
     return code_block;
 }
@@ -335,23 +350,27 @@ bool Parser::peek_enum_definition()
 
 void Parser::parse_enum_definition(ptr<Scope> scope)
 {
-    start_span();
     auto enum_type = CREATE(EnumType);
 
-    eat(Token::KeyEnum);
+    auto keyword = eat(Token::KeyEnum);
     enum_type->identity = eat(Token::Identity).str;
-    declare(scope, enum_type);
 
     eat(Token::CurlyL);
     do
     {
+        auto identity_token = eat(Token::Identity);
+
         auto enum_value = CREATE(EnumValue);
-        enum_value->identity = eat(Token::Identity).str;
+        enum_value->identity = identity_token.str;
+        enum_value->span = to_span(identity_token);
+
         enum_type->values.emplace_back(enum_value);
     } while (match(Token::Comma));
+    auto curly_r = eat(Token::CurlyR);
 
-    eat(Token::CurlyR);
-    enum_type->span = end_span();
+    enum_type->span = merge(to_span(keyword), to_span(curly_r));
+
+    declare(scope, enum_type);
 }
 
 bool Parser::peek_entity_definition()
@@ -361,15 +380,15 @@ bool Parser::peek_entity_definition()
 
 void Parser::parse_entity_definition(ptr<Scope> scope)
 {
-    start_span();
     auto entity = CREATE(Entity);
 
-    eat(Token::KeyEntity);
-    entity->identity = eat(Token::Identity).str;
-    entity->span = end_span();
+    auto keyword = eat(Token::KeyEntity);
+    auto identity_token = eat(Token::Identity);
+    entity->identity = identity_token.str;
+    entity->span = merge(to_span(keyword), to_span(identity_token));
+    eat(Token::Line);
 
     declare(scope, entity);
-    eat(Token::Line);
 }
 
 bool Parser::peek_state_property_definition()
@@ -379,22 +398,21 @@ bool Parser::peek_state_property_definition()
 
 void Parser::parse_state_property_definition(ptr<Scope> scope)
 {
-    start_span();
     auto state = CREATE(StateProperty);
     state->scope = CREATE(Scope);
     state->scope->parent = scope;
 
-    eat(Token::KeyState);
+    auto keyword = eat(Token::KeyState);
     state->pattern = parse_pattern(scope);
 
     eat(Token::ParenL);
     do
     {
-        start_span();
         auto parameter = CREATE(Variable);
         parameter->pattern = parse_pattern(scope);
-        parameter->identity = eat(Token::Identity).str;
-        parameter->span = end_span();
+        auto identity_token = eat(Token::Identity);
+        parameter->identity = identity_token.str;
+        parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
 
         state->parameters.emplace_back(parameter);
         declare(state->scope, parameter);
@@ -402,11 +420,12 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
     eat(Token::ParenR);
 
     eat(Token::Dot);
-    state->identity = eat(Token::Identity).str;
+
+    auto identity_token = eat(Token::Identity);
+    state->identity = identity_token.str;
+    state->span = merge(to_span(keyword), to_span(identity_token));
 
     declare(scope, state);
-
-    state->span = end_span();
 
     if (match(Token::Colon))
         state->initial_value = parse_expression();
@@ -419,22 +438,21 @@ bool Parser::peek_function_property_definition()
 
 void Parser::parse_function_property_definition(ptr<Scope> scope)
 {
-    start_span();
     auto funct = CREATE(FunctionProperty);
     funct->scope = CREATE(Scope);
     funct->scope->parent = scope;
 
-    eat(Token::KeyFn);
+    auto keyword = eat(Token::KeyFn);
     funct->pattern = parse_pattern(scope);
 
     eat(Token::ParenL);
     do
     {
-        start_span();
         auto parameter = CREATE(Variable);
         parameter->pattern = parse_pattern(scope);
-        parameter->identity = eat(Token::Identity).str;
-        parameter->span = end_span();
+        auto identity_token = eat(Token::Identity);
+        parameter->identity = identity_token.str;
+        parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
 
         funct->parameters.emplace_back(parameter);
         declare(funct->scope, parameter);
@@ -442,11 +460,12 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     eat(Token::ParenR);
 
     eat(Token::Dot);
-    funct->identity = eat(Token::Identity).str;
+
+    auto identity_token = eat(Token::Identity);
+    funct->identity = identity_token.str;
+    funct->span = merge(to_span(keyword), to_span(identity_token));
 
     declare(scope, funct);
-
-    funct->span = end_span();
 
     if (peek_code_block())
         funct->body = parse_code_block(funct->scope);
@@ -469,8 +488,13 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         stmt = parse_expression();
     else
     {
-        gambit_error("Expected statement", current_token());
-        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        auto token = current_token();
+        gambit_error("Expected statement", token);
+
+        auto stmt = CREATE(InvalidStatement);
+        // FIXME: Should the span of the invalid statement go across the whole line?
+        stmt->span = to_span(token);
+        return stmt;
     }
 
     if (!match(Token::EndOfFile))
@@ -481,6 +505,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
 
 // EXPRESSIONS //
 
+// FIXME: Move into utility code unit
 bool Parser::operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative)
 {
     if (left_associative)
@@ -492,10 +517,9 @@ bool Parser::operator_should_bind(Precedence operator_precedence, Precedence cal
 ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
-    Token token = eat(Token::Identity);
-    identity->span = Span(token, source);
+    auto token = eat(Token::Identity);
     identity->identity = token.str;
-
+    identity->span = Span(token, source);
     return identity;
 }
 
@@ -538,8 +562,13 @@ Expression Parser::parse_expression(Precedence caller_precedence)
 
     else
     {
-        gambit_error("Expected expression", current_token());
-        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        auto token = current_token();
+        gambit_error("Expected expression", token);
+
+        auto expr = CREATE(InvalidExpression);
+        // FIXME: Should the span of the invalid expression go across the whole line?
+        expr->span = to_span(token);
+        return expr;
     }
 
     while (true)
@@ -550,7 +579,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_term(lhs);
         else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_property_index(lhs);
-        if (peek_infix_logical_and() && operator_should_bind(Precedence::LogicalAnd, caller_precedence))
+        else if (peek_infix_logical_and() && operator_should_bind(Precedence::LogicalAnd, caller_precedence))
             lhs = parse_infix_logical_and(lhs);
         else if (peek_infix_logical_or() && operator_should_bind(Precedence::LogicalOr, caller_precedence))
             lhs = parse_infix_logical_or(lhs);
@@ -568,23 +597,28 @@ bool Parser::peek_paren_expr()
 
 Expression Parser::parse_paren_expr()
 {
-    Token start_token = eat(Token::ParenL);
+    auto paren_l = eat(Token::ParenL);
+
     auto expr = parse_expression();
+
+    // Bracketed expression
     if (!peek(Token::Comma))
     {
         eat(Token::ParenR);
+        // FIXME: Update the expression's span to include the parentheses
         return expr;
     }
 
-    start_span(Span(start_token, source));
+    // Instance list
     auto instance_list = CREATE(InstanceList);
     instance_list->values.emplace_back(expr);
 
     while (match(Token::Comma))
         instance_list->values.emplace_back(parse_expression());
 
-    eat(Token::ParenR);
-    instance_list->span = end_span();
+    auto paren_r = eat(Token::ParenR);
+
+    instance_list->span = merge(to_span(paren_l), to_span(paren_r));
 
     auto property_index = parse_infix_property_index(instance_list);
     return property_index;
@@ -597,28 +631,25 @@ bool Parser::peek_match()
 
 ptr<Match> Parser::parse_match()
 {
-    start_span();
     auto match = CREATE(Match);
 
-    eat(Token::KeyMatch);
+    auto keyword = eat(Token::KeyMatch);
     match->subject = parse_expression();
 
     eat(Token::CurlyL);
     while (peek_expression())
     {
-        start_span();
-
-        auto pattern = parse_expression();
+        Match::Rule rule;
+        rule.pattern = parse_expression();
         eat(Token::Colon);
-        auto result = parse_expression();
+        rule.result = parse_expression();
+        rule.span = merge(get_span(rule.pattern), get_span(rule.result));
 
-        auto span = end_span();
-
-        match->rules.emplace_back(Match::Rule{span, pattern, result});
+        match->rules.emplace_back(rule);
     }
-    eat(Token::CurlyR);
+    auto curly_r = eat(Token::CurlyR);
 
-    match->span = end_span();
+    match->span = merge(to_span(keyword), to_span(curly_r));
     return match;
 }
 
@@ -631,21 +662,22 @@ bool Parser::peek_unary()
 
 ptr<Unary> Parser::parse_unary()
 {
-    start_span();
     auto expr = CREATE(Unary);
+    Token op_token;
 
     if (peek(Token::Add))
-        expr->op = eat(Token::Add).str;
+        op_token = eat(Token::Add);
     else if (peek(Token::Sub))
-        expr->op = eat(Token::Sub).str;
+        op_token = eat(Token::Sub);
     else if (peek(Token::KeyNot))
-        expr->op = eat(Token::KeyNot).str;
+        op_token = eat(Token::KeyNot);
     else
         throw CompilerError("Expected unary expression, got " + to_string(current_token()) + " token");
 
+    expr->op = op_token.str;
     expr->value = parse_expression(Precedence::Unary);
+    expr->span = merge(to_span(op_token), get_span(expr->value));
 
-    expr->span = end_span();
     return expr;
 }
 
@@ -656,45 +688,55 @@ bool Parser::peek_literal()
            peek(Token::Boolean);
 }
 
-ptr<Literal> Parser::parse_literal()
+Expression Parser::parse_literal()
 {
-    start_span();
-    auto literal = CREATE(Literal);
     if (peek(Token::Number))
     {
-        // FIXME: Treat num and int literals differently
-        Token t = eat(Token::Number);
-        if (t.str.find(".") != std::string::npos)
+        auto literal = CREATE(Literal);
+        auto token = eat(Token::Number);
+
+        if (token.str.find(".") != std::string::npos)
         {
-            literal->value = stod(t.str);
+            literal->value = stod(token.str);
             literal->pattern = Intrinsic::type_num;
         }
         else
         {
-            literal->value = stoi(t.str);
+            literal->value = stoi(token.str);
             literal->pattern = Intrinsic::type_amt; // We can use `amt` and not `int` as number literals cannot be negative
         }
-    }
-    else if (peek(Token::String))
-    {
-        Token t = eat(Token::String);
-        literal->value = t.str;
-        literal->pattern = Intrinsic::type_str;
-    }
-    else if (peek(Token::Boolean))
-    {
-        Token t = eat(Token::Boolean);
-        literal->value = t.str == "true";
-        literal->pattern = Intrinsic::type_bool;
-    }
-    else
-    {
-        gambit_error("Expected literal", current_token());
-        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+        literal->span = to_span(token);
+        return literal;
     }
 
-    literal->span = end_span();
-    return literal;
+    if (peek(Token::String))
+    {
+        auto literal = CREATE(Literal);
+        auto token = eat(Token::String);
+
+        literal->value = token.str;
+        literal->pattern = Intrinsic::type_str;
+        literal->span = to_span(token);
+        return literal;
+    }
+
+    if (peek(Token::Boolean))
+    {
+        auto literal = CREATE(Literal);
+        auto token = eat(Token::Boolean);
+
+        literal->value = token.str == "true";
+        literal->pattern = Intrinsic::type_bool;
+        literal->span = to_span(token);
+        return literal;
+    }
+
+    auto token = current_token();
+    gambit_error("Expected literal", token);
+    auto value = CREATE(InvalidValue);
+    value->span = to_span(token);
+    return value;
 }
 
 bool Parser::peek_list_value()
@@ -704,10 +746,9 @@ bool Parser::peek_list_value()
 
 ptr<ListValue> Parser::parse_list_value()
 {
-    start_span();
     auto list = CREATE(ListValue);
 
-    eat(Token::SquareL);
+    auto square_l = eat(Token::SquareL);
     if (peek_expression())
     {
         do
@@ -715,9 +756,9 @@ ptr<ListValue> Parser::parse_list_value()
             list->values.push_back(parse_expression());
         } while (match(Token::Comma));
     }
-    eat(Token::SquareR);
+    auto square_r = eat(Token::SquareR);
 
-    list->span = end_span();
+    list->span = merge(to_span(square_l), to_span(square_r));
     return list;
 }
 
@@ -728,14 +769,13 @@ bool Parser::peek_infix_logical_or()
 
 ptr<Binary> Parser::parse_infix_logical_or(Expression lhs)
 {
-    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
     expr->op = eat(Token::KeyOr).str;
     expr->rhs = parse_expression(Precedence::LogicalOr);
 
-    expr->span = end_span();
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
 }
 
@@ -746,14 +786,13 @@ bool Parser::peek_infix_logical_and()
 
 ptr<Binary> Parser::parse_infix_logical_and(Expression lhs)
 {
-    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
     expr->op = eat(Token::KeyAnd).str;
     expr->rhs = parse_expression(Precedence::LogicalAnd);
 
-    expr->span = end_span();
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
 }
 
@@ -765,20 +804,18 @@ bool Parser::peek_infix_term()
 
 ptr<Binary> Parser::parse_infix_term(Expression lhs)
 {
-    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
-    expr->lhs = lhs;
 
+    expr->lhs = lhs;
     if (peek(Token::Add))
         expr->op = eat(Token::Add).str;
     else if (peek(Token::Sub))
         expr->op = eat(Token::Sub).str;
     else
         throw CompilerError("Expected infix term expression, got " + to_string(current_token()) + " token");
-
     expr->rhs = parse_expression(Precedence::Term);
 
-    expr->span = end_span();
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
 }
 
@@ -790,20 +827,18 @@ bool Parser::peek_infix_factor()
 
 ptr<Binary> Parser::parse_infix_factor(Expression lhs)
 {
-    start_span(get_span(lhs));
     auto expr = CREATE(Binary);
-    expr->lhs = lhs;
 
+    expr->lhs = lhs;
     if (peek(Token::Mul))
         expr->op = eat(Token::Mul).str;
     else if (peek(Token::Div))
         expr->op = eat(Token::Div).str;
     else
         throw CompilerError("Expected infix factor expression, got " + to_string(current_token()) + " token");
-
     expr->rhs = parse_expression(Precedence::Factor);
 
-    expr->span = end_span();
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
 }
 
@@ -816,10 +851,12 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 {
     // TODO: As of writing, InstanceLists are only used to collect values that will become the
     //       lhs of a PropertyIndex. If that remains the case, maybe it would be worth (at this
-    //       point in the code) transfering all of the elements of instance_list->values into a
+    //       point in the code) transferring all of the elements of instance_list->values into a
     //       'lhs' ('subjects'?) vector<Expression> on the PropertyList? This way there isn't a
-    //       reduntant InstanceList node just hanging around in the program model on each index?
+    //       redundant InstanceList node just hanging around in the program model on each index?
 
+    // Convert lhs to an instance list if it isn't one already
+    // This occurs when the syntax foo.bar or (foo).bar is used.
     if (!IS_PTR(lhs, InstanceList))
     {
         auto instance_list = CREATE(InstanceList);
@@ -828,14 +865,15 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
         lhs = instance_list;
     }
 
-    start_span(get_span(lhs));
+    // Property index
     auto property_index = CREATE(PropertyIndex);
 
     property_index->expr = lhs;
     eat(Token::Dot);
-    property_index->property = parse_unresolved_identity();
+    auto unresolved_identity = parse_unresolved_identity();
+    property_index->property = unresolved_identity;
 
-    property_index->span = end_span();
+    property_index->span = merge(get_span(property_index->expr), unresolved_identity->span);
     return property_index;
 }
 
@@ -850,12 +888,12 @@ Pattern Parser::parse_pattern(ptr<Scope> scope)
 {
     Pattern pattern = parse_unresolved_identity();
 
-    if (match(Token::Question))
+    if (peek(Token::Question))
     {
-        start_span(get_span(pattern));
+        auto question = eat(Token::Question);
         auto optional_pattern = CREATE(OptionalPattern);
         optional_pattern->pattern = pattern;
-        optional_pattern->span = end_span();
+        optional_pattern->span = merge(get_span(pattern), to_span(question));
         pattern = optional_pattern;
     }
 

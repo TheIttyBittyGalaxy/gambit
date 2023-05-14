@@ -11,6 +11,8 @@ string Span::get_source_substr()
 
 Span merge(Span start, Span end)
 {
+    // FIXME: Make having the start and end the wrong way around a compiler error, so that
+    //        in a 'production build' we can simply skip this step all together.
     if (start.line > end.line || start.line == end.line && start.column > end.column)
         start, end = end, start;
 

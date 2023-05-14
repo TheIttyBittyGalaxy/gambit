@@ -33,6 +33,8 @@ struct Program;
 struct CodeBlock;
 struct Scope;
 
+struct InvalidStatement;
+
 struct UnresolvedIdentity;
 
 struct Variable;
@@ -66,6 +68,7 @@ struct Binary;
 struct PropertyIndex;
 struct Match;
 struct InvalidValue;
+struct InvalidExpression;
 using Expression = variant<
     ptr<UnresolvedIdentity>,
     ptr<Variable>,
@@ -77,11 +80,13 @@ using Expression = variant<
     ptr<Binary>,
     ptr<PropertyIndex>,
     ptr<Match>,
-    ptr<InvalidValue>>;
+    ptr<InvalidValue>,
+    ptr<InvalidExpression>>;
 
 using Statement = variant<
     Expression,
-    ptr<CodeBlock>>;
+    ptr<CodeBlock>,
+    ptr<InvalidStatement>>;
 
 // Program
 
@@ -119,6 +124,11 @@ struct Scope
 
     wptr<Scope> parent;
     unordered_map<string, LookupValue> lookup;
+};
+
+struct InvalidStatement
+{
+    Span span;
 };
 
 // Unresolved Identity
@@ -260,7 +270,7 @@ struct Match
     struct Rule
     {
         Span span;
-        Expression pattern;
+        Expression pattern; // FIXME: Make this a pattern, not an expression
         Expression result;
     };
     Expression subject;
@@ -268,6 +278,11 @@ struct Match
 };
 
 struct InvalidValue
+{
+    Span span;
+};
+
+struct InvalidExpression
 {
     Span span;
 };

@@ -2,7 +2,7 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-// STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency. 
+// STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency.
 struct Source;
 
 #include "token.h"
@@ -46,6 +46,7 @@ struct Span
           multiline(multiline),
           source(source){};
 
+    // STABILISE: Remove this
     Span(Token t, Source *source)
         : line(t.line),
           column(t.column),
