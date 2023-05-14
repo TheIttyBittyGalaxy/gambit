@@ -20,6 +20,13 @@ Token Parser::current_token()
     return tokens.at(current_token_index);
 }
 
+Token Parser::previous_token()
+{
+    if (current_token_index == 0)
+        return tokens.front(); // TODO: What should the expected behaviour here be?
+    return tokens.at(current_token_index - 1);
+}
+
 // UTILITY //
 
 bool Parser::peek(Token::Kind kind)
@@ -63,7 +70,7 @@ Token Parser::eat(Token::Kind kind)
 
     while (differed_span_stack_spans > 0)
     {
-        span_stack.emplace_back(Span(token.line, token.column, token.position, 0, source));
+        span_stack.emplace_back(Span(token));
         differed_span_stack_spans--;
     }
 
@@ -130,7 +137,7 @@ void Parser::start_span()
 
 void Parser::start_span(Span start)
 {
-    span_stack.emplace_back(Span(start.line, start.column, start.position, 0, source));
+    span_stack.emplace_back(Span(start.line, start.column, start.position, 0, start.multiline, source));
 }
 
 Span Parser::end_span()
@@ -144,6 +151,7 @@ Span Parser::end_span()
     Span span = span_stack.back();
     span_stack.pop_back();
     span.length = current_token().position - span.position;
+    span.multiline = span.multiline || span.line != previous_token().line;
     return span;
 }
 

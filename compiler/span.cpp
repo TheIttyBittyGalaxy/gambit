@@ -16,6 +16,7 @@ Span::Span(Span start, Span end)
     column = start.column;
     position = start.position;
     length = (end.position + end.length) - start.position;
+    multiline = start.multiline || end.multiline || start.line != end.line;
     source = start.source;
 }
 

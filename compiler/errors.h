@@ -10,10 +10,13 @@
 #include <vector>
 using namespace std;
 
+// FIXME: Make the various different ways in which errors are presented more consistent.
+
 extern vector<string> gambit_errors;
 void emit_gambit_error(string msg, size_t line, size_t column);
 void emit_gambit_error(string msg, Token token);
 
+// FIXME: Move method definitions into error.cpp, in the hopes it will help with compilation time
 class GambitError : public exception
 {
 public:
@@ -31,6 +34,7 @@ public:
     }
 };
 
+// FIXME: Move method definitions into error.cpp, in the hopes it will help with compilation time
 class CompilerError : public exception
 {
 public:
@@ -54,7 +58,7 @@ public:
             if (span.source == nullptr)
                 err += "invalid span";
             else
-                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + "\n" + span.get_source_substr();
+                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
         }
 
         if (span_two.has_value())
@@ -64,7 +68,7 @@ public:
             if (span.source == nullptr)
                 err += "invalid span";
             else
-                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + "\n" + span.get_source_substr();
+                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
         }
 
         return err;
