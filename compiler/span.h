@@ -2,7 +2,9 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-#include "source.h"
+// STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency. 
+struct Source;
+
 #include "token.h"
 #include <string>
 using namespace std;

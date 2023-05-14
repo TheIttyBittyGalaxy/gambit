@@ -9,7 +9,7 @@ vector<Token> generate_tokens(Source &source)
     size_t line = 1;
     size_t column = 1;
     size_t position = 0;
-    string sub = source.get_content();
+    string sub = source.content;
 
     auto advance = [&](int amt)
     {
@@ -30,7 +30,7 @@ vector<Token> generate_tokens(Source &source)
     bool is_line_comment = false;
     bool panic_mode = false;
 
-    while (position < source.get_length())
+    while (position < source.length)
     {
         bool error_occurred = false;
         string next = sub.substr(0, 1);

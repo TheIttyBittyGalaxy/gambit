@@ -2,30 +2,24 @@
 #ifndef SOURCE_H
 #define SOURCE_H
 
+#include "token.h"
+#include "errors.h"
+#include <vector>
 #include <string>
 using namespace std;
 
-// FIXME: No other data structure in the compiler is implemented in this 'read-only' kind of way.
-//        Perhaps it would be clearer and more direct to just make it a plain-old-data structure?
-
-// STABILISE: Have sources store both their tokens and their errors.
-
 struct Source
 {
-private:
     string file_path;
     string content;
     size_t length;
+    vector<Token> tokens;
+    vector<GambitError> errors;
 
-public:
     Source(string file_path);
 
-    string get_file_path() const;
-    string get_content() const;
-    size_t get_length() const;
-
-    string substr(size_t position) const;
-    string substr(size_t position, size_t n) const;
+    string substr(size_t position);
+    string substr(size_t position, size_t n);
 };
 
 #endif

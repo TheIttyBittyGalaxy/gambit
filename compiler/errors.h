@@ -2,7 +2,9 @@
 #ifndef ERRORS_H
 #define ERRORS_H
 
-#include "source.h"
+// STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency.
+struct Source;
+
 #include "span.h"
 #include "token.h"
 #include <exception>

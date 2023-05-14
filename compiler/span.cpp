@@ -1,5 +1,6 @@
-#include "span.h"
 #include "errors.h"
+#include "source.h"
+#include "span.h"
 
 Span::Span(Span start, Span end)
 {

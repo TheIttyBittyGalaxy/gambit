@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "source.h"
 
 GambitError::GambitError(string msg, size_t line, size_t column, Source *source)
     : msg(msg),
@@ -33,7 +34,7 @@ string GambitError::what()
             err += "[invalid span] ";
         else
             err += "[" +
-                   span.source->get_file_path() + " " +
+                   span.source->file_path + " " +
                    to_string(span.line) + ":" + to_string(span.column) +
                    "] ";
     }
@@ -44,7 +45,7 @@ string GambitError::what()
     else
     {
         err += "[" +
-               source->get_file_path() + " " +
+               source->file_path + " " +
                to_string(line) + ":" + to_string(column) +
                "] ";
     }
@@ -62,7 +63,7 @@ string GambitError::what()
         else
         {
             if (span_two.has_value())
-                err += span.source->get_file_path() + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
+                err += span.source->file_path + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
             err += span.get_source_substr();
         }
     }
@@ -77,7 +78,7 @@ string GambitError::what()
         }
         else
         {
-            err += span.source->get_file_path() + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
+            err += span.source->file_path + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
             err += span.get_source_substr();
         }
     }
@@ -104,7 +105,7 @@ string CompilerError::what()
         if (span.source == nullptr)
             err += "[invalid span]";
         else
-            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
+            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->file_path + (span.multiline ? "\n" : "  ") + span.get_source_substr();
     }
 
     if (span_two.has_value())
@@ -114,7 +115,7 @@ string CompilerError::what()
         if (span.source == nullptr)
             err += "[invalid span]";
         else
-            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
+            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->file_path + (span.multiline ? "\n" : "  ") + span.get_source_substr();
     }
 
     return err;

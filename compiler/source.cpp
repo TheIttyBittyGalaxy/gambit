@@ -1,4 +1,3 @@
-#include "errors.h"
 #include "source.h"
 #include <fstream>
 
@@ -16,27 +15,12 @@ Source::Source(string file_path)
     length = content.length();
 }
 
-string Source::get_file_path() const
-{
-    return file_path;
-}
-
-string Source::get_content() const
-{
-    return content;
-}
-
-size_t Source::get_length() const
-{
-    return length;
-}
-
-string Source::substr(size_t position) const
+string Source::substr(size_t position)
 {
     return content.substr(position);
 }
 
-string Source::substr(size_t position, size_t n) const
+string Source::substr(size_t position, size_t n)
 {
     return content.substr(position, n);
 }
