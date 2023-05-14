@@ -1,3 +1,14 @@
+/*
+apm.h
+
+Defines the nodes of the Abstract Program Model as well as a range of utility methods.
+The utility methods should not have side-effects, and should not be responsible for
+handling language errors.
+
+Different parts of the compiler handle different scenarios in different ways, and so
+side-effects be managed by the 'actual' compiler.
+*/
+
 #pragma once
 #ifndef APM_H
 #define APM_H
@@ -272,7 +283,6 @@ Span get_span(Expression expr);
 Span get_span(Pattern pattern);
 Span get_span(Scope::LookupValue value);
 
-void declare(ptr<Scope> scope, Scope::LookupValue value, Source *source);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
 

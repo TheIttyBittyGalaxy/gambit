@@ -124,38 +124,6 @@ Span get_span(Scope::LookupValue value)
     throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }
 
-void declare(ptr<Scope> scope, Scope::LookupValue value, Source *source)
-{
-    string identity = identity_of(value);
-
-    if (directly_declared_in_scope(scope, identity))
-    {
-        auto existing = fetch(scope, identity);
-
-        if (IS_PTR(existing, Scope::OverloadedIdentity) && is_overloadable(value))
-        {
-            auto overloaded_identity = AS_PTR(existing, Scope::OverloadedIdentity);
-            overloaded_identity->overloads.emplace_back(value);
-        }
-        else
-        {
-            source->log_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.", {get_span(value), get_span(existing)});
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-        }
-    }
-    else if (is_overloadable(value))
-    {
-        auto overloaded_identity = CREATE(Scope::OverloadedIdentity);
-        overloaded_identity->identity = identity;
-        overloaded_identity->overloads.emplace_back(value);
-        scope->lookup.insert({identity, overloaded_identity});
-    }
-    else
-    {
-        scope->lookup.insert({identity, value});
-    }
-}
-
 Scope::LookupValue fetch(ptr<Scope> scope, string identity)
 {
     while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())

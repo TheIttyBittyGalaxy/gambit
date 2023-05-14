@@ -40,6 +40,8 @@ private:
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
+    void declare(ptr<Scope> scope, Scope::LookupValue value);
+
     // STABILISE: Remove this feature set with just creating spans from tokens and by merging other spans.
     //            Using this approach couples the parser's behaviour for eating tokens with it's behaviour
     //            for generating spans, which is simply not helpful!

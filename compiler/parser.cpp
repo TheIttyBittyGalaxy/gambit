@@ -161,6 +161,38 @@ Span Parser::end_span()
     return span;
 }
 
+void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
+{
+    string identity = identity_of(value);
+
+    if (directly_declared_in_scope(scope, identity))
+    {
+        auto existing = fetch(scope, identity);
+
+        if (IS_PTR(existing, Scope::OverloadedIdentity) && is_overloadable(value))
+        {
+            auto overloaded_identity = AS_PTR(existing, Scope::OverloadedIdentity);
+            overloaded_identity->overloads.emplace_back(value);
+        }
+        else
+        {
+            source->log_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.", {get_span(value), get_span(existing)});
+            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        }
+    }
+    else if (is_overloadable(value))
+    {
+        auto overloaded_identity = CREATE(Scope::OverloadedIdentity);
+        overloaded_identity->identity = identity;
+        overloaded_identity->overloads.emplace_back(value);
+        scope->lookup.insert({identity, overloaded_identity});
+    }
+    else
+    {
+        scope->lookup.insert({identity, value});
+    }
+}
+
 // PROGRAM STRUCTURE //
 
 void Parser::parse_program()
@@ -168,16 +200,14 @@ void Parser::parse_program()
     program = CREATE(Program);
     program->global_scope = CREATE(Scope);
 
-    // FIXME: Should there be a separate method for declaring intrinsics,
-    //        given that they don't really have a 'source'?
-    declare(program->global_scope, Intrinsic::type_str, source);
-    declare(program->global_scope, Intrinsic::type_num, source);
-    declare(program->global_scope, Intrinsic::type_int, source);
-    declare(program->global_scope, Intrinsic::type_amt, source);
-    declare(program->global_scope, Intrinsic::type_bool, source);
+    declare(program->global_scope, Intrinsic::type_str);
+    declare(program->global_scope, Intrinsic::type_num);
+    declare(program->global_scope, Intrinsic::type_int);
+    declare(program->global_scope, Intrinsic::type_amt);
+    declare(program->global_scope, Intrinsic::type_bool);
 
-    declare(program->global_scope, Intrinsic::entity_player, source);
-    declare(program->global_scope, Intrinsic::state_player_number, source);
+    declare(program->global_scope, Intrinsic::entity_player);
+    declare(program->global_scope, Intrinsic::state_player_number);
 
     while (true)
     {
@@ -277,7 +307,7 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
 
     eat(Token::KeyEnum);
     enum_type->identity = eat(Token::Identity).str;
-    declare(scope, enum_type, source);
+    declare(scope, enum_type);
 
     eat(Token::CurlyL);
     do
@@ -305,7 +335,7 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
     entity->identity = eat(Token::Identity).str;
     entity->span = end_span();
 
-    declare(scope, entity, source);
+    declare(scope, entity);
     eat(Token::Line);
 }
 
@@ -334,14 +364,14 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
         parameter->span = end_span();
 
         state->parameters.emplace_back(parameter);
-        declare(state->scope, parameter, source);
+        declare(state->scope, parameter);
     } while (match(Token::Comma));
     eat(Token::ParenR);
 
     eat(Token::Dot);
     state->identity = eat(Token::Identity).str;
 
-    declare(scope, state, source);
+    declare(scope, state);
 
     state->span = end_span();
 
@@ -374,14 +404,14 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
         parameter->span = end_span();
 
         funct->parameters.emplace_back(parameter);
-        declare(funct->scope, parameter, source);
+        declare(funct->scope, parameter);
     } while (match(Token::Comma));
     eat(Token::ParenR);
 
     eat(Token::Dot);
     funct->identity = eat(Token::Identity).str;
 
-    declare(scope, funct, source);
+    declare(scope, funct);
 
     funct->span = end_span();
 
