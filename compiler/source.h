@@ -29,4 +29,6 @@ struct Source
     void log_error(string msg, initializer_list<Span> spans);
 };
 
+string present_error(Source *original_source, GambitError error);
+
 #endif

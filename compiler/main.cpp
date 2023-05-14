@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
     cout << "\nERRORS" << endl;
     for (auto error : source.errors)
-        cout << present_error(error) << endl;
+        cout << present_error(&source, error) << endl;
     cout << endl;
 
     cout << "Compilation complete" << endl;
