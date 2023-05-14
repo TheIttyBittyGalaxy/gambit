@@ -2,6 +2,7 @@
 #ifndef ERRORS_H
 #define ERRORS_H
 
+#include "source.h"
 #include "span.h"
 #include "token.h"
 #include <exception>
@@ -10,31 +11,28 @@
 #include <vector>
 using namespace std;
 
-// FIXME: Make the various different ways in which errors are presented more consistent.
+// FIXME: Currently how errors are displayed is inconsistent, and sometimes messy.
+//        Perhaps it would make more sense to turn these into plain old data structures,
+//        and then have the call site decide how to display the errors? That would make
+//        it possible to things like, for example, grouping errors from the same source
+//        file, instead of printing the file path of each and every error.
 
-extern vector<string> gambit_errors;
-void emit_gambit_error(string msg, size_t line, size_t column);
-void emit_gambit_error(string msg, Token token);
-
-// FIXME: Move method definitions into error.cpp, in the hopes it will help with compilation time
 class GambitError : public exception
 {
 public:
     string msg;
-    Token token;
+    size_t line;
+    size_t column;
+    Source *source;
+    optional<Span> span_one;
+    optional<Span> span_two;
 
-    GambitError(string msg, Token token) : msg(msg), token(token)
-    {
-        emit_gambit_error(msg, token);
-    };
-
-    string what()
-    {
-        return msg;
-    }
+    GambitError(string msg, size_t line, size_t column, Source *source);
+    GambitError(string msg, Token token);
+    GambitError(string msg, Span span_one, optional<Span> span_two = {});
+    string what();
 };
 
-// FIXME: Move method definitions into error.cpp, in the hopes it will help with compilation time
 class CompilerError : public exception
 {
 public:
@@ -42,37 +40,10 @@ public:
     optional<Span> span_one;
     optional<Span> span_two;
 
-    CompilerError(string msg, optional<Span> span_one = {}, optional<Span> span_two = {})
-        : msg(msg),
-          span_one(span_one),
-          span_two(span_two){};
-
-    string what()
-    {
-        string err = msg;
-
-        if (span_one.has_value())
-        {
-            auto span = span_one.value();
-            err += "\n\n";
-            if (span.source == nullptr)
-                err += "invalid span";
-            else
-                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
-        }
-
-        if (span_two.has_value())
-        {
-            auto span = span_two.value();
-            err += "\n\n";
-            if (span.source == nullptr)
-                err += "invalid span";
-            else
-                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + (span.multiline ? "\n" : "  ") + span.get_source_substr();
-        }
-
-        return err;
-    }
+    CompilerError(string msg, optional<Span> span_one = {}, optional<Span> span_two = {});
+    string what();
 };
+
+extern vector<GambitError> gambit_errors;
 
 #endif

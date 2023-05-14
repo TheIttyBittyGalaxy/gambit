@@ -121,7 +121,7 @@ vector<Token> generate_tokens(Source &source)
             if (!character_parsed)
             {
                 if (!panic_mode)
-                    emit_gambit_error("Could not parse character '" + next + "', syntax not recognised.", line, column);
+                    GambitError("Could not parse character '" + next + "', syntax not recognised.", line, column, &source);
                 advance(1);
                 panic_mode = true;
                 error_occurred = true;

@@ -22,5 +22,7 @@ Span::Span(Span start, Span end)
 
 string Span::get_source_substr()
 {
+    if (source == nullptr)
+        return "[invalid span]";
     return source->substr(position, length);
 }

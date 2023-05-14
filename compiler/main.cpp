@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
     {
         cout << "\nUNCAUGHT GAMBIT ERROR: " << endl;
         cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
-        cout << to_string(err.token) << endl;
         cout << err.what() << endl;
     }
     catch (CompilerError err)
@@ -83,7 +82,7 @@ int main(int argc, char *argv[])
 
     cout << "\nERRORS" << endl;
     for (auto err : gambit_errors)
-        cout << err << endl;
+        cout << err.what() << endl;
     cout << endl;
 
     return 0;
