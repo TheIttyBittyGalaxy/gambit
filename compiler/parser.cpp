@@ -8,6 +8,7 @@ ptr<Program> Parser::parse(Source &source)
     this->source = &source;
     current_token_index = 0;
     current_block_nesting = 0;
+    panic_mode = false;
 
     parse_program();
     return program;
@@ -53,7 +54,7 @@ Token Parser::eat(Token::Kind kind)
     if (!peek(kind))
     {
         Token token = current_token();
-        source->log_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
+        gambit_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
         throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 
@@ -176,7 +177,7 @@ void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
         }
         else
         {
-            source->log_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.", {get_span(value), get_span(existing)});
+            gambit_error("Cannot declare " + identity + " in scope, as " + identity + " already exists.", {get_span(value), get_span(existing)});
             throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
         }
     }
@@ -191,6 +192,40 @@ void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
     {
         scope->lookup.insert({identity, value});
     }
+}
+
+// ERRORS //
+
+void Parser::gambit_error(string msg, size_t line, size_t column, initializer_list<Span> spans)
+{
+    if (panic_mode)
+        return;
+    source->log_error(msg, line, column, spans);
+    panic_mode = true;
+}
+
+void Parser::gambit_error(string msg, Token token)
+{
+    if (panic_mode)
+        return;
+    source->log_error(msg, token);
+    panic_mode = true;
+}
+
+void Parser::gambit_error(string msg, Span span)
+{
+    if (panic_mode)
+        return;
+    source->log_error(msg, span);
+    panic_mode = true;
+}
+
+void Parser::gambit_error(string msg, initializer_list<Span> spans)
+{
+    if (panic_mode)
+        return;
+    source->log_error(msg, spans);
+    panic_mode = true;
 }
 
 // PROGRAM STRUCTURE //
@@ -214,27 +249,25 @@ void Parser::parse_program()
         if (match(Token::EndOfFile))
             break;
 
-        try
+        if (peek_entity_definition())
+            parse_entity_definition(program->global_scope);
+        else if (peek_enum_definition())
+            parse_enum_definition(program->global_scope);
+        else if (peek_state_property_definition())
+            parse_state_property_definition(program->global_scope);
+        else if (peek_function_property_definition())
+            parse_function_property_definition(program->global_scope);
+        else
         {
-            if (peek_entity_definition())
-                parse_entity_definition(program->global_scope);
-            else if (peek_enum_definition())
-                parse_enum_definition(program->global_scope);
-            else if (peek_state_property_definition())
-                parse_state_property_definition(program->global_scope);
-            else if (peek_function_property_definition())
-                parse_function_property_definition(program->global_scope);
-            else
-            {
-                skip_whitespace();
-                source->log_error("Unexpected '" + current_token().str + "' in global scope.", current_token());
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
+            skip_whitespace();
+            gambit_error("Unexpected '" + current_token().str + "' in global scope.", current_token());
         }
-        catch (GambitError err)
+
+        if (panic_mode)
         {
             skip_to_end_of_line();
             skip_to_block_nesting(0);
+            panic_mode = false;
         }
     }
 }
@@ -270,12 +303,12 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
             auto code_block_statement = AS_PTR(statement, CodeBlock);
             if (code_block_statement->singleton_block)
             {
-                source->log_error("Too many colons.", code_block->span);
+                gambit_error("Too many colons.", code_block->span);
                 throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             }
             else
             {
-                source->log_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
+                gambit_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
                 throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             }
         }
@@ -436,7 +469,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         stmt = parse_expression();
     else
     {
-        source->log_error("Expected statement", current_token());
+        gambit_error("Expected statement", current_token());
         throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 
@@ -505,7 +538,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
 
     else
     {
-        source->log_error("Expected expression", current_token());
+        gambit_error("Expected expression", current_token());
         throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 
@@ -656,7 +689,7 @@ ptr<Literal> Parser::parse_literal()
     }
     else
     {
-        source->log_error("Expected literal", current_token());
+        gambit_error("Expected literal", current_token());
         throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 

@@ -21,6 +21,7 @@ private:
 
     size_t current_token_index;
     size_t current_block_nesting;
+    bool panic_mode = false;
 
     vector<Span> span_stack;
     size_t differed_span_stack_spans = 0;
@@ -41,6 +42,12 @@ private:
     void skip_to_end_of_current_block();
 
     void declare(ptr<Scope> scope, Scope::LookupValue value);
+
+    // ERROR HANDLING //
+    void gambit_error(string msg, size_t line, size_t column, initializer_list<Span> spans = {});
+    void gambit_error(string msg, Token token);
+    void gambit_error(string msg, Span span);
+    void gambit_error(string msg, initializer_list<Span> spans);
 
     // STABILISE: Remove this feature set with just creating spans from tokens and by merging other spans.
     //            Using this approach couples the parser's behaviour for eating tokens with it's behaviour
