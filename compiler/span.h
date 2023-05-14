@@ -54,9 +54,9 @@ struct Span
           multiline(t.kind == Token::Line),
           source(source){};
 
-    Span(Span start, Span end);
-
     string get_source_substr();
 };
+
+Span merge(Span start, Span end);
 
 #endif

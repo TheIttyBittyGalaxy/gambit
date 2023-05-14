@@ -32,6 +32,7 @@ private:
     Token eat(Token::Kind kind);
     void skip();
     bool match(Token::Kind kind);
+    Span to_span(Token token);
 
     bool end_of_file();
     void skip_whitespace();

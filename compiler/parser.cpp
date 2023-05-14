@@ -100,6 +100,11 @@ bool Parser::match(Token::Kind kind)
     return true;
 }
 
+Span Parser::to_span(Token token)
+{
+    return Span(token, source);
+}
+
 bool Parser::end_of_file()
 {
     return peek(Token::EndOfFile);
@@ -225,10 +230,10 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
 
-        // If we were to use `end_span` after `parse_statement`, the generated span would
+        // STABILISE: If we were to use `end_span` after `parse_statement`, the generated span would
         // include the new line (and potentially other comments and whitespace) at the end
         // of the statement. We don't want this, so generate the span this way instead.
-        code_block->span = Span(start_span, get_span(statement));
+        code_block->span = merge(start_span, get_span(statement));
 
         if (IS_PTR(statement, CodeBlock))
         {
