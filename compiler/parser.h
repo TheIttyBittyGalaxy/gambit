@@ -49,13 +49,6 @@ private:
     void gambit_error(string msg, Span span);
     void gambit_error(string msg, initializer_list<Span> spans);
 
-    // STABILISE: Remove this feature set with just creating spans from tokens and by merging other spans.
-    //            Using this approach couples the parser's behaviour for eating tokens with it's behaviour
-    //            for generating spans, which is simply not helpful!
-    void start_span();
-    void start_span(Span start);
-    [[nodiscard]] Span end_span();
-
     // PROGRAM STRUCTURE //
     void parse_program();
 

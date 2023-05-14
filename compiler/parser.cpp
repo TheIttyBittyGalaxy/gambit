@@ -138,34 +138,6 @@ void Parser::skip_to_end_of_current_block()
     skip_to_block_nesting(current_block_nesting - 1);
 }
 
-void Parser::start_span()
-{
-    // Starting the span is differed, as the current token at this point may be a newline,
-    // that could potentially be skipped over by eat. If this token were part of the span,
-    // it and any subsequent new lines and comments would be included in the span.
-    differed_span_stack_spans++;
-}
-
-void Parser::start_span(Span start)
-{
-    span_stack.emplace_back(Span(start.line, start.column, start.position, 0, start.multiline, source));
-}
-
-Span Parser::end_span()
-{
-    if (differed_span_stack_spans > 0)
-        throw CompilerError("Attempt to end a differed span that has not been started yet");
-
-    if (span_stack.size() == 0)
-        throw CompilerError("Attempt to end a span that wasn't started");
-
-    Span span = span_stack.back();
-    span_stack.pop_back();
-    span.length = current_token().position - span.position;
-    span.multiline = span.multiline || span.line != previous_token().line;
-    return span;
-}
-
 void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
 {
     string identity = identity_of(value);
