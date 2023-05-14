@@ -106,7 +106,6 @@ struct Scope
         vector<LookupValue> overloads;
     };
 
-    Span span;
     wptr<Scope> parent;
     unordered_map<string, LookupValue> lookup;
 };
