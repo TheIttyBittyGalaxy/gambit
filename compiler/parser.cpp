@@ -215,18 +215,24 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
 
     if (match(Token::Colon))
     {
+        auto start_span = end_span();
+
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
 
+        // If we were to use `end_span` after `parse_statement`, the generated span would
+        // include the new line (and potentially other comments and whitespace) at the end
+        // of the statement. We don't want this, so generate the span this way instead.
+        code_block->span = Span(start_span, get_span(statement));
+
         if (IS_PTR(statement, CodeBlock))
         {
-            // FIXME: Include a relevant span instead of an invalid token
             auto code_block_statement = AS_PTR(statement, CodeBlock);
             if (code_block_statement->singleton_block)
-                throw GambitError("Too many colons.", Token());
+                throw GambitError("Too many colons.", code_block->span);
             else
-                throw GambitError("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", Token());
+                throw GambitError("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
         }
     }
     else
@@ -238,9 +244,9 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
             auto statement = parse_statement(code_block->scope);
             code_block->statements.emplace_back(statement);
         }
+        code_block->span = end_span();
     }
 
-    code_block->span = end_span();
     return code_block;
 }
 
@@ -282,9 +288,9 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
 
     eat(Token::KeyEntity);
     entity->identity = eat(Token::Identity).str;
-    declare(scope, entity);
-
     entity->span = end_span();
+
+    declare(scope, entity);
     eat(Token::Line);
 }
 

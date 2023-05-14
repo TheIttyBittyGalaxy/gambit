@@ -7,6 +7,11 @@
 #include <string>
 using namespace std;
 
+// FIXME: For the purposes of displaying errors, would it make the most sense
+//        if multiline spans included the entirely of the lines that they span,
+//        instead of only a segment? Or at least have the option to generate this
+//        string where it would be useful?
+
 struct Span
 {
     size_t line;

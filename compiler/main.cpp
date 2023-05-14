@@ -85,5 +85,7 @@ int main(int argc, char *argv[])
         cout << err.what() << endl;
     cout << endl;
 
+    cout << "Compilation complete" << endl;
+
     return 0;
 }

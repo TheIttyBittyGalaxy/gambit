@@ -114,6 +114,9 @@ Span get_span(Scope::LookupValue value)
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->span;
 
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?
+
     if (IS_PTR(value, IntrinsicType))
         throw CompilerError("Attempt to get the span of an intrinsic type.");
 
@@ -126,7 +129,11 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
 
     if (directly_declared_in_scope(scope, identity))
     {
-        auto existing = fetch(scope, identity);
+        // FIXME: An invalid span is given here, as currently it is only used in the error if the identity
+        //        can't be found, and in this case we've already tested if `directly_declared_in_scope`.
+        //        Still, find a better way of doing this.
+        auto existing = fetch(scope, identity, Span());
+
         if (IS_PTR(existing, Scope::OverloadedIdentity) && is_overloadable(value))
         {
             auto overloaded_identity = AS_PTR(existing, Scope::OverloadedIdentity);
@@ -134,7 +141,7 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
         }
         else
         {
-            throw GambitError("Cannot declare " + identity + " in scope, as " + identity + " already exists.", Token()); // FIXME: Retrieve the correct token to put in the error message
+            throw GambitError("Cannot declare " + identity + " in scope, as " + identity + " already exists.", get_span(value), get_span(existing));
         }
     }
     else if (is_overloadable(value))
@@ -150,7 +157,7 @@ void declare(ptr<Scope> scope, Scope::LookupValue value)
     }
 }
 
-Scope::LookupValue fetch(ptr<Scope> scope, string identity)
+Scope::LookupValue fetch(ptr<Scope> scope, string identity, Span span)
 {
     while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())
         scope = ptr<Scope>(scope->parent);
@@ -158,7 +165,7 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity)
     if (directly_declared_in_scope(scope, identity))
         return scope->lookup.at(identity);
 
-    throw GambitError("'" + identity + "' does not exist.", Token()); // FIXME: Retrieve the correct token to put in the error message
+    throw GambitError("'" + identity + "' does not exist.", span);
 }
 
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity)
