@@ -226,7 +226,7 @@ Pattern determine_expression_pattern(Expression expression)
             return AS_PTR(property, FunctionProperty)->pattern;
         if (IS_PTR(property, UnresolvedIdentity))
         {
-            auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+            auto unresolved_identity = AS_PTR(property, UnresolvedIdentity);
             throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->span);
         }
 
