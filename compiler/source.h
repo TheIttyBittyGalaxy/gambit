@@ -2,10 +2,12 @@
 #ifndef SOURCE_H
 #define SOURCE_H
 
-#include "token.h"
 #include "errors.h"
-#include <vector>
+#include "span.h"
+#include "token.h"
+#include <initializer_list>
 #include <string>
+#include <vector>
 using namespace std;
 
 struct Source
@@ -20,6 +22,11 @@ struct Source
 
     string substr(size_t position);
     string substr(size_t position, size_t n);
+
+    void log_error(string msg, size_t line, size_t column, initializer_list<Span> spans = {});
+    void log_error(string msg, Token token);
+    void log_error(string msg, Span span);
+    void log_error(string msg, initializer_list<Span> spans);
 };
 
 #endif

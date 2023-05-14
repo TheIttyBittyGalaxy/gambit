@@ -273,8 +273,8 @@ Span get_span(Expression expr);
 Span get_span(Pattern pattern);
 Span get_span(Scope::LookupValue value);
 
-void declare(ptr<Scope> scope, Scope::LookupValue value);
-Scope::LookupValue fetch(ptr<Scope> scope, string identity, Span span);
+void declare(ptr<Scope> scope, Scope::LookupValue value, Source *source);
+Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
 
 Pattern determine_expression_pattern(Expression expr);

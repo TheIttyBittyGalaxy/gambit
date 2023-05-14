@@ -1,92 +1,43 @@
 #include "errors.h"
 #include "source.h"
 
-GambitError::GambitError(string msg, size_t line, size_t column, Source *source)
-    : msg(msg),
-      line(line),
-      column(column),
-      source(source)
+string present_error(GambitError error)
 {
-    gambit_errors.push_back(*this);
-};
+    string str = "[" + to_string(error.line) + ":" + to_string(error.column) + "] " + error.msg;
 
-GambitError::GambitError(string msg, Token token, Source *source) : GambitError(msg, token.line, token.column, source){};
+    if (error.spans.size() == 0)
+        return str;
 
-GambitError::GambitError(string msg, Span span_one, optional<Span> span_two)
-    : msg(msg),
-      line(span_one.line),
-      column(span_one.column),
-      span_one(span_one),
-      span_two(span_two),
-      source(span_one.source)
-{
-    gambit_errors.push_back(*this);
-};
-
-string GambitError::what()
-{
-    string err;
-
-    if (span_one.has_value())
+    bool error_spans_multiple_sources = false;
+    for (auto span : error.spans)
     {
-        auto span = span_one.value();
-        if (span.source == nullptr)
-            err += "[invalid span] ";
-        else
-            err += "[" +
-                   span.source->file_path + " " +
-                   to_string(span.line) + ":" + to_string(span.column) +
-                   "] ";
-    }
-    else if (source == nullptr)
-    {
-        err += "[invalid span] ";
-    }
-    else
-    {
-        err += "[" +
-               source->file_path + " " +
-               to_string(line) + ":" + to_string(column) +
-               "] ";
-    }
-
-    err += msg;
-
-    if (span_one.has_value())
-    {
-        auto span = span_one.value();
-        err += "\n\n";
-        if (span.source == nullptr)
+        if (span.source != error.source)
         {
-            err += "[invalid span] ";
-        }
-        else
-        {
-            if (span_two.has_value())
-                err += span.source->file_path + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
-            err += span.get_source_substr();
+            error_spans_multiple_sources = true;
+            break;
         }
     }
 
-    if (span_two.has_value())
+    for (auto span : error.spans)
     {
-        auto span = span_two.value();
-        err += "\n\n";
-        if (span.source == nullptr)
+        str += "\n\n";
+
+        Source *source = span.source;
+        if (source == nullptr)
         {
-            err += "[invalid span] ";
+            str += "[invalid span]";
+            continue;
         }
-        else
-        {
-            err += span.source->file_path + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
-            err += span.get_source_substr();
-        }
+
+        if (error_spans_multiple_sources)
+            str += source->file_path + "  " + to_string(span.line) + ":" + to_string(span.column) + "\n";
+
+        str += span.get_source_substr();
     }
 
-    if (span_one.has_value() || span_two.has_value())
-        err += "\n";
+    str += "\n";
 
-    return err;
+    return str;
 }
 
 CompilerError::CompilerError(string msg, optional<Span> span_one, optional<Span> span_two)
@@ -120,5 +71,3 @@ string CompilerError::what()
 
     return err;
 }
-
-vector<GambitError> gambit_errors;

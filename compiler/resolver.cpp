@@ -1,9 +1,11 @@
 #include "errors.h"
 #include "resolver.h"
+#include "source.h"
 #include <optional>
 
-void Resolver::resolve(ptr<Program> program)
+void Resolver::resolve(ptr<Program> program, Source *new_source)
 {
+    source = new_source;
     resolve_program(program);
 }
 
@@ -68,7 +70,10 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
 
             auto resolved_pattern = determine_expression_pattern(resolved);
             if (!is_pattern_subset_of_superset(resolved_pattern, state->pattern))
-                throw GambitError("Default value for state is the incorrect type.", get_span(resolved));
+            {
+                source->log_error("Default value for state is the incorrect type.", get_span(resolved));
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+            }
         }
     }
 
@@ -144,13 +149,14 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
 
             if (declared_in_scope(scope, id)) // Resolve identity from scope
             {
-                auto resolved = fetch(scope, id, unresolved_identity->span);
+                auto resolved = fetch(scope, id);
 
                 if (IS_PTR(resolved, Variable))
                     return AS_PTR(resolved, Variable);
 
                 // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-                throw GambitError("Expected value, got '" + id + "'", get_span(resolved));
+                source->log_error("Expected value, got '" + id + "'", get_span(resolved));
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
 
                 return CREATE(InvalidValue);
             }
@@ -177,7 +183,8 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
                             return value;
             }
 
-            throw GambitError("'" + id + "' is not defined.", unresolved_identity->span);
+            source->log_error("'" + id + "' is not defined.", unresolved_identity->span);
+            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             return CREATE(InvalidValue);
         }
         else if (IS_PTR(expression, Variable))
@@ -250,7 +257,10 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         auto all_overloads = fetch_all_overloads(scope, identity);
 
         if (all_overloads.size() == 0)
-            throw GambitError("Property '" + identity + "' does not exist.", property_index->span);
+        {
+            source->log_error("Property '" + identity + "' does not exist.", property_index->span);
+            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        }
 
         vector<variant<ptr<UnresolvedIdentity>, ptr<StateProperty>, ptr<FunctionProperty>>> valid_overloads;
         for (auto overload : all_overloads)
@@ -272,9 +282,15 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         }
 
         if (valid_overloads.size() == 0)
-            throw GambitError("No version of the property '" + identity + "' applies to these arguments.", property_index->span);
+        {
+            source->log_error("No version of the property '" + identity + "' applies to these arguments.", property_index->span);
+            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        }
         else if (valid_overloads.size() > 1)
-            throw GambitError("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", property_index->span);
+        {
+            source->log_error("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", property_index->span);
+            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+        }
 
         property_index->property = valid_overloads[0];
     }
@@ -320,7 +336,7 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 
             if (declared_in_scope(scope, id))
             {
-                auto resolved = fetch(scope, id, unresolved_identity->span);
+                auto resolved = fetch(scope, id);
 
                 if (IS_PTR(resolved, IntrinsicType))
                     return AS_PTR(resolved, IntrinsicType);
@@ -330,11 +346,13 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
                     return AS_PTR(resolved, Entity);
 
                 auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-                throw GambitError("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
+                source->log_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             }
             else
             {
-                throw GambitError("'" + id + "' is not defined.", unresolved_identity->span);
+                source->log_error("'" + id + "' is not defined.", unresolved_identity->span);
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             }
 
             return CREATE(InvalidPattern);

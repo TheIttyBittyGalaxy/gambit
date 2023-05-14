@@ -3,6 +3,7 @@
 #define RESOLVER_H
 
 #include "apm.h"
+#include "source.h"
 #include "utilty.h"
 #include <optional>
 using namespace std;
@@ -10,10 +11,11 @@ using namespace std;
 class Resolver
 {
 public:
-    void resolve(ptr<Program> program);
+    void resolve(ptr<Program> program, Source *new_source);
 
 private:
     ptr<Program> program = nullptr;
+    Source *source = nullptr;
 
     // PROGRAM STRUCTURE //
     void resolve_program(ptr<Program> program);

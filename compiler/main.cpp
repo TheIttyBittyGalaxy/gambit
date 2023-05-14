@@ -64,26 +64,19 @@ int main(int argc, char *argv[])
 
         cout << "\nRESOLVER" << endl;
         Resolver resolver;
-        resolver.resolve(program);
+        resolver.resolve(program, &source);
         output_program(program, "resolver_output");
     }
-    catch (GambitError err)
-    {
-        // STABILISE: Gambit errors shouldn't throw
-        cout << "\nUNCAUGHT GAMBIT ERROR: " << endl;
-        cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
-        cout << err.what() << endl;
-    }
-    catch (CompilerError err)
+    catch (CompilerError error)
     {
         cout << "\nCOMPILER ERROR: " << endl;
         cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
-        cout << err.what() << endl;
+        cout << error.what() << endl;
     }
 
     cout << "\nERRORS" << endl;
-    for (auto err : gambit_errors)
-        cout << err.what() << endl;
+    for (auto error : source.errors)
+        cout << present_error(error) << endl;
     cout << endl;
 
     cout << "Compilation complete" << endl;

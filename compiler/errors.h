@@ -8,6 +8,7 @@ struct Source;
 #include "span.h"
 #include "token.h"
 #include <exception>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -23,21 +24,35 @@ using namespace std;
 //            APM nodes are parsed/resolved/whatever, which cascades errors and makes
 //            the behaviour of the compiler unpredictable.
 
-class GambitError : public exception
+struct GambitError
 {
-public:
     string msg;
+    vector<Span> spans;
+
+    Source *source;
     size_t line;
     size_t column;
-    Source *source;
-    optional<Span> span_one;
-    optional<Span> span_two;
 
-    GambitError(string msg, size_t line, size_t column, Source *source);
-    GambitError(string msg, Token token, Source *source);
-    GambitError(string msg, Span span_one, optional<Span> span_two = {});
-    string what();
+    GambitError(string msg, Source *source, size_t line, size_t column, initializer_list<Span> spans = {})
+        : msg(msg),
+          source(source),
+          line(line),
+          column(column),
+          spans(spans){};
+
+    GambitError(string msg, Source *source, Token token)
+        : GambitError(msg, source, token.line, token.column){};
+
+    GambitError(string msg, Source *source, Span span)
+        : GambitError(msg, source, span.line, span.column, {span}){};
+
+    // FIXME: There will be an error if an empty initializer_list is passed to this.
+    //        Either prevent this from being possible or handle it gracefully.
+    GambitError(string msg, Source *source, initializer_list<Span> spans)
+        : GambitError(msg, source, (*(spans.begin())).line, (*(spans.begin())).column, spans){};
 };
+
+string present_error(GambitError error);
 
 class CompilerError : public exception
 {
@@ -49,7 +64,5 @@ public:
     CompilerError(string msg, optional<Span> span_one = {}, optional<Span> span_two = {});
     string what();
 };
-
-extern vector<GambitError> gambit_errors;
 
 #endif

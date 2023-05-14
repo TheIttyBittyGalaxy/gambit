@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "source.h"
 #include "intrinsic.h"
 #include "parser.h"
 
@@ -53,7 +54,8 @@ Token Parser::eat(Token::Kind kind)
     if (!peek(kind))
     {
         Token token = current_token();
-        throw GambitError("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token, source);
+        source->log_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
+        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 
     // Skip line tokens if we are attempting to eat a non-line token
@@ -162,14 +164,16 @@ void Parser::parse_program()
     program = CREATE(Program);
     program->global_scope = CREATE(Scope);
 
-    declare(program->global_scope, Intrinsic::type_str);
-    declare(program->global_scope, Intrinsic::type_num);
-    declare(program->global_scope, Intrinsic::type_int);
-    declare(program->global_scope, Intrinsic::type_amt);
-    declare(program->global_scope, Intrinsic::type_bool);
+    // FIXME: Should there be a separate method for declaring intrinsics,
+    //        given that they don't really have a 'source'?
+    declare(program->global_scope, Intrinsic::type_str, source);
+    declare(program->global_scope, Intrinsic::type_num, source);
+    declare(program->global_scope, Intrinsic::type_int, source);
+    declare(program->global_scope, Intrinsic::type_amt, source);
+    declare(program->global_scope, Intrinsic::type_bool, source);
 
-    declare(program->global_scope, Intrinsic::entity_player);
-    declare(program->global_scope, Intrinsic::state_player_number);
+    declare(program->global_scope, Intrinsic::entity_player, source);
+    declare(program->global_scope, Intrinsic::state_player_number, source);
 
     while (true)
     {
@@ -189,7 +193,8 @@ void Parser::parse_program()
             else
             {
                 skip_whitespace();
-                throw GambitError("Unexpected '" + current_token().str + "' in global scope.", current_token(), source);
+                source->log_error("Unexpected '" + current_token().str + "' in global scope.", current_token());
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
             }
         }
         catch (GambitError err)
@@ -230,9 +235,15 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
         {
             auto code_block_statement = AS_PTR(statement, CodeBlock);
             if (code_block_statement->singleton_block)
-                throw GambitError("Too many colons.", code_block->span);
+            {
+                source->log_error("Too many colons.", code_block->span);
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+            }
             else
-                throw GambitError("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
+            {
+                source->log_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
+                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+            }
         }
     }
     else
@@ -262,7 +273,7 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
 
     eat(Token::KeyEnum);
     enum_type->identity = eat(Token::Identity).str;
-    declare(scope, enum_type);
+    declare(scope, enum_type, source);
 
     eat(Token::CurlyL);
     do
@@ -290,7 +301,7 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
     entity->identity = eat(Token::Identity).str;
     entity->span = end_span();
 
-    declare(scope, entity);
+    declare(scope, entity, source);
     eat(Token::Line);
 }
 
@@ -319,14 +330,14 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
         parameter->span = end_span();
 
         state->parameters.emplace_back(parameter);
-        declare(state->scope, parameter);
+        declare(state->scope, parameter, source);
     } while (match(Token::Comma));
     eat(Token::ParenR);
 
     eat(Token::Dot);
     state->identity = eat(Token::Identity).str;
 
-    declare(scope, state);
+    declare(scope, state, source);
 
     state->span = end_span();
 
@@ -359,14 +370,14 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
         parameter->span = end_span();
 
         funct->parameters.emplace_back(parameter);
-        declare(funct->scope, parameter);
+        declare(funct->scope, parameter, source);
     } while (match(Token::Comma));
     eat(Token::ParenR);
 
     eat(Token::Dot);
     funct->identity = eat(Token::Identity).str;
 
-    declare(scope, funct);
+    declare(scope, funct, source);
 
     funct->span = end_span();
 
@@ -390,7 +401,10 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else if (peek_expression())
         stmt = parse_expression();
     else
-        throw GambitError("Expected statement", current_token(), source);
+    {
+        source->log_error("Expected statement", current_token());
+        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+    }
 
     if (!match(Token::EndOfFile))
         eat(Token::Line);
@@ -456,7 +470,10 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         lhs = parse_list_value();
 
     else
-        throw GambitError("Expected expression", current_token(), source);
+    {
+        source->log_error("Expected expression", current_token());
+        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+    }
 
     while (true)
     {
@@ -605,7 +622,8 @@ ptr<Literal> Parser::parse_literal()
     }
     else
     {
-        throw GambitError("Expected literal", current_token(), source);
+        source->log_error("Expected literal", current_token());
+        throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
     }
 
     literal->span = end_span();
