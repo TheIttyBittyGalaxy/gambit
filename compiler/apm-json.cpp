@@ -73,6 +73,15 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<InvalidStatement> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidStatement"));
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -302,6 +311,15 @@ string to_json(const ptr<InvalidValue> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("InvalidValue"));
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidExpression"));
     json.close();
     return (string)json;
 }
