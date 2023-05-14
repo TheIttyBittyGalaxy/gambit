@@ -74,6 +74,8 @@ struct Token
     size_t line;
     size_t column;
 
+    // STABILISE: Remove source reference from tokens.
+
     // FIXME: As it currently stands, every token contains a reference to the source
     //        so that when we convert them into spans later, it's easy for the merge
     //        function to reference the original source code. Storing the same pointer

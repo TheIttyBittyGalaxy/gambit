@@ -11,6 +11,11 @@
 #include <vector>
 using namespace std;
 
+// STABILISE: Give intrinsics 'intrinsic spans', so that if ever the compiler tries to use one,
+//            we don't crash the program. In future, we'll want to throw a compiler error whenever
+//            this happens, but for now we don't want to have to worry about it, or get strange
+//            errors whenever it happens.
+
 // Forward declarations
 
 struct Program;

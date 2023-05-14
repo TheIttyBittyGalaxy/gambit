@@ -17,6 +17,10 @@ using namespace std;
 //        it possible to things like, for example, grouping errors from the same source
 //        file, instead of printing the file path of each and every error.
 
+// STABILISE: Never throw a gambit error! Doing do breaks assumptions about how the
+//            APM nodes are parsed/resolved/whatever, which cascades errors and makes
+//            the behaviour of the compiler unpredictable.
+
 class GambitError : public exception
 {
 public:

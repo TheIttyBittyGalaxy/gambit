@@ -12,6 +12,8 @@ using namespace std;
 //        instead of only a segment? Or at least have the option to generate this
 //        string where it would be useful?
 
+// STABILISE: Remove any possibility of null spans! null pointers cause errors.
+
 struct Span
 {
     size_t line;

@@ -1,6 +1,8 @@
 #include "errors.h"
 #include "lexing.h"
 
+// STABILISE: Rework this to operate on a source struct
+
 vector<Token> generate_tokens(Source &source)
 {
     vector<Token> tokens;

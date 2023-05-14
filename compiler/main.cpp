@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
     }
     catch (GambitError err)
     {
+        // STABILISE: Gambit errors shouldn't throw
         cout << "\nUNCAUGHT GAMBIT ERROR: " << endl;
         cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
         cout << err.what() << endl;
