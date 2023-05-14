@@ -266,6 +266,7 @@ bool is_overloadable(Scope::LookupValue value);
 Span get_span(Statement stmt);
 Span get_span(Expression expr);
 Span get_span(Pattern pattern);
+Span get_span(Scope::LookupValue value);
 
 void declare(ptr<Scope> scope, Scope::LookupValue value);
 Scope::LookupValue fetch(ptr<Scope> scope, string identity);

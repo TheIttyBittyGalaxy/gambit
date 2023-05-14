@@ -7,6 +7,8 @@
 #include <string>
 using namespace std;
 
+// FIXME: Have spans keep track of if they are multiline spans or not
+
 struct Span
 {
     size_t line;

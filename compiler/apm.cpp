@@ -22,7 +22,7 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
 
-    throw CompilerError("Cannot get identity of Scope::LookupValue variant");
+    throw CompilerError("Cannot get identity of Scope::LookupValue variant", get_span(value));
 }
 
 bool directly_declared_in_scope(ptr<Scope> scope, string identity)
@@ -51,7 +51,7 @@ Span get_span(Statement stmt)
     if (IS_PTR(stmt, CodeBlock))
         return AS_PTR(stmt, CodeBlock)->span;
 
-    throw CompilerError("Could not get span of Expression variant.");
+    throw CompilerError("Could not get span of Statement variant.");
 }
 
 Span get_span(Expression expr)
@@ -99,6 +99,25 @@ Span get_span(Pattern pattern)
         throw CompilerError("Attempt to get the span of an intrinsic type.");
 
     throw CompilerError("Could not get span of Expression variant.");
+}
+
+Span get_span(Scope::LookupValue value)
+{
+    if (IS_PTR(value, Variable))
+        return AS_PTR(value, Variable)->span;
+    if (IS_PTR(value, EnumType))
+        return AS_PTR(value, EnumType)->span;
+    if (IS_PTR(value, Entity))
+        return AS_PTR(value, Entity)->span;
+    if (IS_PTR(value, StateProperty))
+        return AS_PTR(value, StateProperty)->span;
+    if (IS_PTR(value, FunctionProperty))
+        return AS_PTR(value, FunctionProperty)->span;
+
+    if (IS_PTR(value, IntrinsicType))
+        throw CompilerError("Attempt to get the span of an intrinsic type.");
+
+    throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }
 
 void declare(ptr<Scope> scope, Scope::LookupValue value)
@@ -173,7 +192,7 @@ Pattern determine_expression_pattern(Expression expression)
     if (IS_PTR(expression, UnresolvedIdentity))
     {
         auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", Token()); // FIXME: Provide a valid span
+        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->span);
     }
     else if (IS_PTR(expression, Variable))
     {
@@ -201,23 +220,24 @@ Pattern determine_expression_pattern(Expression expression)
         if (IS_PTR(property, UnresolvedIdentity))
         {
             auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", Token()); // FIXME: Provide a valid span
+            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->span);
         }
 
-        throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.");
+        throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
     }
     // else if (IS_PTR(expression, Match))
 
-    throw CompilerError("Cannot determine pattern of Expression variant.");
+    throw CompilerError("Cannot determine pattern of Expression variant.", get_span(expression));
 }
 
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 {
     // Cannot determine result if either pattern is invalid or unresolved
+    // FIXME: Make clear in the error message which pattern is the UnresolvedIdentity
     if (
         IS_PTR(subset, UnresolvedIdentity) ||
         IS_PTR(superset, UnresolvedIdentity))
-        throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns");
+        throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns", get_span(subset), get_span(superset));
 
     if (
         IS_PTR(subset, InvalidPattern) ||

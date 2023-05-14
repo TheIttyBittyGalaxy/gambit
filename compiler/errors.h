@@ -2,6 +2,7 @@
 #ifndef ERRORS_H
 #define ERRORS_H
 
+#include "span.h"
 #include "token.h"
 #include <exception>
 #include <optional>
@@ -30,21 +31,42 @@ public:
     }
 };
 
-// FIXME: Whenever the compiler is at a point where every node has a `span` (something that maps
-//        the node to a segment of the source code), replace the `optional<token>` with `span`.
 class CompilerError : public exception
 {
 public:
     string msg;
-    optional<Token> token;
+    optional<Span> span_one;
+    optional<Span> span_two;
 
-    CompilerError(string msg, optional<Token> token = {}) : msg(msg), token(token){};
+    CompilerError(string msg, optional<Span> span_one = {}, optional<Span> span_two = {})
+        : msg(msg),
+          span_one(span_one),
+          span_two(span_two){};
 
     string what()
     {
         string err = msg;
-        if (token.has_value())
-            err += " " + to_string(token.value());
+
+        if (span_one.has_value())
+        {
+            auto span = span_one.value();
+            err += "\n\n";
+            if (span.source == nullptr)
+                err += "invalid span";
+            else
+                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + "\n" + span.get_source_substr();
+        }
+
+        if (span_two.has_value())
+        {
+            auto span = span_two.value();
+            err += "\n\n";
+            if (span.source == nullptr)
+                err += "invalid span";
+            else
+                err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->get_file_path() + "\n" + span.get_source_substr();
+        }
+
         return err;
     }
 };

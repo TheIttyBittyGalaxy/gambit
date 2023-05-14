@@ -543,7 +543,7 @@ ptr<Unary> Parser::parse_unary()
     else if (peek(Token::KeyNot))
         expr->op = eat(Token::KeyNot).str;
     else
-        throw CompilerError("Expected unary expression", current_token());
+        throw CompilerError("Expected unary expression, got " + to_string(current_token()) + " token");
 
     expr->value = parse_expression(Precedence::Unary);
 
@@ -675,7 +675,7 @@ ptr<Binary> Parser::parse_infix_term(Expression lhs)
     else if (peek(Token::Sub))
         expr->op = eat(Token::Sub).str;
     else
-        throw CompilerError("Expected infix term expression", current_token());
+        throw CompilerError("Expected infix term expression, got " + to_string(current_token()) + " token");
 
     expr->rhs = parse_expression(Precedence::Term);
 
@@ -700,7 +700,7 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
     else if (peek(Token::Div))
         expr->op = eat(Token::Div).str;
     else
-        throw CompilerError("Expected infix factor expression", current_token());
+        throw CompilerError("Expected infix factor expression, got " + to_string(current_token()) + " token");
 
     expr->rhs = parse_expression(Precedence::Factor);
 

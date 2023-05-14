@@ -10,7 +10,7 @@ Span::Span(Span start, Span end)
         throw CompilerError("Attempt to merge null span");
 
     if (start.source != end.source)
-        throw CompilerError("Attempt to merge spans from different sources");
+        throw CompilerError("Attempt to merge spans from different sources", start, end);
 
     line = start.line;
     column = start.column;

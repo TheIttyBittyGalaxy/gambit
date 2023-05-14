@@ -121,7 +121,7 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
         else if (IS(stmt, Expression))
             return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
         else
-            throw CompilerError("Cannot resolve Statement variant.");
+            throw CompilerError("Cannot resolve Statement variant.", get_span(stmt));
     }
     catch (GambitError err)
     {
@@ -199,7 +199,7 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
         else if (IS_PTR(expression, Match))
             resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
         else
-            throw CompilerError("Cannot resolve Expression variant.");
+            throw CompilerError("Cannot resolve Expression variant.", get_span(expression));
     }
     catch (GambitError err)
     {
@@ -341,7 +341,7 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
         }
 
         else
-            throw CompilerError("Cannot resolve Pattern variant.");
+            throw CompilerError("Cannot resolve Pattern variant.", get_span(pattern));
     }
     catch (GambitError err)
     {
