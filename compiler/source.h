@@ -5,6 +5,8 @@
 #include <string>
 using namespace std;
 
+// FIXME: No other data structure in the compiler is implemented in this 'read-only' kind of way.
+//        Perhaps it would be clearer and more direct to just make it a plain-old-data structure?
 struct Source
 {
 private:

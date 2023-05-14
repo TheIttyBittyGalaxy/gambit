@@ -42,10 +42,10 @@ int main(int argc, char *argv[])
                              ? (string)argv[1] + ".gambit"
                              : "local/main.gambit";
 
+    Source source(source_path);
+
     try
     {
-        Source source(source_path);
-
         cout << "\nLEXING" << endl;
         auto tokens = generate_tokens(source);
 
