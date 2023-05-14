@@ -24,63 +24,68 @@ GambitError::GambitError(string msg, Span span_one, optional<Span> span_two)
 
 string GambitError::what()
 {
-    string err = "[" + source->get_file_path() + " " + to_string(line) + ":" + to_string(column) + "] " + msg;
+    string err;
 
-    if (span_one.has_value() && span_two.has_value())
-    {
-        auto span_one_value = span_one.value();
-        auto span_two_value = span_two.value();
-
-        if (span_one_value.source == span_two_value.source)
-        {
-            return "[" + source->get_file_path() + "] " +
-                   msg +
-
-                   "\n\n" +
-                   to_string(span_one_value.line) + ":" + to_string(span_one_value.column) +
-                   span_one_value.get_source_substr() +
-
-                   "\n\n" +
-                   to_string(span_two_value.line) + ":" + to_string(span_two_value.column) +
-                   span_two_value.get_source_substr()
-
-                   + "\n";
-        }
-
-        return "[" + source->get_file_path() + "] " +
-               msg +
-
-               "\n\n" +
-               span_one_value.source->get_file_path() + " " +
-               to_string(span_one_value.line) + ":" + to_string(span_one_value.column) +
-               span_one_value.get_source_substr() +
-
-               "\n\n" +
-               span_two_value.source->get_file_path() + " " +
-               to_string(span_two_value.line) + ":" + to_string(span_two_value.column) +
-               span_two_value.get_source_substr()
-
-               + "\n";
-    }
-    else if (span_one.has_value())
+    if (span_one.has_value())
     {
         auto span = span_one.value();
-        return "[" +
+        if (span.source == nullptr)
+            err += "[invalid span] ";
+        else
+            err += "[" +
+                   span.source->get_file_path() + " " +
+                   to_string(span.line) + ":" + to_string(span.column) +
+                   "] ";
+    }
+    else if (source == nullptr)
+    {
+        err += "[invalid span] ";
+    }
+    else
+    {
+        err += "[" +
                source->get_file_path() + " " +
                to_string(line) + ":" + to_string(column) +
-               "] " +
-
-               msg + "\n\n" +
-               span.get_source_substr()
-
-               + "\n";
+               "] ";
     }
 
-    return "[" +
-           source->get_file_path() + " " +
-           to_string(line) + ":" + to_string(column) +
-           "] " +
-           msg;
+    err += msg;
+
+    if (span_one.has_value())
+    {
+        auto span = span_one.value();
+        err += "\n\n";
+        if (span.source == nullptr)
+        {
+            err += "[invalid span] ";
+        }
+        else
+        {
+            if (span_two.has_value())
+                err += span.source->get_file_path() + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
+            err += span.get_source_substr();
+        }
+    }
+
+    if (span_two.has_value())
+    {
+        auto span = span_two.value();
+        err += "\n\n";
+        if (span.source == nullptr)
+        {
+            err += "[invalid span] ";
+        }
+        else
+        {
+            err += span.source->get_file_path() + " " + to_string(span.line) + ":" + to_string(span.column) + "\n";
+            err += span.get_source_substr();
+        }
+    }
+
+    if (span_one.has_value() || span_two.has_value())
+        err += "\n";
+
+    return err;
 }
 
 CompilerError::CompilerError(string msg, optional<Span> span_one, optional<Span> span_two)
