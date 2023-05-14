@@ -3,9 +3,9 @@
 #include "source.h"
 #include <optional>
 
-void Resolver::resolve(ptr<Program> program, Source *new_source)
+void Resolver::resolve(Source &source, ptr<Program> program)
 {
-    source = new_source;
+    this->source = &source;
     resolve_program(program);
 }
 

@@ -13,10 +13,9 @@ using namespace std;
 class Parser
 {
 public:
-    ptr<Program> parse(vector<Token> new_tokens, Source *new_source);
+    ptr<Program> parse(Source &source);
 
 private:
-    vector<Token> tokens;
     ptr<Program> program = nullptr;
     Source *source;
 

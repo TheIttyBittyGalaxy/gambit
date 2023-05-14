@@ -3,10 +3,9 @@
 #include "intrinsic.h"
 #include "parser.h"
 
-ptr<Program> Parser::parse(vector<Token> new_tokens, Source *new_source)
+ptr<Program> Parser::parse(Source &source)
 {
-    tokens = new_tokens;
-    source = new_source;
+    this->source = &source;
     current_token_index = 0;
     current_block_nesting = 0;
 
@@ -16,16 +15,16 @@ ptr<Program> Parser::parse(vector<Token> new_tokens, Source *new_source)
 
 Token Parser::current_token()
 {
-    if (current_token_index >= tokens.size())
-        return tokens.back();
-    return tokens.at(current_token_index);
+    if (current_token_index >= source->tokens.size())
+        return source->tokens.back();
+    return source->tokens.at(current_token_index);
 }
 
 Token Parser::previous_token()
 {
     if (current_token_index == 0)
-        return tokens.front(); // TODO: What should the expected behaviour here be?
-    return tokens.at(current_token_index - 1);
+        return source->tokens.front(); // TODO: What should the expected behaviour here be?
+    return source->tokens.at(current_token_index - 1);
 }
 
 // UTILITY //
@@ -41,9 +40,9 @@ bool Parser::peek(Token::Kind kind)
     if (kind != Token::Line && token.kind != Token::EndOfFile)
     {
         size_t i = current_token_index;
-        while (tokens.at(i).kind == Token::Line)
+        while (source->tokens.at(i).kind == Token::Line)
             i++;
-        return tokens.at(i).kind == kind;
+        return source->tokens.at(i).kind == kind;
     }
 
     return false;

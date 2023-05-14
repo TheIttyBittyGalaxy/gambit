@@ -11,7 +11,7 @@ using namespace std;
 class Resolver
 {
 public:
-    void resolve(ptr<Program> program, Source *new_source);
+    void resolve(Source &source, ptr<Program> program);
 
 private:
     ptr<Program> program = nullptr;
