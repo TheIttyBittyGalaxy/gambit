@@ -5,7 +5,6 @@
 // STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency.
 struct Source;
 
-#include "token.h"
 #include <string>
 using namespace std;
 
@@ -44,15 +43,6 @@ struct Span
           position(position),
           length(length),
           multiline(multiline),
-          source(source){};
-
-    // STABILISE: Remove this
-    Span(Token t, Source *source)
-        : line(t.line),
-          column(t.column),
-          position(t.position),
-          length(t.str.length()),
-          multiline(t.kind == Token::Line),
           source(source){};
 
     string get_source_substr();

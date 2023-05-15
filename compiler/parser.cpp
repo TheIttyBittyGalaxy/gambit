@@ -74,12 +74,6 @@ Token Parser::eat(Token::Kind kind)
     else if (kind == Token::CurlyR && current_block_nesting > 0)
         current_block_nesting--;
 
-    while (differed_span_stack_spans > 0)
-    {
-        span_stack.emplace_back(Span(token, source));
-        differed_span_stack_spans--;
-    }
-
     current_token_index++;
     return token;
 }
@@ -107,7 +101,13 @@ bool Parser::match(Token::Kind kind)
 
 Span Parser::to_span(Token token)
 {
-    return Span(token, source);
+    return Span(
+        token.line,
+        token.column,
+        token.position,
+        token.str.length(),
+        token.kind == Token::Line,
+        source);
 }
 
 bool Parser::end_of_file()
@@ -491,7 +491,7 @@ ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
     auto identity = CREATE(UnresolvedIdentity);
     auto token = eat(Token::Identity);
     identity->identity = token.str;
-    identity->span = Span(token, source);
+    identity->span = to_span(token);
     return identity;
 }
 

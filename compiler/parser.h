@@ -23,9 +23,6 @@ private:
     size_t current_block_nesting;
     bool panic_mode = false;
 
-    vector<Span> span_stack;
-    size_t differed_span_stack_spans = 0;
-
     // UTILITY //
     Token current_token();
     Token previous_token();
