@@ -73,6 +73,15 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<InvalidStatement> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidStatement"));
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -172,6 +181,26 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<InvalidProperty> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidProperty"));
+    json.close();
+    return (string)json;
+}
+
+string to_json(const Property &node, const size_t &depth)
+{
+
+    VARIANT_PTR(UnresolvedIdentity);
+    VARIANT_PTR(StateProperty);
+    VARIANT_PTR(FunctionProperty);
+    VARIANT_PTR(InvalidProperty);
+
+    throw json_serialisation_error("Could not serialise Property variant.");
+}
+
 string to_json(const ptr<IntrinsicType> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -262,16 +291,8 @@ string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("PropertyIndex"));
-
     STRUCT_PTR_FIELD(expr);
-
-    if (IS_PTR(node->property, UnresolvedIdentity))
-        json.add("property", AS_PTR(node->property, UnresolvedIdentity));
-    else if (IS_PTR(node->property, StateProperty))
-        json.add("property", AS_PTR(node->property, StateProperty));
-    else if (IS_PTR(node->property, FunctionProperty))
-        json.add("property", AS_PTR(node->property, FunctionProperty));
-
+    STRUCT_PTR_FIELD(property);
     json.close();
     return (string)json;
 }
@@ -302,6 +323,15 @@ string to_json(const ptr<InvalidValue> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("InvalidValue"));
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidExpression"));
     json.close();
     return (string)json;
 }

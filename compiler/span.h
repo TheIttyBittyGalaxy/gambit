@@ -2,9 +2,11 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-#include "source.h"
-#include "token.h"
 #include <string>
+
+// Forward declaration of source. (Not included to avoid cyclic dependency.)
+struct Source;
+
 using namespace std;
 
 // FIXME: For the purposes of displaying errors, would it make the most sense
@@ -21,6 +23,10 @@ struct Span
     bool multiline;
     Source *source;
 
+    // TODO: 'null spans' (spans with source = nullptr) are likely to produce
+    //       segmentation faults and other errors if not handled correctly.
+    //       Consider if there a viable way of preventing this, or if not,
+    //       check access sites to see if there are any potential errors.
     Span()
         : line(0),
           column(0),
@@ -42,17 +48,9 @@ struct Span
           multiline(multiline),
           source(source){};
 
-    Span(Token t)
-        : line(t.line),
-          column(t.column),
-          position(t.position),
-          length(t.str.length()),
-          multiline(t.kind == Token::Line),
-          source(t.source){};
-
-    Span(Span start, Span end);
-
     string get_source_substr();
 };
+
+Span merge(Span start, Span end);
 
 #endif

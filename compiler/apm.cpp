@@ -1,6 +1,7 @@
 #include "apm.h"
 #include "errors.h"
 #include "intrinsic.h"
+#include "source.h"
 
 string identity_of(Scope::LookupValue value)
 {
@@ -123,41 +124,7 @@ Span get_span(Scope::LookupValue value)
     throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }
 
-void declare(ptr<Scope> scope, Scope::LookupValue value)
-{
-    string identity = identity_of(value);
-
-    if (directly_declared_in_scope(scope, identity))
-    {
-        // FIXME: An invalid span is given here, as currently it is only used in the error if the identity
-        //        can't be found, and in this case we've already tested if `directly_declared_in_scope`.
-        //        Still, find a better way of doing this.
-        auto existing = fetch(scope, identity, Span());
-
-        if (IS_PTR(existing, Scope::OverloadedIdentity) && is_overloadable(value))
-        {
-            auto overloaded_identity = AS_PTR(existing, Scope::OverloadedIdentity);
-            overloaded_identity->overloads.emplace_back(value);
-        }
-        else
-        {
-            throw GambitError("Cannot declare " + identity + " in scope, as " + identity + " already exists.", get_span(value), get_span(existing));
-        }
-    }
-    else if (is_overloadable(value))
-    {
-        auto overloaded_identity = CREATE(Scope::OverloadedIdentity);
-        overloaded_identity->identity = identity;
-        overloaded_identity->overloads.emplace_back(value);
-        scope->lookup.insert({identity, overloaded_identity});
-    }
-    else
-    {
-        scope->lookup.insert({identity, value});
-    }
-}
-
-Scope::LookupValue fetch(ptr<Scope> scope, string identity, Span span)
+Scope::LookupValue fetch(ptr<Scope> scope, string identity)
 {
     while (!directly_declared_in_scope(scope, identity) && !scope->parent.expired())
         scope = ptr<Scope>(scope->parent);
@@ -165,7 +132,7 @@ Scope::LookupValue fetch(ptr<Scope> scope, string identity, Span span)
     if (directly_declared_in_scope(scope, identity))
         return scope->lookup.at(identity);
 
-    throw GambitError("'" + identity + "' does not exist.", span);
+    throw CompilerError("Attempt to fetch LookupValue '" + identity + "' without confirming that it exists.");
 }
 
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity)

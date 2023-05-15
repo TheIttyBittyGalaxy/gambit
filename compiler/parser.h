@@ -13,18 +13,15 @@ using namespace std;
 class Parser
 {
 public:
-    ptr<Program> parse(vector<Token> new_tokens, Source *new_source);
+    ptr<Program> parse(Source &source);
 
 private:
-    vector<Token> tokens;
     ptr<Program> program = nullptr;
     Source *source;
 
     size_t current_token_index;
     size_t current_block_nesting;
-
-    vector<Span> span_stack;
-    size_t differed_span_stack_spans = 0;
+    bool panic_mode = false;
 
     // UTILITY //
     Token current_token();
@@ -33,6 +30,7 @@ private:
     Token eat(Token::Kind kind);
     void skip();
     bool match(Token::Kind kind);
+    Span to_span(Token token);
 
     bool end_of_file();
     void skip_whitespace();
@@ -40,9 +38,13 @@ private:
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
-    void start_span();
-    void start_span(Span start);
-    [[nodiscard]] Span end_span();
+    void declare(ptr<Scope> scope, Scope::LookupValue value);
+
+    // ERROR HANDLING //
+    void gambit_error(string msg, size_t line, size_t column, initializer_list<Span> spans = {});
+    void gambit_error(string msg, Token token);
+    void gambit_error(string msg, Span span);
+    void gambit_error(string msg, initializer_list<Span> spans);
 
     // PROGRAM STRUCTURE //
     void parse_program();
@@ -80,7 +82,7 @@ private:
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
     bool peek_literal();
-    [[nodiscard]] ptr<Literal> parse_literal();
+    [[nodiscard]] Expression parse_literal();
     bool peek_list_value();
     [[nodiscard]] ptr<ListValue> parse_list_value();
 

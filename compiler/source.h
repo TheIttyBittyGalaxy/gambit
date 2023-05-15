@@ -2,27 +2,33 @@
 #ifndef SOURCE_H
 #define SOURCE_H
 
+#include "errors.h"
+#include "span.h"
+#include "token.h"
+#include <initializer_list>
 #include <string>
+#include <vector>
 using namespace std;
 
-// FIXME: No other data structure in the compiler is implemented in this 'read-only' kind of way.
-//        Perhaps it would be clearer and more direct to just make it a plain-old-data structure?
 struct Source
 {
-private:
     string file_path;
     string content;
     size_t length;
+    vector<Token> tokens;
+    vector<GambitError> errors;
 
-public:
     Source(string file_path);
 
-    string get_file_path() const;
-    string get_content() const;
-    size_t get_length() const;
+    string substr(size_t position);
+    string substr(size_t position, size_t n);
 
-    string substr(size_t position) const;
-    string substr(size_t position, size_t n) const;
+    void log_error(string msg, size_t line, size_t column, initializer_list<Span> spans = {});
+    void log_error(string msg, Token token);
+    void log_error(string msg, Span span);
+    void log_error(string msg, initializer_list<Span> spans);
 };
+
+string present_error(Source *original_source, GambitError error);
 
 #endif

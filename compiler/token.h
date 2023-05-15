@@ -2,7 +2,6 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "source.h"
 #include <map>
 #include <regex>
 #include <string>
@@ -74,27 +73,17 @@ struct Token
     size_t line;
     size_t column;
 
-    // FIXME: As it currently stands, every token contains a reference to the source
-    //        so that when we convert them into spans later, it's easy for the merge
-    //        function to reference the original source code. Storing the same pointer
-    //        on every token individually does feel like a waste of space though -
-    //        could this be done better? Perhaps the list of tokens could be included
-    //        on the source object itself?
-    Source *source;
-
     Token() : kind(Token::InvalidToken),
               str(""),
               line(0),
               column(0),
-              position(0),
-              source(nullptr){};
+              position(0){};
 
-    Token(Kind kind, string str, size_t line, size_t column, size_t position, Source *source) : kind(kind),
-                                                                                                str(str),
-                                                                                                line(line),
-                                                                                                column(column),
-                                                                                                position(position),
-                                                                                                source(source) {}
+    Token(Kind kind, string str, size_t line, size_t column, size_t position) : kind(kind),
+                                                                                str(str),
+                                                                                line(line),
+                                                                                column(column),
+                                                                                position(position) {}
 };
 
 string to_string(Token t);

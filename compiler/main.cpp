@@ -1,7 +1,7 @@
 #include "apm.h"
 #include "errors.h"
 #include "json.h"
-#include "lexing.h"
+#include "lexer.h"
 #include "parser.h"
 #include "resolver.h"
 #include "source.h"
@@ -47,7 +47,8 @@ int main(int argc, char *argv[])
     try
     {
         cout << "\nLEXING" << endl;
-        auto tokens = generate_tokens(source);
+        Lexer lexer;
+        lexer.tokenise(source);
 
         // for (auto t : tokens)
         //     cout << to_string(t) << endl;
@@ -59,30 +60,24 @@ int main(int argc, char *argv[])
 
         cout << "\nPARSING" << endl;
         Parser parser;
-        auto program = parser.parse(tokens, &source);
+        auto program = parser.parse(source);
         output_program(program, "parser_output");
 
         cout << "\nRESOLVER" << endl;
         Resolver resolver;
-        resolver.resolve(program);
+        resolver.resolve(source, program);
         output_program(program, "resolver_output");
     }
-    catch (GambitError err)
-    {
-        cout << "\nUNCAUGHT GAMBIT ERROR: " << endl;
-        cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
-        cout << err.what() << endl;
-    }
-    catch (CompilerError err)
+    catch (CompilerError error)
     {
         cout << "\nCOMPILER ERROR: " << endl;
         cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
-        cout << err.what() << endl;
+        cout << error.what() << endl;
     }
 
     cout << "\nERRORS" << endl;
-    for (auto err : gambit_errors)
-        cout << err.what() << endl;
+    for (auto error : source.errors)
+        cout << present_error(&source, error) << endl;
     cout << endl;
 
     cout << "Compilation complete" << endl;

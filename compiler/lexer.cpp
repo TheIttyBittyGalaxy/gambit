@@ -1,13 +1,13 @@
 #include "errors.h"
-#include "lexing.h"
+#include "lexer.h"
+#include "token.h"
 
-vector<Token> generate_tokens(Source &source)
+void Lexer::tokenise(Source &source)
 {
-    vector<Token> tokens;
     size_t line = 1;
     size_t column = 1;
     size_t position = 0;
-    string sub = source.get_content();
+    string sub = source.content;
 
     auto advance = [&](int amt)
     {
@@ -28,7 +28,7 @@ vector<Token> generate_tokens(Source &source)
     bool is_line_comment = false;
     bool panic_mode = false;
 
-    while (position < source.get_length())
+    while (position < source.length)
     {
         bool error_occurred = false;
         string next = sub.substr(0, 1);
@@ -38,7 +38,7 @@ vector<Token> generate_tokens(Source &source)
         {
             if (next == "\n")
             {
-                tokens.emplace_back(Token(Token::Line, "\n", line, column, position, &source));
+                source.tokens.emplace_back(Token(Token::Line, "\n", line, column, position));
                 advance_line();
                 is_line_comment = false;
             }
@@ -79,7 +79,7 @@ vector<Token> generate_tokens(Source &source)
 
         else if (next == "\n")
         {
-            tokens.emplace_back(Token(Token::Line, "\n", line, column, position, &source));
+            source.tokens.emplace_back(Token(Token::Line, "\n", line, column, position));
             advance_line();
         }
 
@@ -111,7 +111,7 @@ vector<Token> generate_tokens(Source &source)
                         }
                     }
 
-                    tokens.emplace_back(Token(kind, str, line, column, position, &source));
+                    source.tokens.emplace_back(Token(kind, str, line, column, position));
                     advance(info.length());
                     character_parsed = true;
                     break;
@@ -121,7 +121,7 @@ vector<Token> generate_tokens(Source &source)
             if (!character_parsed)
             {
                 if (!panic_mode)
-                    GambitError("Could not parse character '" + next + "', syntax not recognised.", line, column, &source);
+                    source.log_error("Could not parse character '" + next + "', syntax not recognised.", line, column);
                 advance(1);
                 panic_mode = true;
                 error_occurred = true;
@@ -131,7 +131,5 @@ vector<Token> generate_tokens(Source &source)
         panic_mode = error_occurred;
     }
 
-    tokens.emplace_back(Token(Token::EndOfFile, "", line, column, position, &source));
-
-    return tokens;
+    source.tokens.emplace_back(Token(Token::EndOfFile, "", line, column, position));
 }

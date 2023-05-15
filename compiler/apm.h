@@ -1,3 +1,14 @@
+/*
+apm.h
+
+Defines the nodes of the Abstract Program Model as well as a range of utility methods.
+The utility methods should not have side-effects, and should not be responsible for
+handling language errors.
+
+Different parts of the compiler handle different scenarios in different ways, and so
+side-effects be managed by the 'actual' compiler.
+*/
+
 #pragma once
 #ifndef APM_H
 #define APM_H
@@ -17,6 +28,8 @@ struct Program;
 struct CodeBlock;
 struct Scope;
 
+struct InvalidStatement;
+
 struct UnresolvedIdentity;
 
 struct Variable;
@@ -30,6 +43,12 @@ struct Entity;
 
 struct StateProperty;
 struct FunctionProperty;
+struct InvalidProperty;
+using Property = variant<
+    ptr<UnresolvedIdentity>,
+    ptr<StateProperty>,
+    ptr<FunctionProperty>,
+    ptr<InvalidProperty>>;
 
 struct IntrinsicType;
 struct InvalidPattern;
@@ -50,6 +69,7 @@ struct Binary;
 struct PropertyIndex;
 struct Match;
 struct InvalidValue;
+struct InvalidExpression;
 using Expression = variant<
     ptr<UnresolvedIdentity>,
     ptr<Variable>,
@@ -61,11 +81,13 @@ using Expression = variant<
     ptr<Binary>,
     ptr<PropertyIndex>,
     ptr<Match>,
-    ptr<InvalidValue>>;
+    ptr<InvalidValue>,
+    ptr<InvalidExpression>>;
 
 using Statement = variant<
     Expression,
-    ptr<CodeBlock>>;
+    ptr<CodeBlock>,
+    ptr<InvalidStatement>>;
 
 // Program
 
@@ -101,9 +123,13 @@ struct Scope
         vector<LookupValue> overloads;
     };
 
-    Span span;
     wptr<Scope> parent;
     unordered_map<string, LookupValue> lookup;
+};
+
+struct InvalidStatement
+{
+    Span span;
 };
 
 // Unresolved Identity
@@ -181,6 +207,11 @@ struct FunctionProperty
     optional<ptr<CodeBlock>> body;
 };
 
+struct InvalidProperty
+{
+    Span span;
+};
+
 // Types
 
 struct IntrinsicType
@@ -232,11 +263,7 @@ struct PropertyIndex
 {
     Span span;
     Expression expr;
-    variant<
-        ptr<UnresolvedIdentity>,
-        ptr<StateProperty>,
-        ptr<FunctionProperty>>
-        property;
+    Property property;
 };
 
 struct Match
@@ -245,7 +272,7 @@ struct Match
     struct Rule
     {
         Span span;
-        Expression pattern;
+        Expression pattern; // FIXME: Make this a pattern, not an expression
         Expression result;
     };
     Expression subject;
@@ -253,6 +280,11 @@ struct Match
 };
 
 struct InvalidValue
+{
+    Span span;
+};
+
+struct InvalidExpression
 {
     Span span;
 };
@@ -268,8 +300,7 @@ Span get_span(Expression expr);
 Span get_span(Pattern pattern);
 Span get_span(Scope::LookupValue value);
 
-void declare(ptr<Scope> scope, Scope::LookupValue value);
-Scope::LookupValue fetch(ptr<Scope> scope, string identity, Span span);
+Scope::LookupValue fetch(ptr<Scope> scope, string identity);
 vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
 
 Pattern determine_expression_pattern(Expression expr);
@@ -283,6 +314,7 @@ string to_json(const ptr<CodeBlock> &code_block, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
 string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
+string to_json(const ptr<InvalidStatement> &invalid_statement, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<OptionalPattern> &optional_pattern, const size_t &depth = 0);
@@ -292,6 +324,8 @@ string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
+string to_json(const ptr<InvalidProperty> &invalid_property, const size_t &depth = 0);
+string to_json(const Property &property, const size_t &depth = 0);
 string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0);
 string to_json(const Pattern &pattern, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
@@ -300,6 +334,7 @@ string to_json(const Match::Rule &rule, const size_t &depth = 0);
 string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0);
 string to_json(const ptr<Match> &match, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
+string to_json(const ptr<InvalidExpression> &invalid_expression, const size_t &depth = 0);
 string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
 string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
