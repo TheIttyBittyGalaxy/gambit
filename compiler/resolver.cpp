@@ -18,9 +18,8 @@ void Resolver::resolve_program(ptr<Program> program)
 
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
-    // Property signatures need to be resolved before property and procedure
-    // bodies, so that PropertyIndex expressions can correctly resolve which
-    // overload of the property they should use.
+    // Property signatures need to be resolved before property and procedure bodies so that
+    // PropertyIndex nodes can correctly resolve which overload of the property they should use.
     for (auto index : scope->lookup)
         resolve_scope_lookup_value_property_signatures_pass(index.second, scope);
 
@@ -65,16 +64,14 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
         auto state = AS_PTR(value, StateProperty);
         if (state->initial_value.has_value())
         {
-            auto resolved = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
-            state->initial_value = resolved;
+            auto resolved_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
+            state->initial_value = resolved_value;
 
-            auto resolved_pattern = determine_expression_pattern(resolved);
-            if (!is_pattern_subset_of_superset(resolved_pattern, state->pattern))
-            {
-                source->log_error("Default value for state is the incorrect type.", get_span(resolved));
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
+            auto resolved_value_pattern = determine_expression_pattern(resolved_value);
+            if (!is_pattern_subset_of_superset(resolved_value_pattern, state->pattern))
+                source->log_error("Default value for state is the incorrect type.", get_span(resolved_value));
         }
+        // FIXME: Generate a default value if one isn't given
     }
 
     else if (IS_PTR(value, FunctionProperty))
@@ -82,6 +79,8 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
         auto funct = AS_PTR(value, FunctionProperty);
         if (funct->body.has_value())
             resolve_code_block(funct->body.value(), funct->pattern);
+
+        // FIXME: If the body is a singleton, check it's statement as if it were a return expression
     }
 
     else if (IS_PTR(value, Scope::OverloadedIdentity))
@@ -98,19 +97,16 @@ void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> p
 
     if (code_block->singleton_block)
     {
-        // The statement of a singleton code block is given the pattern hint,
-        // whereas statements in a regular code block are not.
+        // Unlike in regular code blocks, the statement of a singleton code block is given the pattern hint.
         auto stmt = code_block->statements[0];
-        stmt = resolve_statement(stmt, code_block->scope, pattern_hint);
-        code_block->statements[0] = stmt;
+        code_block->statements[0] = resolve_statement(stmt, code_block->scope, pattern_hint);
     }
     else
     {
         for (size_t i = 0; i < code_block->statements.size(); i++)
         {
             auto stmt = code_block->statements[i];
-            stmt = resolve_statement(stmt, code_block->scope);
-            code_block->statements[i] = stmt;
+            code_block->statements[i] = resolve_statement(stmt, code_block->scope);
         }
     }
 }
@@ -119,19 +115,17 @@ void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> p
 
 Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    try
-    {
-        if (IS_PTR(stmt, CodeBlock))
-            resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
-        else if (IS(stmt, Expression))
-            return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
-        else
-            throw CompilerError("Cannot resolve Statement variant.", get_span(stmt));
-    }
-    catch (GambitError err)
-    {
+    if (IS(stmt, Expression))
+        return resolve_expression(AS(stmt, Expression), scope, pattern_hint);
+
+    else if (IS_PTR(stmt, CodeBlock))
+        resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
+
+    else if (IS_PTR(stmt, InvalidStatement))
         ; // pass
-    }
+
+    else
+        throw CompilerError("Cannot resolve Statement variant.", get_span(stmt));
 
     return stmt;
 }
@@ -140,78 +134,78 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    try
+    if (IS_PTR(expression, UnresolvedIdentity))
     {
-        if (IS_PTR(expression, UnresolvedIdentity))
+        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
+        auto identity = unresolved_identity->identity;
+
+        // Resolve identity by searching for it in the scope
+        if (declared_in_scope(scope, identity))
         {
-            auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-            string id = unresolved_identity->identity;
+            auto resolved = fetch(scope, identity);
 
-            if (declared_in_scope(scope, id)) // Resolve identity from scope
-            {
-                auto resolved = fetch(scope, id);
+            if (IS_PTR(resolved, Variable))
+                return AS_PTR(resolved, Variable);
 
-                if (IS_PTR(resolved, Variable))
-                    return AS_PTR(resolved, Variable);
+            // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
+            source->log_error("Expected value, got '" + identity + "'", get_span(resolved));
 
-                // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-                source->log_error("Expected value, got '" + id + "'", get_span(resolved));
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-
-                return CREATE(InvalidValue);
-            }
-
-            if (pattern_hint.has_value()) // Resolve identity from pattern hint
-            {
-                auto the_pattern_hint = pattern_hint.value();
-                optional<ptr<EnumType>> enum_type = {};
-
-                if (IS_PTR(the_pattern_hint, EnumType)) // Pattern hint is enum type
-                {
-                    enum_type = AS_PTR(the_pattern_hint, EnumType);
-                }
-                else if (IS_PTR(the_pattern_hint, OptionalPattern)) // Pattern hint is optional enum type
-                {
-                    auto optional_pattern = AS_PTR(the_pattern_hint, OptionalPattern);
-                    if (IS_PTR(optional_pattern->pattern, EnumType))
-                        enum_type = AS_PTR(optional_pattern->pattern, EnumType);
-                }
-
-                if (enum_type.has_value())
-                    for (const auto &value : enum_type.value()->values)
-                        if (value->identity == unresolved_identity->identity)
-                            return value;
-            }
-
-            source->log_error("'" + id + "' is not defined.", unresolved_identity->span);
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            return CREATE(InvalidValue);
+            auto invalid_value = CREATE(InvalidValue);
+            invalid_value->span = unresolved_identity->span;
+            return invalid_value;
         }
-        else if (IS_PTR(expression, Variable))
-            ; // pass
-        else if (IS_PTR(expression, Literal))
-            ; // pass
-        else if (IS_PTR(expression, ListValue))
-            resolve_list_value(AS_PTR(expression, ListValue), scope, pattern_hint);
-        else if (IS_PTR(expression, InstanceList))
-            resolve_instance_list(AS_PTR(expression, InstanceList), scope, pattern_hint);
-        else if (IS_PTR(expression, EnumValue))
-            ; // pass
-        else if (IS_PTR(expression, Unary))
-            resolve_unary(AS_PTR(expression, Unary), scope, pattern_hint);
-        else if (IS_PTR(expression, Binary))
-            resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
-        else if (IS_PTR(expression, PropertyIndex))
-            resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
-        else if (IS_PTR(expression, Match))
-            resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
-        else
-            throw CompilerError("Cannot resolve Expression variant.", get_span(expression));
+
+        // Resolve identity using the pattern hint (works for enum types only)
+        if (pattern_hint.has_value())
+        {
+            auto the_pattern_hint = pattern_hint.value();
+            optional<ptr<EnumType>> enum_type = {};
+
+            // Pattern hint is the enum type
+            if (IS_PTR(the_pattern_hint, EnumType))
+            {
+                enum_type = AS_PTR(the_pattern_hint, EnumType);
+            }
+
+            // Pattern hint is an optional enum type
+            else if (IS_PTR(the_pattern_hint, OptionalPattern))
+            {
+                auto optional_pattern = AS_PTR(the_pattern_hint, OptionalPattern);
+                if (IS_PTR(optional_pattern->pattern, EnumType))
+                    enum_type = AS_PTR(optional_pattern->pattern, EnumType);
+            }
+
+            // Search enum type for the given identity
+            if (enum_type.has_value())
+                for (const auto &value : enum_type.value()->values)
+                    if (value->identity == unresolved_identity->identity)
+                        return value;
+        }
+
+        source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
+
+        auto invalid_value = CREATE(InvalidValue);
+        invalid_value->span = unresolved_identity->span;
+        return invalid_value;
     }
-    catch (GambitError err)
-    {
-        ; // pass
-    }
+
+    else if (IS_PTR(expression, ListValue))
+        resolve_list_value(AS_PTR(expression, ListValue), scope, pattern_hint);
+
+    else if (IS_PTR(expression, InstanceList))
+        resolve_instance_list(AS_PTR(expression, InstanceList), scope, pattern_hint);
+
+    else if (IS_PTR(expression, Unary))
+        resolve_unary(AS_PTR(expression, Unary), scope, pattern_hint);
+
+    else if (IS_PTR(expression, Binary))
+        resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
+
+    else if (IS_PTR(expression, PropertyIndex))
+        resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
+
+    else if (IS_PTR(expression, Match))
+        resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
 
     return expression;
 }
@@ -219,32 +213,38 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
 void Resolver::resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     for (size_t i = 0; i < list->values.size(); i++)
-        list->values[i] = resolve_expression(list->values[i], scope, pattern_hint);
+    {
+        auto value = list->values[i];
+        list->values[i] = resolve_expression(value, scope, pattern_hint);
+    }
 }
 
 void Resolver::resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     for (size_t i = 0; i < list->values.size(); i++)
-        list->values[i] = resolve_expression(list->values[i], scope, pattern_hint);
+    {
+        auto value = list->values[i];
+        list->values[i] = resolve_expression(value, scope, pattern_hint);
+    }
 }
 
 void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     match->subject = resolve_expression(match->subject, scope);
-    // FIXME: Implement pattern checking on the subject
-    // auto subject_type = determine_type(match->subject);
+    auto subject_pattern = determine_expression_pattern(match->subject);
 
     for (auto &rule : match->rules)
     {
-        rule.pattern = resolve_expression(rule.pattern, scope);
-        // FIXME: Implement pattern checking and inference on the pattern
+        // FIXME: Check that pattern matches subject
+        rule.pattern = resolve_expression(rule.pattern, scope, subject_pattern);
+
+        // FIXME: Determine the return pattern of the match using the results
         rule.result = resolve_expression(rule.result, scope, pattern_hint);
     }
 }
 
-// NOTE: Currently when resolving which property is being used in a property index
-//       we look at all overloads that could match, and throw an error unless there
-//       is exactly one match. That is to say, we ignore the specifity of the match.
+// NOTE: Currently, when resolving which property is being used in a property index, we look at
+//       all overloads that could match, and throw an error unless there is exactly one match.
 void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     property_index->expr = resolve_expression(property_index->expr, scope);
@@ -258,24 +258,29 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 
         if (all_overloads.size() == 0)
         {
+            // FIXME: If the identity is declared (just not as a property), give additional information about what it is.
             source->log_error("Property '" + identity + "' does not exist.", property_index->span);
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
+            auto invalid_property = CREATE(InvalidProperty);
+            invalid_property->span = unresolved_identity->span;
+            property_index->property = invalid_property;
+            return;
         }
 
-        vector<variant<ptr<UnresolvedIdentity>, ptr<StateProperty>, ptr<FunctionProperty>>> valid_overloads;
+        vector<Property> valid_overloads;
         for (auto overload : all_overloads)
         {
             if (IS_PTR(overload, StateProperty))
             {
                 auto state_property = AS_PTR(overload, StateProperty);
-
                 if (does_instance_list_match_parameters(instance_list, state_property->parameters))
                     valid_overloads.emplace_back(state_property);
             }
+
             else if (IS_PTR(overload, FunctionProperty))
             {
                 auto function_property = AS_PTR(overload, FunctionProperty);
-
                 if (does_instance_list_match_parameters(instance_list, function_property->parameters))
                     valid_overloads.emplace_back(function_property);
             }
@@ -284,12 +289,22 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
         if (valid_overloads.size() == 0)
         {
             source->log_error("No version of the property '" + identity + "' applies to these arguments.", property_index->span);
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
+            auto invalid_property = CREATE(InvalidProperty);
+            invalid_property->span = unresolved_identity->span;
+            property_index->property = invalid_property;
+            return;
         }
         else if (valid_overloads.size() > 1)
         {
             source->log_error("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", property_index->span);
-            throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
+
+            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
+            auto invalid_property = CREATE(InvalidProperty);
+            invalid_property->span = unresolved_identity->span;
+            property_index->property = invalid_property;
+            return;
         }
 
         property_index->property = valid_overloads[0];
@@ -311,59 +326,43 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
 
 // PATTERNS //
 
-void Resolver::resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope)
-{
-    optional_pattern->pattern = resolve_pattern(optional_pattern->pattern, scope);
-}
-
 Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 {
-    try
+    if (IS_PTR(pattern, UnresolvedIdentity))
     {
-        if (IS_PTR(pattern, InvalidPattern))
-            ; // pass
+        auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
+        auto identity = unresolved_identity->identity;
 
-        else if (IS_PTR(pattern, IntrinsicType) || IS_PTR(pattern, EnumType) || IS_PTR(pattern, Entity))
-            ; // pass
-
-        else if (IS_PTR(pattern, OptionalPattern))
-            resolve_optional_pattern(AS_PTR(pattern, OptionalPattern), scope);
-
-        else if (IS_PTR(pattern, UnresolvedIdentity))
+        if (declared_in_scope(scope, identity))
         {
-            auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-            string id = unresolved_identity->identity;
+            auto resolved = fetch(scope, identity);
 
-            if (declared_in_scope(scope, id))
-            {
-                auto resolved = fetch(scope, id);
+            if (IS_PTR(resolved, IntrinsicType))
+                return AS_PTR(resolved, IntrinsicType);
+            if (IS_PTR(resolved, EnumType))
+                return AS_PTR(resolved, EnumType);
+            if (IS_PTR(resolved, Entity))
+                return AS_PTR(resolved, Entity);
 
-                if (IS_PTR(resolved, IntrinsicType))
-                    return AS_PTR(resolved, IntrinsicType);
-                if (IS_PTR(resolved, EnumType))
-                    return AS_PTR(resolved, EnumType);
-                if (IS_PTR(resolved, Entity))
-                    return AS_PTR(resolved, Entity);
-
-                auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-                source->log_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
-            else
-            {
-                source->log_error("'" + id + "' is not defined.", unresolved_identity->span);
-                throw CompilerError("Reached old throw site"); // STABILISE: We used to throw a GambitError here. Examine the scenario to figure out what we should do instead?
-            }
-
-            return CREATE(InvalidPattern);
+            // FIXME: Provide information about what the node actually is.
+            source->log_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
+        }
+        else
+        {
+            source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
         }
 
-        else
-            throw CompilerError("Cannot resolve Pattern variant.", get_span(pattern));
+        auto invalid_pattern = CREATE(InvalidPattern);
+        invalid_pattern->span = unresolved_identity->span;
+        return invalid_pattern;
     }
-    catch (GambitError err)
+
+    else if (IS_PTR(pattern, OptionalPattern))
     {
-        ; // pass
+        auto optional_pattern = AS_PTR(pattern, OptionalPattern);
+        optional_pattern->pattern = resolve_pattern(optional_pattern->pattern, scope);
+        // FIXME: Throw an error if an already optional pattern (the original pattern) is made
+        //        optional, and then return the original pattern in place of the optional one.
     }
 
     return pattern;

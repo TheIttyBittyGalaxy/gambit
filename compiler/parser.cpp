@@ -140,7 +140,7 @@ void Parser::skip_to_end_of_current_block()
 
 void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
 {
-    string identity = identity_of(value);
+    auto identity = identity_of(value);
 
     if (directly_declared_in_scope(scope, identity))
     {

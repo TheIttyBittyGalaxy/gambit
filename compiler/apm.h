@@ -48,6 +48,12 @@ struct Entity;
 
 struct StateProperty;
 struct FunctionProperty;
+struct InvalidProperty;
+using Property = variant<
+    ptr<UnresolvedIdentity>,
+    ptr<StateProperty>,
+    ptr<FunctionProperty>,
+    ptr<InvalidProperty>>;
 
 struct IntrinsicType;
 struct InvalidPattern;
@@ -206,6 +212,11 @@ struct FunctionProperty
     optional<ptr<CodeBlock>> body;
 };
 
+struct InvalidProperty
+{
+    Span span;
+};
+
 // Types
 
 struct IntrinsicType
@@ -257,11 +268,7 @@ struct PropertyIndex
 {
     Span span;
     Expression expr;
-    variant<
-        ptr<UnresolvedIdentity>,
-        ptr<StateProperty>,
-        ptr<FunctionProperty>>
-        property;
+    Property property;
 };
 
 struct Match
@@ -322,6 +329,8 @@ string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
+string to_json(const ptr<InvalidProperty> &invalid_property, const size_t &depth = 0);
+string to_json(const Property &property, const size_t &depth = 0);
 string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0);
 string to_json(const Pattern &pattern, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
