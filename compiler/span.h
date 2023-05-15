@@ -2,18 +2,17 @@
 #ifndef SPAN_H
 #define SPAN_H
 
-// STABILISE: Forward declaration to allow for a source pointer, without creating a cyclic include dependency.
+#include <string>
+
+// Forward declaration of source. (Not included to avoid cyclic dependency.)
 struct Source;
 
-#include <string>
 using namespace std;
 
 // FIXME: For the purposes of displaying errors, would it make the most sense
 //        if multiline spans included the entirely of the lines that they span,
 //        instead of only a segment? Or at least have the option to generate this
 //        string where it would be useful?
-
-// STABILISE: Remove any possibility of null spans! null pointers cause errors.
 
 struct Span
 {
@@ -24,6 +23,10 @@ struct Span
     bool multiline;
     Source *source;
 
+    // TODO: 'null spans' (spans with source = nullptr) are likely to produce
+    //       segmentation faults and other errors if not handled correctly.
+    //       Consider if there a viable way of preventing this, or if not,
+    //       check access sites to see if there are any potential errors.
     Span()
         : line(0),
           column(0),

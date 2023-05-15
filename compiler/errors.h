@@ -37,6 +37,10 @@ struct GambitError
         : GambitError(msg, (*(spans.begin())).line, (*(spans.begin())).column, spans){};
 };
 
+// FIXME: CompilerError is a hang-over of an hold error handling system. Asses how it is used throughout the
+//        codebase, and consider if there is a better alternative? At the very least, it may be more useful
+//        to replace `span_one` `span_two` with just some helpful utility to turn tokens, spans, and nodes
+//        into error message strings that are actually useful for debugging.
 class CompilerError : public exception
 {
 public:
