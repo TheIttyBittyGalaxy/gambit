@@ -10,34 +10,35 @@ enum Rank { ACE, 2, 3, 4, 5, 6, 7, 8, 9, 10, JACK, QUEEN, KING }
 enum Colour { BLACK, RED }
 
 fn bool (Rank rank).is_picture: match rank {
-    ACE: true,
-    JACK: true,
-    QUEEN: true,
-    KING: true,
+    ACE: true
+    JACK: true
+    QUEEN: true
+    KING: true
     default: false
 }
 
 fn int (Rank rank).value: match rank {
-    ACE: 11,    
-    rank.is_picture: 10, // What should the semantics of this be? I would imagine any expressions must be constrained to only access the value being matched?
+    ACE: 11    
+    rank.is_picture: 10 // What should the semantics of this be? I would imagine any expressions must be constrained to only access the value being matched?
     default: rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
 }
 
 fn Colour (Suit suit).colour: match suit {
-    SPADE: BLACK,
-    CLUB: BLACK,
-    HEART: RED,
-    DIAMOND: RED,
+    SPADE: BLACK
+    CLUB: BLACK
+    HEART: RED
+    DIAMOND: RED
 }
 
 // Cards
 entity Card
-static Suit (Card card).suit
-static Rank (Card card).rank
-static bool (Card card).is_picture: card.rank.is_picture
-static int (Card card).value: card.rank.value
-static Colour (Card card).colour: card.suit.colour
+state Suit (Card card).suit
+state Rank (Card card).rank
 state int (Card card).tokens
+
+fn bool (Card card).is_picture: card.rank.is_picture
+fn int (Card card).value: card.rank.value
+fn Colour (Card card).colour: card.suit.colour
 
 // Attacks
 fn int (Card card).power:
