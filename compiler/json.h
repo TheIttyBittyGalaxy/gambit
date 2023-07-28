@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <stdexcept>
 using namespace std;
 
 // JSON serialisation Exception
