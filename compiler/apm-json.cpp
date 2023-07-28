@@ -357,6 +357,7 @@ string to_json(const Statement &node, const size_t &depth)
 {
     VARIANT(Expression);
     VARIANT_PTR(CodeBlock);
+    VARIANT_PTR(InvalidStatement);
 
     throw json_serialisation_error("Could not serialise Statement variant.");
 };
