@@ -28,7 +28,7 @@ private:
     Token previous_token();
     bool peek(Token::Kind kind);
     Token eat(Token::Kind kind);
-    void skip();
+    Token skip();
     bool match(Token::Kind kind);
     Span to_span(Token token);
 

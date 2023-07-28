@@ -78,16 +78,17 @@ Token Parser::eat(Token::Kind kind)
     return token;
 }
 
-void Parser::skip()
+Token Parser::skip()
 {
-    Token::Kind kind = current_token().kind;
+    Token token = current_token();
 
-    if (kind == Token::CurlyL)
+    if (token.kind == Token::CurlyL)
         current_block_nesting++;
-    else if (kind == Token::CurlyR && current_block_nesting > 0)
+    else if (token.kind == Token::CurlyR && current_block_nesting > 0)
         current_block_nesting--;
 
     current_token_index++;
+    return token;
 }
 
 bool Parser::match(Token::Kind kind)
@@ -460,11 +461,12 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         stmt = parse_expression();
     else
     {
-        auto token = current_token();
+        // FIXME: Instead of marking just the current token as an invalid statement,
+        //        we should mark everything up to the end of the line as invalid.
+        Token token = skip();
         gambit_error("Expected statement", token);
 
         auto stmt = CREATE(InvalidStatement);
-        // FIXME: Should the span of the invalid statement go across the whole line?
         stmt->span = to_span(token);
         return stmt;
     }
@@ -534,11 +536,13 @@ Expression Parser::parse_expression(Precedence caller_precedence)
 
     else
     {
-        auto token = current_token();
+        // FIXME: Currently, only the current token is turned into an invalid expression,
+        //        should some larger portion of the code become invalid? (e.g. until the)
+        //        end of the current line? maybe the current brackets?)
+        Token token = skip();
         gambit_error("Expected expression", token);
 
         auto expr = CREATE(InvalidExpression);
-        // FIXME: Should the span of the invalid expression go across the whole line?
         expr->span = to_span(token);
         return expr;
     }
@@ -704,7 +708,7 @@ Expression Parser::parse_literal()
         return literal;
     }
 
-    auto token = current_token();
+    Token token = skip();
     gambit_error("Expected literal", token);
     auto value = CREATE(InvalidValue);
     value->span = to_span(token);
