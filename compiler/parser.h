@@ -90,6 +90,10 @@ private:
     [[nodiscard]] ptr<Binary> parse_infix_logical_or(Expression lhs);
     bool peek_infix_logical_and();
     [[nodiscard]] ptr<Binary> parse_infix_logical_and(Expression lhs);
+    bool peek_infix_compare_equal();
+    [[nodiscard]] ptr<Binary> parse_infix_compare_equal(Expression lhs);
+    bool peek_infix_compare_relative();
+    [[nodiscard]] ptr<Binary> parse_infix_compare_relative(Expression lhs);
     bool peek_infix_term();
     [[nodiscard]] ptr<Binary> parse_infix_term(Expression lhs);
     bool peek_infix_factor();

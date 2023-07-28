@@ -7,6 +7,8 @@ enum class Precedence
     None,
     LogicalOr,
     LogicalAnd,
+    CompareEqual,
+    CompareRelative,
     Term,
     Factor,
     Unary,

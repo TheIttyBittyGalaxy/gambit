@@ -555,6 +555,10 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_term(lhs);
         else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_property_index(lhs);
+        else if (peek_infix_compare_relative() && operator_should_bind(Precedence::CompareRelative, caller_precedence))
+            lhs = parse_infix_compare_relative(lhs);
+        else if (peek_infix_compare_equal() && operator_should_bind(Precedence::CompareEqual, caller_precedence))
+            lhs = parse_infix_compare_equal(lhs);
         else if (peek_infix_logical_and() && operator_should_bind(Precedence::LogicalAnd, caller_precedence))
             lhs = parse_infix_logical_and(lhs);
         else if (peek_infix_logical_or() && operator_should_bind(Precedence::LogicalOr, caller_precedence))
@@ -767,6 +771,58 @@ ptr<Binary> Parser::parse_infix_logical_and(Expression lhs)
     expr->lhs = lhs;
     expr->op = eat(Token::KeyAnd).str;
     expr->rhs = parse_expression(Precedence::LogicalAnd);
+
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
+    return expr;
+}
+
+bool Parser::peek_infix_compare_equal()
+{
+    return peek(Token::Equal) ||
+           peek(Token::NotEqual);
+}
+
+ptr<Binary> Parser::parse_infix_compare_equal(Expression lhs)
+{
+    auto expr = CREATE(Binary);
+
+    expr->lhs = lhs;
+    if (peek(Token::Equal))
+        expr->op = eat(Token::Equal).str;
+    else if (peek(Token::NotEqual))
+        expr->op = eat(Token::NotEqual).str;
+    else
+        throw CompilerError("Expected infix compare equal expression, got " + to_string(current_token()) + " token");
+    expr->rhs = parse_expression(Precedence::CompareEqual);
+
+    expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
+    return expr;
+}
+
+bool Parser::peek_infix_compare_relative()
+{
+    return peek(Token::TrigL) ||
+           peek(Token::LessThanEqual) ||
+           peek(Token::TrigR) ||
+           peek(Token::GreaterThanEqual);
+}
+
+ptr<Binary> Parser::parse_infix_compare_relative(Expression lhs)
+{
+    auto expr = CREATE(Binary);
+
+    expr->lhs = lhs;
+    if (peek(Token::TrigL))
+        expr->op = eat(Token::TrigL).str;
+    else if (peek(Token::LessThanEqual))
+        expr->op = eat(Token::LessThanEqual).str;
+    else if (peek(Token::TrigR))
+        expr->op = eat(Token::TrigR).str;
+    else if (peek(Token::GreaterThanEqual))
+        expr->op = eat(Token::GreaterThanEqual).str;
+    else
+        throw CompilerError("Expected infix compare relative expression, got " + to_string(current_token()) + " token");
+    expr->rhs = parse_expression(Precedence::CompareRelative);
 
     expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
