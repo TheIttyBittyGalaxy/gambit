@@ -65,8 +65,8 @@ Span get_span(Expression expr)
         return AS_PTR(expr, Variable)->span;
     if (IS_PTR(expr, EnumValue))
         return AS_PTR(expr, EnumValue)->span;
-    if (IS_PTR(expr, Literal))
-        return AS_PTR(expr, Literal)->span;
+    if (IS_PTR(expr, IntrinsicValue))
+        return AS_PTR(expr, IntrinsicValue)->span;
     if (IS_PTR(expr, ListValue))
         return AS_PTR(expr, ListValue)->span;
     if (IS_PTR(expr, InstanceList))
@@ -175,10 +175,10 @@ Pattern determine_expression_pattern(Expression expression)
         auto variable = AS_PTR(expression, Variable);
         return variable->pattern;
     }
-    else if (IS_PTR(expression, Literal))
+    else if (IS_PTR(expression, IntrinsicValue))
     {
-        auto literal = AS_PTR(expression, Literal);
-        return literal->pattern;
+        auto intrinsic_value = AS_PTR(expression, IntrinsicValue);
+        return intrinsic_value->type;
     }
     // else if (IS_PTR(expression, ListValue))
     // else if (IS_PTR(expression, InstanceList))

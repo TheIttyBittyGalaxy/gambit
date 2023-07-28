@@ -81,8 +81,8 @@ private:
     [[nodiscard]] ptr<Match> parse_match();
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
-    bool peek_literal();
-    [[nodiscard]] Expression parse_literal();
+    bool peek_intrinsic_value();
+    [[nodiscard]] Expression parse_intrinsic_value();
     bool peek_list_value();
     [[nodiscard]] ptr<ListValue> parse_list_value();
 

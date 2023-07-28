@@ -61,7 +61,7 @@ using Pattern = variant<
     ptr<Entity>,
     ptr<IntrinsicType>>;
 
-struct Literal;
+struct IntrinsicValue;
 struct ListValue;
 struct InstanceList;
 struct Unary;
@@ -74,7 +74,7 @@ using Expression = variant<
     ptr<UnresolvedIdentity>,
     ptr<Variable>,
     ptr<EnumValue>,
-    ptr<Literal>,
+    ptr<IntrinsicValue>,
     ptr<ListValue>,
     ptr<InstanceList>,
     ptr<Unary>,
@@ -222,11 +222,11 @@ struct IntrinsicType
 
 // Expressions
 
-struct Literal
+struct IntrinsicValue
 {
     Span span;
     variant<double, int, bool, string> value;
-    Pattern pattern;
+    ptr<IntrinsicType> type;
 };
 
 struct ListValue
@@ -335,7 +335,7 @@ string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0
 string to_json(const ptr<Match> &match, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
 string to_json(const ptr<InvalidExpression> &invalid_expression, const size_t &depth = 0);
-string to_json(const ptr<Literal> &literal, const size_t &depth = 0);
+string to_json(const ptr<IntrinsicValue> &intrinsic_value, const size_t &depth = 0);
 string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);

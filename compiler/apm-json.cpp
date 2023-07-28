@@ -225,11 +225,11 @@ string to_json(const Pattern &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }
 
-string to_json(const ptr<Literal> &node, const size_t &depth)
+string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("Literal"));
+    json.add("node", string("IntrinsicValue"));
     if (IS(node->value, double))
         json.add("value", AS(node->value, double));
     else if (IS(node->value, int))
@@ -238,7 +238,7 @@ string to_json(const ptr<Literal> &node, const size_t &depth)
         json.add("value", AS(node->value, bool));
     else if (IS(node->value, string))
         json.add("value", AS(node->value, string));
-    STRUCT_PTR_FIELD(pattern);
+    STRUCT_PTR_FIELD(type);
     json.close();
     return (string)json;
 }
@@ -339,7 +339,7 @@ string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(Variable);
-    VARIANT_PTR(Literal);
+    VARIANT_PTR(IntrinsicValue);
     VARIANT_PTR(ListValue);
     VARIANT_PTR(InstanceList);
     VARIANT_PTR(UnresolvedIdentity);

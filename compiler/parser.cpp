@@ -503,7 +503,7 @@ bool Parser::peek_expression()
            peek_match() ||
            peek_unary() ||
            peek(Token::Identity) ||
-           peek_literal() ||
+           peek_intrinsic_value() ||
            peek_list_value();
 }
 
@@ -529,8 +529,8 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         lhs = parse_unresolved_identity();
     else if (peek_paren_expr())
         lhs = parse_paren_expr();
-    else if (peek_literal())
-        lhs = parse_literal();
+    else if (peek_intrinsic_value())
+        lhs = parse_intrinsic_value();
     else if (peek_list_value())
         lhs = parse_list_value();
 
@@ -661,55 +661,55 @@ ptr<Unary> Parser::parse_unary()
     return expr;
 }
 
-bool Parser::peek_literal()
+bool Parser::peek_intrinsic_value()
 {
     return peek(Token::Number) ||
            peek(Token::String) ||
            peek(Token::Boolean);
 }
 
-Expression Parser::parse_literal()
+Expression Parser::parse_intrinsic_value()
 {
     if (peek(Token::Number))
     {
-        auto literal = CREATE(Literal);
+        auto intrinsic_value = CREATE(IntrinsicValue);
         auto token = eat(Token::Number);
 
         if (token.str.find(".") != std::string::npos)
         {
-            literal->value = stod(token.str);
-            literal->pattern = Intrinsic::type_num;
+            intrinsic_value->value = stod(token.str);
+            intrinsic_value->type = Intrinsic::type_num;
         }
         else
         {
-            literal->value = stoi(token.str);
-            literal->pattern = Intrinsic::type_amt; // We can use `amt` and not `int` as number literals cannot be negative
+            intrinsic_value->value = stoi(token.str);
+            intrinsic_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
         }
 
-        literal->span = to_span(token);
-        return literal;
+        intrinsic_value->span = to_span(token);
+        return intrinsic_value;
     }
 
     if (peek(Token::String))
     {
-        auto literal = CREATE(Literal);
+        auto intrinsic_value = CREATE(IntrinsicValue);
         auto token = eat(Token::String);
 
-        literal->value = token.str;
-        literal->pattern = Intrinsic::type_str;
-        literal->span = to_span(token);
-        return literal;
+        intrinsic_value->value = token.str;
+        intrinsic_value->type = Intrinsic::type_str;
+        intrinsic_value->span = to_span(token);
+        return intrinsic_value;
     }
 
     if (peek(Token::Boolean))
     {
-        auto literal = CREATE(Literal);
+        auto intrinsic_value = CREATE(IntrinsicValue);
         auto token = eat(Token::Boolean);
 
-        literal->value = token.str == "true";
-        literal->pattern = Intrinsic::type_bool;
-        literal->span = to_span(token);
-        return literal;
+        intrinsic_value->value = token.str == "true";
+        intrinsic_value->type = Intrinsic::type_bool;
+        intrinsic_value->span = to_span(token);
+        return intrinsic_value;
     }
 
     Token token = skip();

@@ -235,10 +235,11 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
 
     for (auto &rule : match->rules)
     {
-        // FIXME: Check that pattern matches subject
+        // FIXME: Check that the expression used for the rule's pattern is static
+        // FIXME: Check that rule's pattern matches the subject's pattern
         rule.pattern = resolve_expression(rule.pattern, scope, subject_pattern);
 
-        // FIXME: Determine the return pattern of the match using the results
+        // FIXME: Determine the return pattern of the match using the rule's result
         rule.result = resolve_expression(rule.result, scope, pattern_hint);
     }
 }
