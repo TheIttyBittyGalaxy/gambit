@@ -37,7 +37,8 @@ private:
     void resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
 
     // PATTERNS //
-    [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);
+    [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    [[nodiscard]] variant<ptr<EnumValue>, ptr<InvalidValue>> resolve_identity_from_pattern_hint(ptr<UnresolvedIdentity> unresolved_identity, Pattern hint);
 };
 
 #endif

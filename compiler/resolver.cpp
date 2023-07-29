@@ -155,73 +155,19 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
             return invalid_value;
         }
 
-        // Resolve identity using the pattern hint (this only works for enums)
+        // Resolve identity using the pattern hint
         if (pattern_hint.has_value())
         {
-            auto the_pattern_hint = pattern_hint.value();
-            auto value_identity = unresolved_identity->identity;
-
-            if (IS_PTR(the_pattern_hint, EnumType))
-            {
-                auto enum_type = AS_PTR(the_pattern_hint, EnumType);
-                for (const auto &value : enum_type->values)
-                    if (value->identity == value_identity)
-                        return value;
-            }
-
-            if (IS_PTR(the_pattern_hint, EnumValue))
-            {
-                auto value = AS_PTR(the_pattern_hint, EnumValue);
-                if (value->identity == value_identity)
-                    return value;
-            }
-
-            if (IS_PTR(the_pattern_hint, UnionPattern))
-            {
-                auto union_pattern = AS_PTR(the_pattern_hint, UnionPattern);
-                vector<ptr<EnumValue>> potential_values;
-                for (auto pattern : union_pattern->patterns)
-                {
-                    if (IS_PTR(pattern, EnumType))
-                    {
-                        auto enum_type = AS_PTR(pattern, EnumType);
-                        for (const auto &value : enum_type->values)
-                            if (value->identity == value_identity)
-                                potential_values.push_back(value);
-                    }
-
-                    if (IS_PTR(pattern, EnumValue))
-                    {
-                        auto value = AS_PTR(pattern, EnumValue);
-                        if (value->identity == value_identity)
-                            potential_values.push_back(value);
-                    }
-                }
-
-                if (potential_values.size() == 1)
-                {
-                    return potential_values[0];
-                }
-                else if (potential_values.size() > 1)
-                {
-                    string msg = "'" + identity + "' is ambiguous. It could refer to any of ";
-                    for (size_t i = 0; i < potential_values.size(); i++)
-                    {
-                        auto value = potential_values[i];
-                        if (i > 0)
-                            msg += ", ";
-                        msg += value->type->identity + ":" + value->identity;
-                    }
-                    msg += ".";
-                    source->log_error(msg, unresolved_identity->span);
-
-                    auto invalid_value = CREATE(InvalidValue);
-                    invalid_value->span = unresolved_identity->span;
-                    return invalid_value;
-                }
-            }
+            auto resolved = resolve_identity_from_pattern_hint(unresolved_identity, pattern_hint.value());
+            if (IS_PTR(resolved, InvalidValue))
+                ; // pass (proceed to throwing an error)
+            else if (IS_PTR(resolved, EnumValue))
+                return AS_PTR(resolved, EnumValue);
+            else
+                CompilerError("Cannot resolve variant of identity resolved from pattern hint (while resolving expression).", get_span(expression));
         }
 
+        // Identity could not be resolved
         source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
 
         auto invalid_value = CREATE(InvalidValue);
@@ -278,7 +224,7 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
         // FIXME: Check that the expression used for the rule's pattern is static
         // FIXME: Check that rule's pattern matches the subject's pattern
         if (!rule.default_rule)
-            rule.pattern = resolve_expression(rule.pattern, scope, subject_pattern);
+            rule.pattern = resolve_pattern(rule.pattern, scope, subject_pattern);
 
         // FIXME: Determine the return pattern of the match using the rule's result
         rule.result = resolve_expression(rule.result, scope, pattern_hint);
@@ -368,13 +314,14 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
 
 // PATTERNS //
 
-Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
+Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     if (IS_PTR(pattern, UnresolvedIdentity))
     {
         auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
         auto identity = unresolved_identity->identity;
 
+        // Resolve identity by searching for it in the scope
         if (declared_in_scope(scope, identity))
         {
             auto resolved = fetch(scope, identity);
@@ -392,11 +339,26 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
 
             // FIXME: Provide information about what the node actually is.
             source->log_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
+
+            auto invalid_pattern = CREATE(InvalidPattern);
+            invalid_pattern->span = unresolved_identity->span;
+            return invalid_pattern;
         }
-        else
+
+        // Resolve identity using the pattern hint
+        if (pattern_hint.has_value())
         {
-            source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
+            auto resolved = resolve_identity_from_pattern_hint(unresolved_identity, pattern_hint.value());
+            if (IS_PTR(resolved, InvalidValue))
+                ; // pass (proceed to throwing an error)
+            else if (IS_PTR(resolved, EnumValue))
+                return AS_PTR(resolved, EnumValue);
+            else
+                CompilerError("Cannot resolve variant of identity resolved from pattern hint (while resolving pattern).", get_span(pattern));
         }
+
+        // Identity could not be resolved
+        source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
 
         auto invalid_pattern = CREATE(InvalidPattern);
         invalid_pattern->span = unresolved_identity->span;
@@ -411,7 +373,7 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
         for (size_t i = 0; i < union_pattern->patterns.size(); i++)
         {
             auto pattern = union_pattern->patterns[i];
-            union_pattern->patterns[i] = resolve_pattern(pattern, scope);
+            union_pattern->patterns[i] = resolve_pattern(pattern, scope, pattern_hint);
         }
 
         // Remove any pattern in the union that is a subset of another pattern
@@ -450,4 +412,69 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
     }
 
     return pattern;
+}
+
+variant<ptr<EnumValue>, ptr<InvalidValue>> Resolver::resolve_identity_from_pattern_hint(ptr<UnresolvedIdentity> unresolved_identity, Pattern hint)
+{
+    auto identity = unresolved_identity->identity;
+
+    if (IS_PTR(hint, EnumType))
+    {
+        auto enum_type = AS_PTR(hint, EnumType);
+        for (const auto &value : enum_type->values)
+            if (value->identity == identity)
+                return value;
+    }
+
+    if (IS_PTR(hint, EnumValue))
+    {
+        auto value = AS_PTR(hint, EnumValue);
+        if (value->identity == identity)
+            return value;
+    }
+
+    if (IS_PTR(hint, UnionPattern))
+    {
+        auto union_pattern = AS_PTR(hint, UnionPattern);
+        vector<ptr<EnumValue>> potential_values;
+        for (auto pattern : union_pattern->patterns)
+        {
+            if (IS_PTR(pattern, EnumType))
+            {
+                auto enum_type = AS_PTR(pattern, EnumType);
+                for (const auto &value : enum_type->values)
+                    if (value->identity == identity)
+                        potential_values.push_back(value);
+            }
+
+            if (IS_PTR(pattern, EnumValue))
+            {
+                auto value = AS_PTR(pattern, EnumValue);
+                if (value->identity == identity)
+                    potential_values.push_back(value);
+            }
+        }
+
+        if (potential_values.size() == 1)
+        {
+            return potential_values[0];
+        }
+        else if (potential_values.size() > 1)
+        {
+            string msg = "'" + identity + "' is ambiguous. It could refer to any of ";
+            for (size_t i = 0; i < potential_values.size(); i++)
+            {
+                auto value = potential_values[i];
+                if (i > 0)
+                    msg += ", ";
+                msg += value->type->identity + ":" + value->identity;
+            }
+            msg += ".";
+            source->log_error(msg, unresolved_identity->span);
+        }
+    }
+
+    auto invalid_value = CREATE(InvalidValue);
+    invalid_value->span = unresolved_identity->span;
+    return invalid_value;
 }

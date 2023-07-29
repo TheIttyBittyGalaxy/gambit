@@ -282,7 +282,7 @@ struct Match
     {
         Span span;
         bool default_rule = false;
-        Expression pattern; // FIXME: Make this a pattern, not an expression
+        Pattern pattern;
         Expression result;
     };
     Expression subject;

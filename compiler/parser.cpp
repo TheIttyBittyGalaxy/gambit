@@ -407,13 +407,13 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
     state->scope->parent = scope;
 
     auto keyword = eat(Token::KeyState);
-    state->pattern = parse_pattern(scope);
+    state->pattern = parse_pattern(false);
 
     eat(Token::ParenL);
     do
     {
         auto parameter = CREATE(Variable);
-        parameter->pattern = parse_pattern(scope);
+        parameter->pattern = parse_pattern(false);
         auto identity_token = eat(Token::Identity);
         parameter->identity = identity_token.str;
         parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
@@ -447,13 +447,13 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     funct->scope->parent = scope;
 
     auto keyword = eat(Token::KeyFn);
-    funct->pattern = parse_pattern(scope);
+    funct->pattern = parse_pattern(false);
 
     eat(Token::ParenL);
     do
     {
         auto parameter = CREATE(Variable);
-        parameter->pattern = parse_pattern(scope);
+        parameter->pattern = parse_pattern(false);
         auto identity_token = eat(Token::Identity);
         parameter->identity = identity_token.str;
         parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
@@ -648,7 +648,7 @@ ptr<Match> Parser::parse_match()
     match->subject = parse_expression();
 
     eat(Token::CurlyL);
-    while ((peek_expression() || peek(Token::KeyDefault)) && !match->has_default_rule)
+    while ((peek_pattern(true) || peek(Token::KeyDefault)) && !match->has_default_rule)
     {
         Match::Rule rule;
         Span opening_span;
@@ -663,7 +663,7 @@ ptr<Match> Parser::parse_match()
         }
         else
         {
-            rule.pattern = parse_expression();
+            rule.pattern = parse_pattern(true);
             opening_span = get_span(rule.pattern);
         }
 
@@ -957,14 +957,39 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 
 // PATTERNS
 
-bool Parser::peek_pattern()
+bool Parser::peek_pattern(bool allow_intrinsic_values)
 {
-    return peek(Token::Identity);
+    return peek(Token::Identity) ||
+           (peek_intrinsic_value() && allow_intrinsic_values);
 }
 
-Pattern Parser::parse_pattern(ptr<Scope> scope)
+Pattern Parser::parse_pattern(bool allow_intrinsic_values)
 {
-    Pattern pattern = parse_unresolved_identity();
+    Pattern pattern;
+    if (peek_intrinsic_value() && allow_intrinsic_values)
+    {
+        auto expr = parse_intrinsic_value();
+        if (IS_PTR(expr, IntrinsicValue))
+        {
+            auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
+            pattern = intrinsic_value;
+        }
+        else if (IS_PTR(expr, InvalidValue))
+        {
+            auto invalid_value = AS_PTR(expr, InvalidValue);
+            auto invalid_pattern = CREATE(InvalidPattern);
+            invalid_pattern->span = invalid_value->span;
+            pattern = invalid_pattern;
+        }
+        else
+        {
+            throw CompilerError("Unable to resolve expression variant when creating pattern from intrinsic value", get_span(expr));
+        }
+    }
+    else
+    {
+        pattern = parse_unresolved_identity();
+    }
 
     if (peek(Token::Question))
     {

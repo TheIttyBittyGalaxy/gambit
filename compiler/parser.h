@@ -102,8 +102,8 @@ private:
     [[nodiscard]] ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
 
     // PATTERNS //
-    bool peek_pattern();
-    Pattern parse_pattern(ptr<Scope> scope);
+    bool peek_pattern(bool allow_intrinsic_values);
+    Pattern parse_pattern(bool allow_intrinsic_values);
 };
 
 #endif
