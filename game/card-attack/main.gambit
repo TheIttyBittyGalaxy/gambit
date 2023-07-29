@@ -17,11 +17,10 @@ fn bool (Rank rank).is_picture: match rank {
     any: false
 }
 
-fn int (Rank rank).value: match rank {
-    ACE: 11    
-    rank.is_picture: 10 // What should the semantics of this be? I would imagine any expressions must be constrained to only access the value being matched?
-    any: rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
-}
+fn int (Rank rank).value:
+    if rank == ACE: 11
+    else if rank.is_picture: 10
+    else: rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
 
 fn Colour (Suit suit).colour: match suit {
     SPADE: BLACK

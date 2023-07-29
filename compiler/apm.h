@@ -88,9 +88,12 @@ using Expression = variant<
     ptr<InvalidValue>,
     ptr<InvalidExpression>>;
 
+struct IfStatement;
+
 using Statement = variant<
     Expression,
     ptr<CodeBlock>,
+    ptr<IfStatement>,
     ptr<InvalidStatement>>;
 
 // Program
@@ -155,6 +158,9 @@ struct Variable
 };
 
 // Patterns
+
+// TODO: If the only serious use of the any pattern is in match rules, perhaps it could be
+//       replaced with an 'else' syntax (meant to mirror the syntax of else/ifs statements)
 
 // TODO: A semantics question to figure out is if the "Any Pattern" should match against `none`.
 //       The compiler currently says yes, so that match 'any rules' can still cover none,
@@ -309,6 +315,21 @@ struct InvalidExpression
     Span span;
 };
 
+// Statements
+
+struct IfStatement
+{
+    Span span;
+    struct Segment
+    {
+        Span span;
+        Expression condition;
+        ptr<CodeBlock> code_block;
+    };
+    vector<Segment> segments;
+    optional<ptr<CodeBlock>> fallback;
+};
+
 // Methods
 
 string identity_of(Scope::LookupValue value);
@@ -362,6 +383,8 @@ string to_json(const ptr<IntrinsicValue> &intrinsic_value, const size_t &depth =
 string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
+string to_json(const IfStatement::Segment &segment, const size_t &depth = 0);
+string to_json(const ptr<IfStatement> &if_statement, const size_t &depth = 0);
 string to_json(const Statement &statement, const size_t &depth = 0);
 
 #endif

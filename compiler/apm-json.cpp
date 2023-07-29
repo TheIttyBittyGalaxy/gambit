@@ -368,10 +368,32 @@ string to_json(const Expression &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Expression variant.");
 };
 
+string to_json(const IfStatement::Segment &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(condition);
+    STRUCT_FIELD(code_block);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<IfStatement> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("IfStatement"));
+    STRUCT_PTR_FIELD(segments);
+    STRUCT_PTR_FIELD(fallback);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Statement &node, const size_t &depth)
 {
     VARIANT(Expression);
     VARIANT_PTR(CodeBlock);
+    VARIANT_PTR(IfStatement);
     VARIANT_PTR(InvalidStatement);
 
     throw json_serialisation_error("Could not serialise Statement variant.");

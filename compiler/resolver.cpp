@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "intrinsic.h"
 #include "resolver.h"
 #include "source.h"
 #include <optional>
@@ -121,6 +122,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, CodeBlock))
         resolve_code_block(AS_PTR(stmt, CodeBlock), pattern_hint);
 
+    else if (IS_PTR(stmt, IfStatement))
+        resolve_if_statement(AS_PTR(stmt, IfStatement), scope, pattern_hint);
+
     else if (IS_PTR(stmt, InvalidStatement))
         ; // pass
 
@@ -128,6 +132,30 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
         throw CompilerError("Cannot resolve Statement variant.", get_span(stmt));
 
     return stmt;
+}
+
+void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    for (auto segment : stmt->segments)
+    {
+        segment.condition = resolve_expression(segment.condition, scope);
+        resolve_code_block(segment.code_block, pattern_hint);
+
+        auto condition_pattern = determine_expression_pattern(segment.condition);
+        bool bool_condition = is_pattern_subset_of_superset(condition_pattern, Intrinsic::type_bool);
+        bool optional_condition = is_pattern_optional(condition_pattern);
+        if (!bool_condition && !optional_condition)
+        {
+            // FIXME: Now the segment's condition has been resolved, `segment.condition` has
+            //        a span for the origin of the value, not necessarily for the expression
+            //        used in the if statement. The correct condition span would be better
+            //        than the span for the entire segment.
+            source->log_error("If statement conditions must evaluate either to true or false, or potentially to none. This condition will never be true, false, or none.", segment.span);
+        }
+    }
+
+    if (stmt->fallback.has_value())
+        resolve_code_block(stmt->fallback.value(), pattern_hint);
 }
 
 // EXPRESSIONS //

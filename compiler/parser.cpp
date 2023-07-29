@@ -493,6 +493,8 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     Statement stmt;
     if (peek_code_block(false))
         stmt = parse_code_block(scope);
+    else if (peek_if_statement())
+        stmt = parse_if_statement(scope);
     else if (peek_expression())
         stmt = parse_expression();
     else
@@ -511,6 +513,50 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         eat(Token::Line);
 
     return stmt;
+}
+
+bool Parser::peek_if_statement()
+{
+    return peek(Token::KeyIf);
+}
+
+[[nodiscard]] ptr<IfStatement> Parser::parse_if_statement(ptr<Scope> scope)
+{
+    auto if_statement = CREATE(IfStatement);
+
+    auto keyword = eat(Token::KeyIf);
+
+    IfStatement::Segment segment;
+    segment.condition = parse_expression();
+    segment.code_block = parse_code_block(scope);
+    segment.span = merge(to_span(keyword), get_span(segment.code_block));
+
+    if_statement->segments.push_back(segment);
+    Span last_span = segment.span;
+
+    while (peek(Token::KeyElse))
+    {
+        Token keyword = eat(Token::KeyElse);
+
+        if (!match(Token::KeyIf))
+        {
+            auto code_block = parse_code_block(scope);
+            if_statement->fallback = code_block;
+            last_span = get_span(code_block);
+            break;
+        }
+
+        IfStatement::Segment segment;
+        segment.condition = parse_expression();
+        segment.code_block = parse_code_block(scope);
+        segment.span = merge(to_span(keyword), get_span(segment.code_block));
+
+        last_span = segment.span;
+        if_statement->segments.push_back(segment);
+    }
+
+    if_statement->span = merge(segment.span, last_span);
+    return if_statement;
 }
 
 // EXPRESSIONS //
