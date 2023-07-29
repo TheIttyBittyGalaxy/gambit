@@ -346,17 +346,18 @@ string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
 
 string to_json(const Expression &node, const size_t &depth)
 {
+    VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(Variable);
+    VARIANT_PTR(EnumValue);
     VARIANT_PTR(IntrinsicValue);
     VARIANT_PTR(ListValue);
     VARIANT_PTR(InstanceList);
-    VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR(EnumValue);
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
     VARIANT_PTR(PropertyIndex);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
+    VARIANT_PTR(InvalidExpression);
 
     throw json_serialisation_error("Could not serialise Expression variant.");
 };

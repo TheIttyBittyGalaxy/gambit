@@ -7,24 +7,20 @@ string identity_of(Scope::LookupValue value)
 {
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->identity;
-
     if (IS_PTR(value, UnionPattern))
         return AS_PTR(value, UnionPattern)->identity;
-
     if (IS_PTR(value, IntrinsicType))
         return AS_PTR(value, IntrinsicType)->identity;
-
     if (IS_PTR(value, EnumType))
         return AS_PTR(value, EnumType)->identity;
-
     if (IS_PTR(value, Entity))
         return AS_PTR(value, Entity)->identity;
-
     if (IS_PTR(value, StateProperty))
         return AS_PTR(value, StateProperty)->identity;
-
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return AS_PTR(value, Scope::OverloadedIdentity)->identity;
 
     throw CompilerError("Cannot get identity of Scope::LookupValue variant", get_span(value));
 }
@@ -84,6 +80,8 @@ Span get_span(Expression expr)
         return AS_PTR(expr, Match)->span;
     if (IS_PTR(expr, InvalidValue))
         return AS_PTR(expr, InvalidValue)->span;
+    if (IS_PTR(expr, InvalidExpression))
+        return AS_PTR(expr, InvalidExpression)->span;
 
     throw CompilerError("Could not get span of Expression variant.");
 }
