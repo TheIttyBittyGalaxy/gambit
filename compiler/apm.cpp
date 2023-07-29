@@ -183,13 +183,41 @@ Pattern determine_expression_pattern(Expression expression)
     else if (IS_PTR(expression, IntrinsicValue))
     {
         auto intrinsic_value = AS_PTR(expression, IntrinsicValue);
-        return intrinsic_value->type;
+        return intrinsic_value;
     }
     // else if (IS_PTR(expression, ListValue))
     // else if (IS_PTR(expression, InstanceList))
-    // else if (IS_PTR(expression, EnumValue))
-    // else if (IS_PTR(expression, Unary))
-    // else if (IS_PTR(expression, Binary))
+    else if (IS_PTR(expression, EnumValue))
+    {
+        auto enum_value = AS_PTR(expression, EnumValue);
+        return enum_value;
+    }
+    else if (IS_PTR(expression, Unary))
+    {
+        auto unary = AS_PTR(expression, Unary);
+        auto op = unary->op;
+
+        if (op == "not")
+            return Intrinsic::type_bool;
+
+        if (op == "+")
+            return determine_expression_pattern(unary->value);
+
+        // If the value is `int` or `amt`, the pattern should actually be `int`
+        if (op == "-")
+            return Intrinsic::type_num;
+    }
+    else if (IS_PTR(expression, Binary))
+    {
+        auto binary = AS_PTR(expression, Binary);
+        auto op = binary->op;
+        if (op == "==" || op == "!=" || op == "<=" || op == ">=" || op == ">" || op == "<" || op == "or" || op == "and")
+            return Intrinsic::type_bool;
+
+        // FIXME: Depending on the operation and arguments, sometimes the pattern can actually be `int` or `amt`
+        if (op == "+" || op == "*" || op == "-" || op == "/")
+            return Intrinsic::type_num;
+    }
     else if (IS_PTR(expression, PropertyIndex))
     {
         auto property_index = AS_PTR(expression, PropertyIndex);
