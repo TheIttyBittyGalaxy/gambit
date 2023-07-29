@@ -285,6 +285,11 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     {
         auto colon = eat(Token::Colon);
 
+        // This means that the "Expected statement" error will appear on the next
+        // line, which is more appropriate if the rest of the line is blank
+        if (!peek_statement() && peek(Token::Line))
+            skip_to_end_of_line();
+
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
         code_block->singleton_block = true;
