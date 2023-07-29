@@ -327,6 +327,7 @@ bool Parser::peek_enum_definition()
 void Parser::parse_enum_definition(ptr<Scope> scope)
 {
     auto enum_type = CREATE(EnumType);
+    auto union_pattern = CREATE(UnionPattern);
 
     auto keyword = eat(Token::KeyEnum);
     enum_type->identity = eat(Token::Identity).str;
@@ -334,20 +335,46 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     eat(Token::CurlyL);
     do
     {
-        auto identity_token = eat(Token::Identity);
+        if (peek_intrinsic_value())
+        {
+            auto expr = parse_intrinsic_value();
+            if (IS_PTR(expr, IntrinsicValue))
+            {
+                auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
+                union_pattern->patterns.push_back(intrinsic_value);
+            }
+            else
+            {
+                // FIXME: In this case expr is an invalid value - what should we do?
+            }
+        }
+        else if (peek(Token::Identity))
+        {
+            auto identity_token = eat(Token::Identity);
 
-        auto enum_value = CREATE(EnumValue);
-        enum_value->identity = identity_token.str;
-        enum_value->type = enum_type;
-        enum_value->span = to_span(identity_token);
+            auto enum_value = CREATE(EnumValue);
+            enum_value->identity = identity_token.str;
+            enum_value->type = enum_type;
+            enum_value->span = to_span(identity_token);
 
-        enum_type->values.emplace_back(enum_value);
+            enum_type->values.emplace_back(enum_value);
+        }
     } while (match(Token::Comma));
     auto curly_r = eat(Token::CurlyR);
 
     enum_type->span = merge(to_span(keyword), to_span(curly_r));
 
-    declare(scope, enum_type);
+    if (union_pattern->patterns.size() == 0)
+    {
+        declare(scope, enum_type);
+    }
+    else
+    {
+        union_pattern->patterns.push_back(enum_type);
+        union_pattern->identity = enum_type->identity;
+        union_pattern->span = enum_type->span;
+        declare(scope, union_pattern);
+    }
 }
 
 bool Parser::peek_entity_definition()

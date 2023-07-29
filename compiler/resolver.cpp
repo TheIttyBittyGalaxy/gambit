@@ -378,6 +378,10 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
         {
             auto resolved = fetch(scope, identity);
 
+            // NOTE: We presume that if a UnionPattern has been declared, then it must
+            //       represent an enum comprised of both enum and intrinsic values.
+            if (IS_PTR(resolved, UnionPattern))
+                return AS_PTR(resolved, UnionPattern);
             if (IS_PTR(resolved, IntrinsicType))
                 return AS_PTR(resolved, IntrinsicType);
             if (IS_PTR(resolved, EnumType))

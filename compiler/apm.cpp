@@ -8,6 +8,9 @@ string identity_of(Scope::LookupValue value)
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->identity;
 
+    if (IS_PTR(value, UnionPattern))
+        return AS_PTR(value, UnionPattern)->identity;
+
     if (IS_PTR(value, IntrinsicType))
         return AS_PTR(value, IntrinsicType)->identity;
 
@@ -108,6 +111,8 @@ Span get_span(Scope::LookupValue value)
 {
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->span;
+    if (IS_PTR(value, UnionPattern))
+        return AS_PTR(value, UnionPattern)->span;
     if (IS_PTR(value, EnumType))
         return AS_PTR(value, EnumType)->span;
     if (IS_PTR(value, Entity))

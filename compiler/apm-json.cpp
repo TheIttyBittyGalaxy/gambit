@@ -42,6 +42,7 @@ string to_json(const ptr<CodeBlock> &node, const size_t &depth)
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
     VARIANT_PTR(Variable);
+    VARIANT_PTR(UnionPattern);
     VARIANT_PTR(IntrinsicType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
@@ -108,6 +109,7 @@ string to_json(const ptr<UnionPattern> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("UnionPattern"));
+    STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(patterns);
     json.close();
     return (string)json;

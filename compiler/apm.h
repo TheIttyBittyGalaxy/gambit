@@ -112,6 +112,7 @@ struct Scope
 
     using LookupValue = variant<
         ptr<Variable>,
+        ptr<UnionPattern>,
         ptr<IntrinsicType>,
         ptr<EnumType>,
         ptr<Entity>,
@@ -153,9 +154,14 @@ struct Variable
 
 // Patterns
 
+// TODO: Current UnionPattern has an identity field and is part of the Scope::LookupValue variant
+//       as when an enum is declared with both enums and intrinsic values, we represent that as
+//       a UnionPattern declared in the scope. However, most UnionPatterns are anonymous.
+//       I'm not sure if this is the best solution for this?
 struct UnionPattern
 {
     Span span;
+    string identity;
     vector<Pattern> patterns;
 };
 
