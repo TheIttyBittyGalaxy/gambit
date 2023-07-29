@@ -223,8 +223,7 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
     {
         // FIXME: Check that the expression used for the rule's pattern is static
         // FIXME: Check that rule's pattern matches the subject's pattern
-        if (!rule.default_rule)
-            rule.pattern = resolve_pattern(rule.pattern, scope, subject_pattern);
+        rule.pattern = resolve_pattern(rule.pattern, scope, subject_pattern);
 
         // FIXME: Determine the return pattern of the match using the rule's result
         rule.result = resolve_expression(rule.result, scope, pattern_hint);

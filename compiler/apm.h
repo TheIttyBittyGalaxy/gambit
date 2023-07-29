@@ -34,6 +34,7 @@ struct UnresolvedIdentity;
 
 struct Variable;
 
+struct AnyPattern;
 struct UnionPattern;
 struct InvalidPattern;
 
@@ -57,6 +58,7 @@ struct IntrinsicValue;
 using Pattern = variant<
     ptr<UnresolvedIdentity>,
     ptr<InvalidPattern>,
+    ptr<AnyPattern>,
     ptr<UnionPattern>,
     ptr<IntrinsicType>,
     ptr<EnumType>,
@@ -153,6 +155,14 @@ struct Variable
 };
 
 // Patterns
+
+// TODO: A semantics question to figure out is if the "Any Pattern" should match against `none`.
+//       The compiler currently says yes, so that match 'any rules' can still cover none,
+//       but it might be worth giving some thought as to what should apply in other cases.
+struct AnyPattern
+{
+    Span span;
+};
 
 // TODO: Current UnionPattern has an identity field and is part of the Scope::LookupValue variant
 //       as when an enum is declared with both enums and intrinsic values, we represent that as
@@ -281,13 +291,12 @@ struct Match
     struct Rule
     {
         Span span;
-        bool default_rule = false;
         Pattern pattern;
         Expression result;
     };
     Expression subject;
     vector<Rule> rules;
-    bool has_default_rule = false;
+    bool has_fallback_rule = false;
 };
 
 struct InvalidValue
@@ -330,6 +339,7 @@ string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<InvalidStatement> &invalid_statement, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
+string to_json(const ptr<AnyPattern> &any_pattern, const size_t &depth = 0);
 string to_json(const ptr<UnionPattern> &union_pattern, const size_t &depth = 0);
 string to_json(const ptr<InvalidPattern> &invalid_type, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);

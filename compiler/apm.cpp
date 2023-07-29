@@ -90,6 +90,8 @@ Span get_span(Pattern pattern)
 {
     if (IS_PTR(pattern, UnresolvedIdentity))
         return AS_PTR(pattern, UnresolvedIdentity)->span;
+    if (IS_PTR(pattern, AnyPattern))
+        return AS_PTR(pattern, AnyPattern)->span;
     if (IS_PTR(pattern, UnionPattern))
         return AS_PTR(pattern, UnionPattern)->span;
     if (IS_PTR(pattern, InvalidPattern))
@@ -102,7 +104,7 @@ Span get_span(Pattern pattern)
     if (IS_PTR(pattern, IntrinsicType))
         throw CompilerError("Attempt to get the span of an intrinsic type.");
 
-    throw CompilerError("Could not get span of Expression variant.");
+    throw CompilerError("Could not get span of Pattern variant.");
 }
 
 Span get_span(Scope::LookupValue value)
@@ -284,6 +286,13 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
         IS_PTR(superset, InvalidPattern))
         return false;
 
+    // Any pattern
+    if (IS_PTR(superset, AnyPattern))
+        return true;
+
+    if (IS_PTR(subset, AnyPattern))
+        return false;
+
     // If patterns are the same, subset is confirmed
     if (subset == superset)
         return true;
@@ -430,6 +439,9 @@ bool is_pattern_optional(Pattern pattern)
                 return true;
         return false;
     }
+
+    if (IS_PTR(pattern, AnyPattern))
+        return true;
 
     return false;
 }

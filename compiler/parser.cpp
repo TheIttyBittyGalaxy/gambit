@@ -648,28 +648,18 @@ ptr<Match> Parser::parse_match()
     match->subject = parse_expression();
 
     eat(Token::CurlyL);
-    while ((peek_pattern(true) || peek(Token::KeyDefault)) && !match->has_default_rule)
+    while (peek_pattern(true) && !match->has_fallback_rule)
     {
         Match::Rule rule;
-        Span opening_span;
 
-        if (peek(Token::KeyDefault))
-        {
-            rule.default_rule = true;
-            match->has_default_rule = true;
-
-            auto key_default = eat(Token::KeyDefault);
-            opening_span = to_span(key_default);
-        }
-        else
-        {
-            rule.pattern = parse_pattern(true);
-            opening_span = get_span(rule.pattern);
-        }
+        rule.pattern = parse_pattern(true);
+        if (IS_PTR(rule.pattern, AnyPattern))
+            match->has_fallback_rule = true;
 
         eat(Token::Colon);
         rule.result = parse_expression();
-        rule.span = merge(opening_span, get_span(rule.result));
+        rule.span = merge(get_span(rule.pattern), get_span(rule.result));
+        // eat(Token::Line); // FIXME: Should we not be eating a line at the end of each rule?
 
         match->rules.emplace_back(rule);
     }
@@ -960,11 +950,20 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 bool Parser::peek_pattern(bool allow_intrinsic_values)
 {
     return peek(Token::Identity) ||
+           peek(Token::KeyAny) ||
            (peek_intrinsic_value() && allow_intrinsic_values);
 }
 
 Pattern Parser::parse_pattern(bool allow_intrinsic_values)
 {
+    if (peek(Token::KeyAny))
+    {
+        auto keyword = eat(Token::KeyAny);
+        auto any_pattern = CREATE(AnyPattern);
+        any_pattern->span = to_span(eat(Token::KeyAny));
+        return any_pattern;
+    }
+
     Pattern pattern;
     if (peek_intrinsic_value() && allow_intrinsic_values)
     {

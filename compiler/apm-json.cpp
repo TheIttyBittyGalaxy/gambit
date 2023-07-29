@@ -104,6 +104,15 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<AnyPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("AnyPattern"));
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<UnionPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -218,6 +227,7 @@ string to_json(const Pattern &node, const size_t &depth)
 {
     VARIANT_PTR(UnresolvedIdentity);
     VARIANT_PTR(InvalidPattern);
+    VARIANT_PTR(AnyPattern);
     VARIANT_PTR(UnionPattern);
     VARIANT_PTR(IntrinsicType);
     VARIANT_PTR(EnumType);
@@ -304,12 +314,8 @@ string to_json(const Match::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    if (!node.default_rule)
-    {
-        STRUCT_FIELD(pattern);
-    }
+    STRUCT_FIELD(pattern);
     STRUCT_FIELD(result);
-    STRUCT_FIELD(default_rule);
     json.close();
     return (string)json;
 }
@@ -321,7 +327,7 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     json.add("node", string("Match"));
     STRUCT_PTR_FIELD(subject);
     STRUCT_PTR_FIELD(rules);
-    STRUCT_PTR_FIELD(has_default_rule);
+    STRUCT_PTR_FIELD(has_fallback_rule);
     json.close();
     return (string)json;
 }
