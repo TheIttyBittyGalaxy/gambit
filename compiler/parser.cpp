@@ -659,7 +659,7 @@ ptr<Match> Parser::parse_match()
         eat(Token::Colon);
         rule.result = parse_expression();
         rule.span = merge(get_span(rule.pattern), get_span(rule.result));
-        // eat(Token::Line); // FIXME: Should we not be eating a line at the end of each rule?
+        eat(Token::Line);
 
         match->rules.emplace_back(rule);
     }
