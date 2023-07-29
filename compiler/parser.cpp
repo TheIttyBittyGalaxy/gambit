@@ -960,7 +960,7 @@ Pattern Parser::parse_pattern(bool allow_intrinsic_values)
     {
         auto keyword = eat(Token::KeyAny);
         auto any_pattern = CREATE(AnyPattern);
-        any_pattern->span = to_span(eat(Token::KeyAny));
+        any_pattern->span = to_span(keyword);
         return any_pattern;
     }
 
