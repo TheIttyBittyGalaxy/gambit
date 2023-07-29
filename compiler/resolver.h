@@ -38,7 +38,6 @@ private:
 
     // PATTERNS //
     [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope);
-    void resolve_optional_pattern(ptr<OptionalPattern> optional_pattern, ptr<Scope> scope);
 };
 
 #endif

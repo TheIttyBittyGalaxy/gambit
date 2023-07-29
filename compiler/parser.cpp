@@ -233,6 +233,9 @@ void Parser::parse_program()
     declare(program->global_scope, Intrinsic::type_int);
     declare(program->global_scope, Intrinsic::type_amt);
     declare(program->global_scope, Intrinsic::type_bool);
+    // NOTE: We intentionally do not declare the none type, as users cannot access this directly.
+    //       Instead they should use the `none` keyword.
+    // FIXME: Implement the `none` keyword.
 
     declare(program->global_scope, Intrinsic::entity_player);
     declare(program->global_scope, Intrinsic::state_player_number);
@@ -923,10 +926,12 @@ Pattern Parser::parse_pattern(ptr<Scope> scope)
     if (peek(Token::Question))
     {
         auto question = eat(Token::Question);
-        auto optional_pattern = CREATE(OptionalPattern);
-        optional_pattern->pattern = pattern;
+        auto optional_pattern = CREATE(UnionPattern);
+        // FIXME: Replace this with a function interested to determine the union of two patterns i.e. union(pattern, Intrinsic:none_val)
+        optional_pattern->patterns.push_back(pattern);
+        optional_pattern->patterns.push_back(Intrinsic::none_val);
         optional_pattern->span = merge(get_span(pattern), to_span(question));
-        pattern = optional_pattern;
+        return optional_pattern;
     }
 
     return pattern;

@@ -34,7 +34,8 @@ struct UnresolvedIdentity;
 
 struct Variable;
 
-struct OptionalPattern;
+struct UnionPattern;
+struct InvalidPattern;
 
 struct EnumType;
 struct EnumValue;
@@ -51,17 +52,18 @@ using Property = variant<
     ptr<InvalidProperty>>;
 
 struct IntrinsicType;
-struct InvalidPattern;
+struct IntrinsicValue;
 
 using Pattern = variant<
     ptr<UnresolvedIdentity>,
-    ptr<OptionalPattern>,
     ptr<InvalidPattern>,
+    ptr<UnionPattern>,
+    ptr<IntrinsicType>,
     ptr<EnumType>,
     ptr<Entity>,
-    ptr<IntrinsicType>>;
+    ptr<IntrinsicValue>,
+    ptr<EnumValue>>;
 
-struct IntrinsicValue;
 struct ListValue;
 struct InstanceList;
 struct Unary;
@@ -151,10 +153,10 @@ struct Variable
 
 // Patterns
 
-struct OptionalPattern
+struct UnionPattern
 {
     Span span;
-    Pattern pattern;
+    vector<Pattern> patterns;
 };
 
 struct InvalidPattern
@@ -305,6 +307,7 @@ vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity
 
 Pattern determine_expression_pattern(Expression expr);
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
+bool is_pattern_optional(Pattern pattern);
 bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters);
 
 // JSON Serialisation
@@ -317,7 +320,7 @@ string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<InvalidStatement> &invalid_statement, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
-string to_json(const ptr<OptionalPattern> &optional_pattern, const size_t &depth = 0);
+string to_json(const ptr<UnionPattern> &union_pattern, const size_t &depth = 0);
 string to_json(const ptr<InvalidPattern> &invalid_type, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);

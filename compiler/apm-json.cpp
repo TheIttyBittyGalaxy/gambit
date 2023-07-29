@@ -103,12 +103,12 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<OptionalPattern> &node, const size_t &depth)
+string to_json(const ptr<UnionPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("OptionalPattern"));
-    STRUCT_PTR_FIELD(pattern);
+    json.add("node", string("UnionPattern"));
+    STRUCT_PTR_FIELD(patterns);
     json.close();
     return (string)json;
 }
@@ -214,13 +214,14 @@ string to_json(const ptr<IntrinsicType> &node, const size_t &depth)
 
 string to_json(const Pattern &node, const size_t &depth)
 {
-
     VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR(OptionalPattern);
     VARIANT_PTR(InvalidPattern);
+    VARIANT_PTR(UnionPattern);
+    VARIANT_PTR(IntrinsicType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
-    VARIANT_PTR(IntrinsicType);
+    VARIANT_PTR(IntrinsicValue);
+    VARIANT_PTR(EnumValue);
 
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }

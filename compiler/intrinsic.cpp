@@ -3,7 +3,7 @@
 
 namespace Intrinsic
 {
-    // FIXME: Give intrinsics some kind of 'intrinsic spans. Eventually, if the compiler tries to access the span of an
+    // FIXME: Give intrinsics some kind of 'intrinsic spans'. Eventually, if the compiler tries to access the span of an
     //        intrinsic, that should be a compiler error, as that's never going to make a useful error message for the user.
     //        For the purposes of building the compiler however, it would be useful to not have to deal with those compiler
     //        errors yet. (let alone the kind of memory segmentation errors that can occur due to null spans).
@@ -13,6 +13,9 @@ namespace Intrinsic
     ptr<IntrinsicType> type_int = ptr<IntrinsicType>(new IntrinsicType({"int", "int"}));
     ptr<IntrinsicType> type_amt = ptr<IntrinsicType>(new IntrinsicType({"amt", "int"}));
     ptr<IntrinsicType> type_bool = ptr<IntrinsicType>(new IntrinsicType({"bool", "bool"}));
+
+    ptr<IntrinsicType> type_none = ptr<IntrinsicType>(new IntrinsicType({"none", "void"}));
+    ptr<IntrinsicValue> none_val = ptr<IntrinsicValue>(new IntrinsicValue({Span(), 0, type_none}));
 
     // FIXME: Is it worth adding an 'IntrinsicEntity' type?
     ptr<Entity> entity_player = ptr<Entity>(new Entity({Span(), "Player"}));

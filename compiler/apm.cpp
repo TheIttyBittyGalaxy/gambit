@@ -89,8 +89,8 @@ Span get_span(Pattern pattern)
 {
     if (IS_PTR(pattern, UnresolvedIdentity))
         return AS_PTR(pattern, UnresolvedIdentity)->span;
-    if (IS_PTR(pattern, OptionalPattern))
-        return AS_PTR(pattern, OptionalPattern)->span;
+    if (IS_PTR(pattern, UnionPattern))
+        return AS_PTR(pattern, UnionPattern)->span;
     if (IS_PTR(pattern, InvalidPattern))
         return AS_PTR(pattern, InvalidPattern)->span;
     if (IS_PTR(pattern, EnumType))
@@ -224,24 +224,72 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     if (subset == superset)
         return true;
 
-    // Optional patterns
-    // FIXME: I'm not certian that these comparisons will work correctly if multiple
-    //        OptionalPattern nodes get nested inside each other. Once more complex
-    //        patterns are possible, further testing and examination may be needed!
+    // Union patterns
+    bool subset_is_union = IS_PTR(subset, UnionPattern);
+    bool superset_is_union = IS_PTR(superset, UnionPattern);
 
-    bool subset_optional = IS_PTR(subset, OptionalPattern);
-    bool superset_optional = IS_PTR(superset, OptionalPattern);
-
-    if (subset_optional && superset_optional)
-        return is_pattern_subset_of_superset(AS_PTR(subset, OptionalPattern)->pattern, AS_PTR(superset, OptionalPattern)->pattern);
-
-    if (subset_optional && !superset_optional)
+    if (!subset_is_union && superset_is_union)
+    {
+        auto super_union = AS_PTR(superset, UnionPattern);
+        for (auto pattern : super_union->patterns)
+        {
+            if (is_pattern_subset_of_superset(subset, pattern))
+                return true;
+        }
         return false;
+    }
 
-    if (!subset_optional && superset_optional)
-        return is_pattern_subset_of_superset(subset, AS_PTR(superset, OptionalPattern)->pattern);
+    if (subset_is_union && !superset_is_union)
+    {
+        // NOTE: Technically, if the subset is a union with only one pattern in the union,
+        //       and that one pattern is a subset of the superset, in that case we should
+        //       return true. However, we are returning false by default under the
+        //       assumption that the resolver will always simplify UnionPattern nodes with
+        //       only one pattern to just the pattern itself.
 
-    // Intrinsic sub types
+        // FIXME: Check that this assumption about the resolver is correct.
+
+        return false;
+    }
+
+    if (subset_is_union && superset_is_union)
+    {
+        // In this case, every pattern in the sub union needs to be a subset
+        // of at least one pattern in the super union.
+        auto sub_union = AS_PTR(subset, UnionPattern);
+        auto super_union = AS_PTR(superset, UnionPattern);
+
+        for (auto sub_pattern : sub_union->patterns)
+        {
+            bool sub_pattern_is_subset = false;
+            for (auto super_pattern : super_union->patterns)
+            {
+                if (is_pattern_subset_of_superset(sub_pattern, super_pattern))
+                {
+                    sub_pattern_is_subset = true;
+                    break;
+                }
+            }
+
+            if (!sub_pattern_is_subset)
+                return false;
+        }
+
+        return true;
+    }
+
+    // Enums
+    if (IS_PTR(subset, EnumValue) && IS_PTR(superset, EnumType))
+    {
+        auto enum_type = AS_PTR(superset, EnumType);
+        auto enum_value = AS_PTR(subset, EnumValue);
+        for (auto value : enum_type->values)
+            if (value == enum_value)
+                return true;
+        return false;
+    }
+
+    // Intrinsic types
     if (IS_PTR(subset, IntrinsicType) && IS_PTR(superset, IntrinsicType))
     {
         auto subtype = AS_PTR(subset, IntrinsicType);
@@ -254,6 +302,68 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
         if (subtype == Intrinsic::type_int && supertype == Intrinsic::type_num)
             return true;
 
+        return false;
+    }
+
+    // Intrinsic values
+    if (IS_PTR(subset, IntrinsicValue) && IS_PTR(superset, IntrinsicType))
+    {
+        auto sub_value = AS_PTR(subset, IntrinsicValue);
+        auto super_type = AS_PTR(superset, IntrinsicType);
+        return is_pattern_subset_of_superset(sub_value->type, super_type);
+    }
+
+    if (IS_PTR(subset, IntrinsicValue) && IS_PTR(superset, IntrinsicValue))
+    {
+        auto sub_value = AS_PTR(subset, IntrinsicValue);
+        auto super_value = AS_PTR(superset, IntrinsicValue);
+        return is_pattern_subset_of_superset(sub_value->type, super_value->type) &&
+               sub_value->value == super_value->value;
+    }
+
+    // None edge case
+    if (IS_PTR(subset, IntrinsicType) && IS_PTR(superset, IntrinsicValue))
+    {
+        // NOTE: I don't we will ever _actually_ hit this code path, as the intrinsic type
+        //       only really exists so that the intrinsic value has something to point to.
+        //       If we do hit this code path, it might be worth exploring why the intrinsic
+        //       value wasn't used instead.
+
+        auto sub_type = AS_PTR(subset, IntrinsicType);
+        auto super_value = AS_PTR(superset, IntrinsicValue);
+
+        if (sub_type == Intrinsic::type_none && super_value == Intrinsic::none_val)
+            return true;
+    }
+
+    return false;
+}
+
+bool is_pattern_optional(Pattern pattern)
+{
+    if (IS_PTR(pattern, IntrinsicValue))
+    {
+        auto intrinsic_value = AS_PTR(pattern, IntrinsicValue);
+        return intrinsic_value == Intrinsic::none_val;
+    }
+
+    if (IS_PTR(pattern, IntrinsicType))
+    {
+        // NOTE: I don't we will ever _actually_ hit this code path, as the intrinsic type
+        //       only really exists so that the intrinsic value has something to point to.
+        //       If we do hit this code path, it might be worth exploring why the intrinsic
+        //       value wasn't used instead.
+
+        auto intrinsic_type = AS_PTR(pattern, IntrinsicType);
+        return intrinsic_type == Intrinsic::type_none;
+    }
+
+    if (IS_PTR(pattern, UnionPattern))
+    {
+        auto union_pattern = AS_PTR(pattern, UnionPattern);
+        for (auto sub_pattern : union_pattern->patterns)
+            if (is_pattern_optional(sub_pattern))
+                return true;
         return false;
     }
 
@@ -274,7 +384,7 @@ bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector
         // If there are more patterns than values, the patterns without corresponding values must be optional
         if (i >= values.size())
         {
-            if (!IS_PTR(pattern, OptionalPattern))
+            if (!is_pattern_optional(pattern))
                 return false;
             continue;
         }

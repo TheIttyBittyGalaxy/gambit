@@ -167,13 +167,7 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
                 enum_type = AS_PTR(the_pattern_hint, EnumType);
             }
 
-            // Pattern hint is an optional enum type
-            else if (IS_PTR(the_pattern_hint, OptionalPattern))
-            {
-                auto optional_pattern = AS_PTR(the_pattern_hint, OptionalPattern);
-                if (IS_PTR(optional_pattern->pattern, EnumType))
-                    enum_type = AS_PTR(optional_pattern->pattern, EnumType);
-            }
+            // FIXME: Infer enum values from UnionPatterns
 
             // Search enum type for the given identity
             if (enum_type.has_value())
@@ -358,12 +352,16 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
         return invalid_pattern;
     }
 
-    else if (IS_PTR(pattern, OptionalPattern))
+    else if (IS_PTR(pattern, UnionPattern))
     {
-        auto optional_pattern = AS_PTR(pattern, OptionalPattern);
-        optional_pattern->pattern = resolve_pattern(optional_pattern->pattern, scope);
-        // FIXME: Throw an error if an already optional pattern (the original pattern) is made
-        //        optional, and then return the original pattern in place of the optional one.
+        auto union_pattern = AS_PTR(pattern, UnionPattern);
+        for (size_t i = 0; i < union_pattern->patterns.size(); i++)
+        {
+            auto pattern = union_pattern->patterns[i];
+            union_pattern->patterns[i] = resolve_pattern(pattern, scope);
+        }
+        // FIXME: At this stage, we should also simplify the union as much as possible
+        //        i.e. remove any pattern in the union that is a subset of another
     }
 
     return pattern;

@@ -14,6 +14,9 @@ namespace Intrinsic
     extern ptr<IntrinsicType> type_int;
     extern ptr<IntrinsicType> type_bool;
 
+    extern ptr<IntrinsicType> type_none;
+    extern ptr<IntrinsicValue> none_val;
+
     extern ptr<Entity> entity_player;
     extern ptr<StateProperty> state_player_number;
 }
