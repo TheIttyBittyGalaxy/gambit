@@ -355,13 +355,47 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope)
     else if (IS_PTR(pattern, UnionPattern))
     {
         auto union_pattern = AS_PTR(pattern, UnionPattern);
+
+        // Resolve all patterns in the union
         for (size_t i = 0; i < union_pattern->patterns.size(); i++)
         {
             auto pattern = union_pattern->patterns[i];
             union_pattern->patterns[i] = resolve_pattern(pattern, scope);
         }
-        // FIXME: At this stage, we should also simplify the union as much as possible
-        //        i.e. remove any pattern in the union that is a subset of another
+
+        // Remove any pattern in the union that is a subset of another pattern
+        {
+            size_t i = 0;
+            while (i < union_pattern->patterns.size() - 1)
+            {
+                auto pattern = union_pattern->patterns[i];
+                bool pattern_is_redundant = false;
+
+                for (size_t j = union_pattern->patterns.size() - 1; j > i; j--)
+                {
+                    auto other = union_pattern->patterns[j];
+                    if (is_pattern_subset_of_superset(pattern, other))
+                    {
+                        pattern_is_redundant = true;
+                        break;
+                    }
+
+                    if (is_pattern_subset_of_superset(other, pattern))
+                    {
+                        union_pattern->patterns.erase(union_pattern->patterns.begin() + i);
+                    }
+                }
+
+                if (pattern_is_redundant)
+                    union_pattern->patterns.erase(union_pattern->patterns.begin() + i);
+                else
+                    i++;
+            }
+        }
+
+        // If only one pattern is present in the union, the union is unecessary
+        if (union_pattern->patterns.size() == 1)
+            return union_pattern->patterns[0];
     }
 
     return pattern;
