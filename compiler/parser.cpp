@@ -338,6 +338,7 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
 
         auto enum_value = CREATE(EnumValue);
         enum_value->identity = identity_token.str;
+        enum_value->type = enum_type;
         enum_value->span = to_span(identity_token);
 
         enum_type->values.emplace_back(enum_value);

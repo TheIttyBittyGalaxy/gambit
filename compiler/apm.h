@@ -177,6 +177,7 @@ struct EnumValue
 {
     Span span;
     string identity;
+    ptr<EnumType> type;
 };
 
 // Entities

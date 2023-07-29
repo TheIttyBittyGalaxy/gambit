@@ -155,25 +155,71 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
             return invalid_value;
         }
 
-        // Resolve identity using the pattern hint (works for enum types only)
+        // Resolve identity using the pattern hint (this only works for enums)
         if (pattern_hint.has_value())
         {
             auto the_pattern_hint = pattern_hint.value();
-            optional<ptr<EnumType>> enum_type = {};
+            auto value_identity = unresolved_identity->identity;
 
-            // Pattern hint is the enum type
             if (IS_PTR(the_pattern_hint, EnumType))
             {
-                enum_type = AS_PTR(the_pattern_hint, EnumType);
+                auto enum_type = AS_PTR(the_pattern_hint, EnumType);
+                for (const auto &value : enum_type->values)
+                    if (value->identity == value_identity)
+                        return value;
             }
 
-            // FIXME: Infer enum values from UnionPatterns
+            if (IS_PTR(the_pattern_hint, EnumValue))
+            {
+                auto value = AS_PTR(the_pattern_hint, EnumValue);
+                if (value->identity == value_identity)
+                    return value;
+            }
 
-            // Search enum type for the given identity
-            if (enum_type.has_value())
-                for (const auto &value : enum_type.value()->values)
-                    if (value->identity == unresolved_identity->identity)
-                        return value;
+            if (IS_PTR(the_pattern_hint, UnionPattern))
+            {
+                auto union_pattern = AS_PTR(the_pattern_hint, UnionPattern);
+                vector<ptr<EnumValue>> potential_values;
+                for (auto pattern : union_pattern->patterns)
+                {
+                    if (IS_PTR(pattern, EnumType))
+                    {
+                        auto enum_type = AS_PTR(pattern, EnumType);
+                        for (const auto &value : enum_type->values)
+                            if (value->identity == value_identity)
+                                potential_values.push_back(value);
+                    }
+
+                    if (IS_PTR(pattern, EnumValue))
+                    {
+                        auto value = AS_PTR(pattern, EnumValue);
+                        if (value->identity == value_identity)
+                            potential_values.push_back(value);
+                    }
+                }
+
+                if (potential_values.size() == 1)
+                {
+                    return potential_values[0];
+                }
+                else if (potential_values.size() > 1)
+                {
+                    string msg = "'" + identity + "' is ambiguous. It could refer to any of ";
+                    for (size_t i = 0; i < potential_values.size(); i++)
+                    {
+                        auto value = potential_values[i];
+                        if (i > 0)
+                            msg += ", ";
+                        msg += value->type->identity + ":" + value->identity;
+                    }
+                    msg += ".";
+                    source->log_error(msg, unresolved_identity->span);
+
+                    auto invalid_value = CREATE(InvalidValue);
+                    invalid_value->span = unresolved_identity->span;
+                    return invalid_value;
+                }
+            }
         }
 
         source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
