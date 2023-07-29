@@ -648,13 +648,28 @@ ptr<Match> Parser::parse_match()
     match->subject = parse_expression();
 
     eat(Token::CurlyL);
-    while (peek_expression())
+    while ((peek_expression() || peek(Token::KeyDefault)) && !match->has_default_rule)
     {
         Match::Rule rule;
-        rule.pattern = parse_expression();
+        Span opening_span;
+
+        if (peek(Token::KeyDefault))
+        {
+            rule.default_rule = true;
+            match->has_default_rule = true;
+
+            auto key_default = eat(Token::KeyDefault);
+            opening_span = to_span(key_default);
+        }
+        else
+        {
+            rule.pattern = parse_expression();
+            opening_span = get_span(rule.pattern);
+        }
+
         eat(Token::Colon);
         rule.result = parse_expression();
-        rule.span = merge(get_span(rule.pattern), get_span(rule.result));
+        rule.span = merge(opening_span, get_span(rule.result));
 
         match->rules.emplace_back(rule);
     }

@@ -52,6 +52,7 @@ struct Token
         KeyIn,
         KeyLoop,
         KeyMatch,
+        KeyDefault,
         KeyReturn,
         KeyUntil,
         KeyChoose,

@@ -281,11 +281,13 @@ struct Match
     struct Rule
     {
         Span span;
+        bool default_rule = false;
         Expression pattern; // FIXME: Make this a pattern, not an expression
         Expression result;
     };
     Expression subject;
     vector<Rule> rules;
+    bool has_default_rule = false;
 };
 
 struct InvalidValue

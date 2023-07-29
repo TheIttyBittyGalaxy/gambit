@@ -304,8 +304,12 @@ string to_json(const Match::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    STRUCT_FIELD(pattern);
+    if (!node.default_rule)
+    {
+        STRUCT_FIELD(pattern);
+    }
     STRUCT_FIELD(result);
+    STRUCT_FIELD(default_rule);
     json.close();
     return (string)json;
 }
@@ -317,6 +321,7 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     json.add("node", string("Match"));
     STRUCT_PTR_FIELD(subject);
     STRUCT_PTR_FIELD(rules);
+    STRUCT_PTR_FIELD(has_default_rule);
     json.close();
     return (string)json;
 }
