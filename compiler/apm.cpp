@@ -206,6 +206,39 @@ Pattern determine_expression_pattern(Expression expression)
     throw CompilerError("Cannot determine pattern of Expression variant.", get_span(expression));
 }
 
+ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b)
+{
+    // NOTE: This function does not simplify the resulting union
+    //       e.g. remove patterns in the union that are subsets of other patterns.
+    //       As of writing, this is completed when the pattern is resolved.
+
+    auto union_pattern = CREATE(UnionPattern);
+
+    if (IS_PTR(a, UnionPattern))
+    {
+        auto union_a = AS_PTR(a, UnionPattern);
+        for (auto pattern : union_a->patterns)
+            union_pattern->patterns.push_back(pattern);
+    }
+    else
+    {
+        union_pattern->patterns.push_back(a);
+    }
+
+    if (IS_PTR(b, UnionPattern))
+    {
+        auto union_b = AS_PTR(b, UnionPattern);
+        for (auto pattern : union_b->patterns)
+            union_pattern->patterns.push_back(pattern);
+    }
+    else
+    {
+        union_pattern->patterns.push_back(b);
+    }
+
+    return union_pattern;
+}
+
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 {
     // Cannot determine result if either pattern is invalid or unresolved

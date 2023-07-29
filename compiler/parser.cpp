@@ -926,10 +926,7 @@ Pattern Parser::parse_pattern(ptr<Scope> scope)
     if (peek(Token::Question))
     {
         auto question = eat(Token::Question);
-        auto optional_pattern = CREATE(UnionPattern);
-        // FIXME: Replace this with a function interested to determine the union of two patterns i.e. union(pattern, Intrinsic:none_val)
-        optional_pattern->patterns.push_back(pattern);
-        optional_pattern->patterns.push_back(Intrinsic::none_val);
+        auto optional_pattern = create_union_pattern(pattern, Intrinsic::none_val);
         optional_pattern->span = merge(get_span(pattern), to_span(question));
         return optional_pattern;
     }
