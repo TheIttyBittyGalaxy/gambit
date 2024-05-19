@@ -243,7 +243,26 @@ Pattern determine_expression_pattern(Expression expression)
 
         throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
     }
-    // else if (IS_PTR(expression, Match))
+    else if (IS_PTR(expression, Match))
+    {
+        auto match = AS_PTR(expression, Match);
+
+        // FIXME: This is a silly thing to check (given that a one rule match is
+        //        useless). However, as of writing, `is_pattern_subset_of_superset`
+        //        assumes that union patterns never have just one child.
+        if (match->rules.size() == 1)
+            return determine_expression_pattern(match->rules[0].result);
+
+        auto union_pattern = CREATE(UnionPattern);
+
+        for (auto rule : match->rules)
+            union_pattern->patterns.push_back(determine_expression_pattern(rule.result));
+
+        // FIXME: This union pattern is never resolved, which in turn means it is
+        //        never simplified (as of writing, UnionPatterns are simplified
+        //        when they are resolved)
+        return union_pattern;
+    }
 
     // TODO: For now, invalid expressions are considered to be the "any" pattern.
     //       I'm not sure yet if this is the right choice, this is just a temporary
@@ -343,6 +362,13 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
         //       only one pattern to just the pattern itself.
 
         // FIXME: Check that this assumption about the resolver is correct.
+
+        // FIXME: Is it possible that parts of the program may try to use this function on
+        //        patterns that never get resolved? e.g. a caller could call
+        //        `determine_expression_pattern` on an expression to do some pattern checking,
+        //        meaning the result was never resolved as it was never part of the APM.
+        //        Presumably that caller would then call `is_pattern_subset_of_superset` to
+        //        do the check?
 
         return false;
     }
