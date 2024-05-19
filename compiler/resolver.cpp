@@ -309,8 +309,20 @@ void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Patter
 
 void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    binary->lhs = resolve_expression(binary->lhs, scope);
-    binary->rhs = resolve_expression(binary->rhs, scope);
+    if (binary->op == "==" || binary->op == "!=")
+    {
+        // FIXME: This allows the rhs to infer it's pattern from the lhs,
+        //        but not vice versa. This means an enum on the lhs cannot
+        //        be resolved using the pattern of the expression on the rhs.
+        binary->lhs = resolve_expression(binary->lhs, scope);
+        auto lhs_pattern = determine_expression_pattern(binary->lhs);
+        binary->rhs = resolve_expression(binary->rhs, scope, lhs_pattern);
+    }
+    else
+    {
+        binary->lhs = resolve_expression(binary->lhs, scope);
+        binary->rhs = resolve_expression(binary->rhs, scope);
+    }
 }
 
 // PATTERNS //
