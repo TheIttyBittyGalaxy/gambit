@@ -64,15 +64,7 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
     {
         auto state = AS_PTR(value, StateProperty);
         if (state->initial_value.has_value())
-        {
-            auto resolved_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
-            state->initial_value = resolved_value;
-
-            auto resolved_value_pattern = determine_expression_pattern(resolved_value);
-            if (!is_pattern_subset_of_superset(resolved_value_pattern, state->pattern))
-                source->log_error("Default value for state is the incorrect type.", get_span(resolved_value));
-        }
-        // FIXME: Generate a default value if one isn't given
+            state->initial_value = resolve_expression(state->initial_value.value(), state->scope, state->pattern);
     }
 
     else if (IS_PTR(value, FunctionProperty))
@@ -81,7 +73,7 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
         if (funct->body.has_value())
             resolve_code_block(funct->body.value(), funct->pattern);
 
-        // FIXME: If the body is a singleton, check it's statement as if it were a return expression
+        // FIXME: If the body is a singleton, resolve the statement as if it were a return expression
     }
 
     else if (IS_PTR(value, Scope::OverloadedIdentity))
@@ -140,18 +132,6 @@ void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, opt
     {
         segment.condition = resolve_expression(segment.condition, scope);
         resolve_code_block(segment.code_block, pattern_hint);
-
-        auto condition_pattern = determine_expression_pattern(segment.condition);
-        bool bool_condition = is_pattern_subset_of_superset(condition_pattern, Intrinsic::type_bool);
-        bool optional_condition = is_pattern_optional(condition_pattern);
-        if (!bool_condition && !optional_condition)
-        {
-            // FIXME: Now the segment's condition has been resolved, `segment.condition` has
-            //        a span for the origin of the value, not necessarily for the expression
-            //        used in the if statement. The correct condition span would be better
-            //        than the span for the entire segment.
-            source->log_error("If statement conditions must evaluate either to true or false, or potentially to none. This condition will never be true, false, or none.", segment.span);
-        }
     }
 
     if (stmt->fallback.has_value())
@@ -250,12 +230,6 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
     for (auto &rule : match->rules)
     {
         rule.pattern = resolve_pattern(rule.pattern, scope, subject_pattern);
-        // FIXME: Check that the expression used for the rule's pattern is static
-
-        if (!is_pattern_subset_of_superset(rule.pattern, subject_pattern))
-            source->log_error("This rule's pattern will never match.", get_span(rule.pattern));
-
-        // FIXME: Determine the return pattern of the match using the rule's result
         rule.result = resolve_expression(rule.result, scope, pattern_hint);
     }
 }
@@ -331,14 +305,12 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     unary->value = resolve_expression(unary->value, scope);
-    // FIXME: Implement pattern checking on the operands
 }
 
 void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     binary->lhs = resolve_expression(binary->lhs, scope);
     binary->rhs = resolve_expression(binary->rhs, scope);
-    // FIXME: Implement pattern checking on the operands
 }
 
 // PATTERNS //

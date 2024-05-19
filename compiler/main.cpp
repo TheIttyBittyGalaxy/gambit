@@ -1,4 +1,5 @@
 #include "apm.h"
+#include "checker.h"
 #include "errors.h"
 #include "json.h"
 #include "lexer.h"
@@ -67,6 +68,11 @@ int main(int argc, char *argv[])
         Resolver resolver;
         resolver.resolve(source, program);
         output_program(program, "resolver_output");
+
+        cout << "\nCHECKER" << endl;
+        Checker checker;
+        checker.check(source, program);
+        output_program(program, "checker_output");
     }
     catch (CompilerError error)
     {
