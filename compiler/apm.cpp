@@ -264,17 +264,13 @@ Pattern determine_expression_pattern(Expression expression)
         return union_pattern;
     }
 
-    // TODO: For now, invalid expressions are considered to be the "any" pattern.
-    //       I'm not sure yet if this is the right choice, this is just a temporary
-    //       solution while the compiler is being developed to prevent the compiler
-    //       compiler errors occurring as often.
     else if (IS_PTR(expression, InvalidExpression))
     {
-        return CREATE(AnyPattern);
+        return CREATE(InvalidPattern);
     }
     else if (IS_PTR(expression, InvalidValue))
     {
-        return CREATE(AnyPattern);
+        return CREATE(InvalidPattern);
     }
 
     throw CompilerError("Cannot determine pattern of Expression variant.", get_span(expression));
@@ -322,10 +318,13 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
         IS_PTR(superset, UnresolvedIdentity))
         throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns", get_span(subset), get_span(superset));
 
+    // TODO: For now, invalid patterns are considered to be subsets and supersets
+    //       of every possible pattern. I'm not sure if this is the correct
+    //       assumption. We're going to roll with it though while compiler matures.
     if (
         IS_PTR(subset, InvalidPattern) ||
         IS_PTR(superset, InvalidPattern))
-        return false;
+        return true;
 
     // Any pattern
     if (IS_PTR(superset, AnyPattern))
