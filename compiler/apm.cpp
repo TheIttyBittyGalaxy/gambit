@@ -235,6 +235,8 @@ Pattern determine_expression_pattern(Expression expression)
             return AS_PTR(property, StateProperty)->pattern;
         if (IS_PTR(property, FunctionProperty))
             return AS_PTR(property, FunctionProperty)->pattern;
+        if (IS_PTR(property, InvalidProperty))
+            return CREATE(InvalidPattern);
         if (IS_PTR(property, UnresolvedIdentity))
         {
             auto unresolved_identity = AS_PTR(property, UnresolvedIdentity);
