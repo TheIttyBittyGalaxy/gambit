@@ -197,9 +197,7 @@ void Checker::check_match(ptr<Match> match, ptr<Scope> scope)
         // FIXME: Check that rule's pattern is static
         check_expression(rule.result, scope);
 
-        // FIXME: `is_pattern_subset_of_superset` is not quite correct here. We actually need
-        //        to test for any overlap between the two sets.
-        if (!is_pattern_subset_of_superset(rule.pattern, subject_pattern))
+        if (!do_patterns_overlap(rule.pattern, subject_pattern))
             source->log_error("This rule's pattern will never match.", get_span(rule.pattern));
     }
 }

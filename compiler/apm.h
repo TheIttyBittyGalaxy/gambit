@@ -347,6 +347,7 @@ vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity
 [[nodiscard]] Pattern determine_expression_pattern(Expression expr);
 [[nodiscard]] ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b);
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
+bool do_patterns_overlap(Pattern a, Pattern b);
 bool is_pattern_optional(Pattern pattern);
 bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters);
 

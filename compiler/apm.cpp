@@ -459,6 +459,13 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     return false;
 }
 
+// FIXME: This is a terribly inefficient way of doing this!
+//        Figure out a sensible algorithm for this.
+bool do_patterns_overlap(Pattern a, Pattern b)
+{
+    return is_pattern_subset_of_superset(a, b) || is_pattern_subset_of_superset(b, a);
+}
+
 bool is_pattern_optional(Pattern pattern)
 {
     if (IS_PTR(pattern, IntrinsicValue))
