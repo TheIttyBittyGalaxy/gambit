@@ -245,6 +245,19 @@ Pattern determine_expression_pattern(Expression expression)
     }
     // else if (IS_PTR(expression, Match))
 
+    // TODO: For now, invalid expressions are considered to be the "any" pattern.
+    //       I'm not sure yet if this is the right choice, this is just a temporary
+    //       solution while the compiler is being developed to prevent the compiler
+    //       compiler errors occurring as often.
+    else if (IS_PTR(expression, InvalidExpression))
+    {
+        return CREATE(AnyPattern);
+    }
+    else if (IS_PTR(expression, InvalidValue))
+    {
+        return CREATE(AnyPattern);
+    }
+
     throw CompilerError("Cannot determine pattern of Expression variant.", get_span(expression));
 }
 
