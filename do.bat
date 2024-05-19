@@ -1,1 +1,1 @@
-local/script/%1.bat %2
+script/%1.bat %2

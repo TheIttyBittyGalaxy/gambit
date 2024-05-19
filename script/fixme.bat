@@ -1,0 +1,1 @@
+findstr /s /i "FIXME TODO" *.* | find /v "" /c

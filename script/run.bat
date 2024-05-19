@@ -1,0 +1,1 @@
+lua54 script/run.lua %*
