@@ -22,6 +22,6 @@ Players take turns. On their turn, each player takes the following steps in orde
 
 Every card had a 'power' score. A card's power is it's rank plus how many tokens it has. (Jack, Queen, and King are 10; Ace is 11).
 
-When you attack, you choose two of your cards (the 'attackers'), and one of your opponent's cards (the 'defender'). In order to attack, the combined power of the attackers must be _more than_ the power of the defender. Also, at least one of your attackers must match the suit of the deference.
+When you attack, you choose two of your cards (the 'attackers'), and one of your opponent's cards (the 'defender'). In order to attack, the combined power of the attackers must be _more than_ the power of the defender. Additionally, at least one of your attackers must match the suit of the defender.
 
 When you have attacked successfully, discard the defender, and gain an amount of tokens equal to it's power. Also, discard your weakest attacker, but take back any tokens it has. If your attackers have equal power, you may choose which is discarded.

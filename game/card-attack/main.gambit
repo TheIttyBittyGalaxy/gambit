@@ -97,14 +97,14 @@ main() {
         if #current_player.cards >= 2 and (current_player choose bool ("Would you like to attack?")) {
             attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `List<Card, 2>`
             attacker_one = attackers[1]
-            attacker_one = attackers[2]
+            attacker_two = attackers[2]
 
             defender = current_player choose other_player.cards ("Who would you like to attack?")
 
             if not (attacker_one, attacker_two, defender).can_attack:
                 illegal
 
-            // NOTE: There is probably a way the engine could select all three-way-pairs of (attacker, attacker, defender)
+            // TODO: There is probably a way the engine could select all three-way-pairs of (attacker, attacker, defender)
             //       that yeild a `can_attack` of true, and then just present those options to the user.
 
             other_player.cards remove defender
