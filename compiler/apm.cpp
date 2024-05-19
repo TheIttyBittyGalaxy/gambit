@@ -92,19 +92,26 @@ Span get_span(Pattern pattern)
 {
     if (IS_PTR(pattern, UnresolvedIdentity))
         return AS_PTR(pattern, UnresolvedIdentity)->span;
+    if (IS_PTR(pattern, InvalidPattern))
+        return AS_PTR(pattern, InvalidPattern)->span;
     if (IS_PTR(pattern, AnyPattern))
         return AS_PTR(pattern, AnyPattern)->span;
     if (IS_PTR(pattern, UnionPattern))
         return AS_PTR(pattern, UnionPattern)->span;
-    if (IS_PTR(pattern, InvalidPattern))
-        return AS_PTR(pattern, InvalidPattern)->span;
     if (IS_PTR(pattern, EnumType))
         return AS_PTR(pattern, EnumType)->span;
     if (IS_PTR(pattern, Entity))
         return AS_PTR(pattern, Entity)->span;
+    if (IS_PTR(pattern, EnumValue))
+        return AS_PTR(pattern, EnumValue)->span;
+    if (IS_PTR(pattern, IntrinsicValue))
+        return AS_PTR(pattern, IntrinsicValue)->span;
 
     if (IS_PTR(pattern, IntrinsicType))
+    {
+        auto intrinsic = AS_PTR(pattern, IntrinsicType);
         throw CompilerError("Attempt to get the span of an intrinsic type.");
+    }
 
     throw CompilerError("Could not get span of Pattern variant.");
 }
