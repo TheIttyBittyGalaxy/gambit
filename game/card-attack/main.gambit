@@ -59,8 +59,8 @@ state List<Card> (Player player).cards
 
 // Main
 main() {
-    player_one = game.players[1] // Infer type `Player`
-    player_two = game.players[2]
+    let player_one = game.players[1] // Infer type `Player`
+    let player_two = game.players[2]
 
     player_one.tokens = 10
     player_two.tokens = 10
@@ -77,17 +77,17 @@ main() {
         player_two.cards insert pop(deck)
     }
 
-    current_player = player_one
-    other_player = player_two
+    var current_player = player_one
+    var other_player = player_two
     loop {
 
         // Add tokens to card
         if current_player.tokens > 0 {
-            options = player_one.cards
+            let options = player_one.cards
             options insert none
-            chosen_card = current_player choose options ("Which card would you like to add tokens to?") // Infer type `Card?`
+            let chosen_card = current_player choose options ("Which card would you like to add tokens to?") // Infer type `Card?`
             if chosen_card { // Promote `Card?` to `Card`
-                token_count = current_player choose 1..current_player.tokens ("How many tokens?")
+                let token_count = current_player choose 1..current_player.tokens ("How many tokens?")
                 current_player.tokens -= token_count
                 chosen_card.tokens += token_count
             }
@@ -95,11 +95,11 @@ main() {
 
         // Attack
         if #current_player.cards >= 2 and (current_player choose bool ("Would you like to attack?")) {
-            attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `List<Card, 2>`
-            attacker_one = attackers[1]
-            attacker_two = attackers[2]
+            let attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `List<Card, 2>`
+            let attacker_one = attackers[1]
+            let attacker_two = attackers[2]
 
-            defender = current_player choose other_player.cards ("Who would you like to attack?")
+            let defender = current_player choose other_player.cards ("Who would you like to attack?")
 
             if not (attacker_one, attacker_two, defender).can_attack:
                 illegal
@@ -110,14 +110,13 @@ main() {
             other_player.cards remove defender
             current_player.tokens += defender.power
 
-            weakest_attacker = match attacker_one, attacker_two {
-                attacker_one.power > attacker_two.power:
+            let weakest_attacker = 
+                if attacker_one.power > attacker_two.power:
                     attacker_one
-                attacker_one.power < attacker_two.power:
+                else if attacker_one.power < attacker_two.power: 
                     attacker_two
-                any:
+                else: 
                     current_player choose [attacker_one, attacker_two] ("Which attacker would you like to discard?")
-            }
 
             current_player.cards remove weakest_attacker
             current_player.tokens += weakest_attacker.tokens
