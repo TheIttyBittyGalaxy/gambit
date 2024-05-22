@@ -64,6 +64,9 @@ private:
     bool peek_function_property_definition();
     void parse_function_property_definition(ptr<Scope> scope);
 
+    bool peek_procedure_definition();
+    void parse_procedure_definition(ptr<Scope> scope);
+
     // STATEMENTS //
     bool peek_statement();
     [[nodiscard]] Statement parse_statement(ptr<Scope> scope);

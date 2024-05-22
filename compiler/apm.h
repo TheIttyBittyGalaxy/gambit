@@ -52,6 +52,8 @@ using Property = variant<
     ptr<FunctionProperty>,
     ptr<InvalidProperty>>;
 
+struct Procedure;
+
 struct IntrinsicType;
 struct IntrinsicValue;
 
@@ -123,6 +125,7 @@ struct Scope
         ptr<Entity>,
         ptr<StateProperty>,
         ptr<FunctionProperty>,
+        ptr<Procedure>,
         ptr<OverloadedIdentity>>;
 
     struct OverloadedIdentity
@@ -235,6 +238,17 @@ struct FunctionProperty
 struct InvalidProperty
 {
     Span span;
+};
+
+// Procedures
+
+struct Procedure
+{
+    Span span;
+    string identity;
+    ptr<Scope> scope;
+    vector<ptr<Variable>> parameters;
+    ptr<CodeBlock> body;
 };
 
 // Types
@@ -369,6 +383,7 @@ string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
 string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
 string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
 string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
+string to_json(const ptr<Procedure> &procedure, const size_t &depth = 0);
 string to_json(const ptr<InvalidProperty> &invalid_property, const size_t &depth = 0);
 string to_json(const Property &property, const size_t &depth = 0);
 string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0);

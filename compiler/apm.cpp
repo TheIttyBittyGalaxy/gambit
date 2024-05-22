@@ -19,6 +19,8 @@ string identity_of(Scope::LookupValue value)
         return AS_PTR(value, StateProperty)->identity;
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->identity;
     if (IS_PTR(value, Scope::OverloadedIdentity))
         return AS_PTR(value, Scope::OverloadedIdentity)->identity;
 
@@ -130,6 +132,8 @@ Span get_span(Scope::LookupValue value)
         return AS_PTR(value, StateProperty)->span;
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->span;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->span;
 
     if (IS_PTR(value, Scope::OverloadedIdentity))
         return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?

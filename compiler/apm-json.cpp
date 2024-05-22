@@ -48,6 +48,7 @@ string to_json(const Scope::LookupValue &node, const size_t &depth)
     VARIANT_PTR(Entity);
     VARIANT_PTR(StateProperty);
     VARIANT_PTR(FunctionProperty);
+    VARIANT_PTR(Procedure);
     VARIANT_PTR(Scope::OverloadedIdentity);
 
     throw json_serialisation_error("Could not serialise Scope::LookupValue variant.");
@@ -185,6 +186,19 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     json.add("node", string("FunctionProperty"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(pattern);
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(parameters);
+    STRUCT_PTR_FIELD(body);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<Procedure> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Procedure"));
+    STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(scope);
     STRUCT_PTR_FIELD(parameters);
     STRUCT_PTR_FIELD(body);

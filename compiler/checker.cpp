@@ -86,6 +86,14 @@ void Checker::check_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scop
         // FIXME: If the body is a singleton, check the statement as if it were a return expression
     }
 
+    else if (IS_PTR(value, Procedure))
+    {
+        auto proc = AS_PTR(value, Procedure);
+        check_code_block(proc->body);
+
+        // FIXME: If the body is a singleton, check the statement as if it were a return expression
+    }
+
     else if (IS_PTR(value, Scope::OverloadedIdentity))
     {
         auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);

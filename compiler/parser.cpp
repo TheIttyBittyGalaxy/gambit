@@ -253,6 +253,8 @@ void Parser::parse_program()
             parse_state_property_definition(program->global_scope);
         else if (peek_function_property_definition())
             parse_function_property_definition(program->global_scope);
+        else if (peek_procedure_definition())
+            parse_procedure_definition(program->global_scope);
         else
         {
             skip_whitespace();
@@ -478,6 +480,46 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
 
     if (peek_code_block())
         funct->body = parse_code_block(funct->scope);
+}
+
+bool Parser::peek_procedure_definition()
+{
+    return peek(Token::Identity);
+}
+
+void Parser::parse_procedure_definition(ptr<Scope> scope)
+{
+    auto proc = CREATE(Procedure);
+    proc->scope = CREATE(Scope);
+    proc->scope->parent = scope;
+
+    auto identity_token = eat(Token::Identity);
+    proc->identity = identity_token.str;
+
+    eat(Token::ParenL);
+    if (peek_pattern(false))
+    {
+        do
+        {
+            auto parameter = CREATE(Variable);
+            parameter->pattern = parse_pattern(false);
+            auto identity_token = eat(Token::Identity);
+            parameter->identity = identity_token.str;
+            parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
+
+            proc->parameters.emplace_back(parameter);
+            declare(proc->scope, parameter);
+        } while (match(Token::Comma));
+    }
+
+    auto paren_token = eat(Token::ParenR);
+
+    proc->span = merge(to_span(identity_token), to_span(paren_token));
+
+    declare(scope, proc);
+
+    if (peek_code_block())
+        proc->body = parse_code_block(proc->scope);
 }
 
 // STATEMENTS //
