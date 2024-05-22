@@ -252,6 +252,7 @@ string to_json(const Pattern &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }
 
+/*
 string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -268,6 +269,21 @@ string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
     STRUCT_PTR_FIELD(type);
     json.close();
     return (string)json;
+}
+*/
+
+string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
+{
+    if (IS(node->value, double))
+        return to_json(AS(node->value, double));
+    if (IS(node->value, int))
+        return to_json(AS(node->value, int));
+    if (IS(node->value, bool))
+        return to_json(AS(node->value, bool));
+    if (IS(node->value, string))
+        return to_json(AS(node->value, string));
+
+    throw json_serialisation_error("Could not serialise IntrinsicValue.");
 }
 
 string to_json(const ptr<ListValue> &node, const size_t &depth)
