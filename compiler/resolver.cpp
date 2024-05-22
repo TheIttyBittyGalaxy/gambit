@@ -125,6 +125,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, IfStatement))
         resolve_if_statement(AS_PTR(stmt, IfStatement), scope, pattern_hint);
 
+    else if (IS_PTR(stmt, VariableDeclaration))
+        resolve_variable_declaration(AS_PTR(stmt, VariableDeclaration), scope);
+
     else if (IS_PTR(stmt, InvalidStatement))
         ; // pass
 
@@ -144,6 +147,13 @@ void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, opt
 
     if (stmt->fallback.has_value())
         resolve_code_block(stmt->fallback.value(), pattern_hint);
+}
+
+void Resolver::resolve_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope)
+{
+    // TODO: If the pattern of the variable was not specified in the declaration, than we should infer it from the assigned value
+    if (stmt->value.has_value())
+        stmt->value = resolve_expression(stmt->value.value(), scope, stmt->variable->pattern);
 }
 
 // EXPRESSIONS //

@@ -25,6 +25,7 @@ private:
     // STATEMENTS //
     void check_statement(Statement statement, ptr<Scope> scope);
     void check_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope);
+    void check_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope);
 
     // EXPRESSIONS //
     void check_expression(Expression expression, ptr<Scope> scope);

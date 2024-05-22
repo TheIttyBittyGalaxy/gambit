@@ -537,6 +537,8 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         stmt = parse_code_block(scope);
     else if (peek_if_statement())
         stmt = parse_if_statement(scope);
+    else if (peek_variable_declaration())
+        stmt = parse_variable_declaration(scope);
     else if (peek_expression())
         stmt = parse_expression();
     else
@@ -599,6 +601,50 @@ bool Parser::peek_if_statement()
 
     if_statement->span = merge(segment.span, last_span);
     return if_statement;
+}
+
+bool Parser::peek_variable_declaration()
+{
+    return peek(Token::KeyLet) || peek(Token::KeyVar);
+}
+
+ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
+{
+    auto assignment_stmt = CREATE(VariableDeclaration);
+    auto variable = CREATE(Variable);
+    assignment_stmt->variable = variable;
+
+    Token opening_token;
+    if (peek(Token::KeyVar))
+    {
+        opening_token = eat(Token::KeyVar);
+        variable->is_mutable = true;
+    }
+    else
+    {
+        opening_token = eat(Token::KeyLet);
+        variable->is_mutable = false;
+    }
+
+    // TODO: Mark this as an "unresolved pattern" that the type checker should then infer from inference
+    variable->pattern = CREATE(AnyPattern);
+
+    Token identity = eat(Token::Identity);
+    variable->identity = identity.str;
+    Span last_span = to_span(identity);
+
+    if (!variable->is_mutable || peek(Token::Assign))
+    {
+        eat(Token::Assign);
+        auto value = parse_expression();
+        assignment_stmt->value = value;
+        last_span = get_span(value);
+    }
+
+    declare(scope, variable);
+
+    assignment_stmt->span = merge(to_span(opening_token), last_span);
+    return assignment_stmt;
 }
 
 // EXPRESSIONS //

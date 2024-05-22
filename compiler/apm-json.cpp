@@ -101,6 +101,7 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     json.add("node", string("Variable"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(pattern);
+    STRUCT_PTR_FIELD(is_mutable);
     json.close();
     return (string)json;
 }
@@ -419,11 +420,23 @@ string to_json(const ptr<IfStatement> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<VariableDeclaration> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("VariableDeclaration"));
+    STRUCT_PTR_FIELD(variable);
+    STRUCT_PTR_FIELD(value);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Statement &node, const size_t &depth)
 {
     VARIANT(Expression);
     VARIANT_PTR(CodeBlock);
     VARIANT_PTR(IfStatement);
+    VARIANT_PTR(VariableDeclaration);
     VARIANT_PTR(InvalidStatement);
 
     throw json_serialisation_error("Could not serialise Statement variant.");

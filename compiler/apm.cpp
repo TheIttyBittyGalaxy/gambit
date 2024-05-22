@@ -54,6 +54,8 @@ Span get_span(Statement stmt)
         return AS_PTR(stmt, CodeBlock)->span;
     if (IS_PTR(stmt, IfStatement))
         return AS_PTR(stmt, IfStatement)->span;
+    if (IS_PTR(stmt, VariableDeclaration))
+        return AS_PTR(stmt, VariableDeclaration)->span;
     if (IS_PTR(stmt, InvalidStatement))
         return AS_PTR(stmt, InvalidStatement)->span;
 

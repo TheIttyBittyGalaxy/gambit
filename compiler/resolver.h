@@ -27,6 +27,7 @@ private:
     // STATEMENTS //
     [[nodiscard]] Statement resolve_statement(Statement statement, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope);
 
     // EXPRESSIONS //
     [[nodiscard]] Expression resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});

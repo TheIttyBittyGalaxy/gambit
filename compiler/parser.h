@@ -72,6 +72,8 @@ private:
     [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
     bool peek_if_statement();
     [[nodiscard]] ptr<IfStatement> parse_if_statement(ptr<Scope> scope);
+    bool peek_variable_declaration();
+    [[nodiscard]] ptr<VariableDeclaration> parse_variable_declaration(ptr<Scope> scope);
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);

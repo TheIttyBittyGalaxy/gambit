@@ -91,11 +91,13 @@ using Expression = variant<
     ptr<InvalidExpression>>;
 
 struct IfStatement;
+struct VariableDeclaration;
 
 using Statement = variant<
     Expression,
     ptr<CodeBlock>,
     ptr<IfStatement>,
+    ptr<VariableDeclaration>,
     ptr<InvalidStatement>>;
 
 // Program
@@ -158,6 +160,7 @@ struct Variable
     Span span;
     string identity;
     Pattern pattern;
+    bool is_mutable;
 };
 
 // Patterns
@@ -344,6 +347,13 @@ struct IfStatement
     optional<ptr<CodeBlock>> fallback;
 };
 
+struct VariableDeclaration
+{
+    Span span;
+    ptr<Variable> variable;
+    optional<Expression> value;
+};
+
 // Methods
 
 string identity_of(Scope::LookupValue value);
@@ -401,6 +411,7 @@ string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 string to_json(const IfStatement::Segment &segment, const size_t &depth = 0);
 string to_json(const ptr<IfStatement> &if_statement, const size_t &depth = 0);
+string to_json(const ptr<VariableDeclaration> &assignment_statement, const size_t &depth = 0);
 string to_json(const Statement &statement, const size_t &depth = 0);
 
 #endif

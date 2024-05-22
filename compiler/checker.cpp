@@ -126,6 +126,8 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_code_block(AS_PTR(stmt, CodeBlock));
     else if (IS_PTR(stmt, IfStatement))
         check_if_statement(AS_PTR(stmt, IfStatement), scope);
+    else if (IS_PTR(stmt, VariableDeclaration))
+        check_variable_declaration(AS_PTR(stmt, VariableDeclaration), scope);
     else if (IS_PTR(stmt, InvalidStatement))
         ; // pass
     else
@@ -148,6 +150,16 @@ void Checker::check_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope)
 
     if (stmt->fallback.has_value())
         check_code_block(stmt->fallback.value());
+}
+
+void Checker::check_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope)
+{
+    if (stmt->value.has_value())
+    {
+        auto value_pattern = determine_expression_pattern(stmt->value.value());
+        if (!is_pattern_subset_of_superset(value_pattern, stmt->variable->pattern))
+            source->log_error("Assigned value does not match the pattern of the variable.", stmt->span);
+    }
 }
 
 // EXPRESSIONS //
