@@ -312,7 +312,7 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     auto curly_l = eat(Token::CurlyL);
     eat(Token::Line);
 
-    while (!peek(Token::CurlyR))
+    while (!peek_statement())
     {
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
@@ -509,7 +509,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         return stmt;
     }
 
-    if (!match(Token::EndOfFile))
+    if (!peek(Token::EndOfFile))
         eat(Token::Line);
 
     return stmt;
