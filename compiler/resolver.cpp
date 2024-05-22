@@ -76,6 +76,14 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
         // FIXME: If the body is a singleton, resolve the statement as if it were a return expression
     }
 
+    else if (IS_PTR(value, Procedure))
+    {
+        auto funct = AS_PTR(value, Procedure);
+        resolve_code_block(funct->body);
+
+        // FIXME: If the body is a singleton, resolve the statement as if it were a return expression
+    }
+
     else if (IS_PTR(value, Scope::OverloadedIdentity))
     {
         auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
