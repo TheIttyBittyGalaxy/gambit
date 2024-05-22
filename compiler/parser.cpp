@@ -522,8 +522,7 @@ void Parser::parse_procedure_definition(ptr<Scope> scope)
 
     declare(scope, proc);
 
-    if (peek_code_block())
-        proc->body = parse_code_block(proc->scope);
+    proc->body = parse_code_block(proc->scope);
 }
 
 // STATEMENTS //
