@@ -240,6 +240,10 @@ void Parser::parse_program()
     declare(program->global_scope, Intrinsic::entity_player);
     declare(program->global_scope, Intrinsic::state_player_number);
 
+    declare(program->global_scope, Intrinsic::entity_game);
+    declare(program->global_scope, Intrinsic::variable_game);
+    declare(program->global_scope, Intrinsic::state_game_players);
+
     while (true)
     {
         if (match(Token::EndOfFile))

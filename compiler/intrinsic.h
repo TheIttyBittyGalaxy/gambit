@@ -19,6 +19,10 @@ namespace Intrinsic
 
     extern ptr<Entity> entity_player;
     extern ptr<StateProperty> state_player_number;
+
+    extern ptr<Entity> entity_game;
+    extern ptr<Variable> variable_game;
+    extern ptr<StateProperty> state_game_players;
 }
 
 #endif
