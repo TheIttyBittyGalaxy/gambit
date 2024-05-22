@@ -14,38 +14,46 @@ ptr<Program> Parser::parse(Source &source)
     return program;
 }
 
+// TOKENS //
+
 Token Parser::current_token()
 {
     if (current_token_index >= source->tokens.size())
         return source->tokens.back();
+
     return source->tokens.at(current_token_index);
 }
 
 Token Parser::previous_token()
 {
     if (current_token_index == 0)
-        return source->tokens.front(); // TODO: What should the expected behaviour here be?
+        throw CompilerError("Attempt to get the token before the first token.");
+
+    if (current_token_index >= source->tokens.size())
+        return source->tokens.back();
+
     return source->tokens.at(current_token_index - 1);
 }
 
-// UTILITY //
-
 bool Parser::peek(Token::Kind kind)
 {
-    Token token = current_token();
-
-    if (token.kind == kind)
+    if (current_token().kind == kind)
         return true;
 
-    // Look ahead of line tokens if we are attempting to peek a non-line token
-    if (kind != Token::Line && token.kind != Token::EndOfFile)
-    {
-        size_t i = current_token_index;
-        while (source->tokens.at(i).kind == Token::Line)
-            i++;
-        return source->tokens.at(i).kind == kind;
-    }
+    // Peek at first token that isn't a line token
+    size_t i = current_token_index;
+    while (source->tokens.at(i).kind == Token::Line && i < source->tokens.size())
+        i++;
+    return source->tokens.at(i).kind == kind;
+}
 
+bool Parser::check(Token::Kind kind)
+{
+    if (peek(kind))
+        return true;
+
+    Token token = current_token();
+    gambit_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
     return false;
 }
 
@@ -54,15 +62,10 @@ Token Parser::eat(Token::Kind kind)
     if (!peek(kind))
     {
         Token token = current_token();
-        gambit_error("Expected " + token_name.at(kind) + ", got " + token_name.at(token.kind), token);
-
-        // FIXME: Currently we're returning the current token just so that decent spans can still be
-        //        formed. However, this will cause strange behaviour in cases where the string of a
-        //        token is stored on the APM node itself.
-        return token;
+        throw CompilerError("Attempt to eat " + token_name.at(kind) + ", got " + token_name.at(token.kind) + " " + to_string(token));
     }
 
-    // Skip line tokens if we are attempting to eat a non-line token
+    // Skip ahead to first token that isn't a line token (unless we are attempting to eat one)
     if (kind != Token::Line)
         while (current_token().kind == Token::Line)
             current_token_index++;
@@ -78,6 +81,17 @@ Token Parser::eat(Token::Kind kind)
     return token;
 }
 
+bool Parser::match(Token::Kind kind)
+{
+    if (peek(kind))
+    {
+        eat(kind);
+        return true;
+    }
+
+    return false;
+}
+
 Token Parser::skip()
 {
     Token token = current_token();
@@ -89,26 +103,6 @@ Token Parser::skip()
 
     current_token_index++;
     return token;
-}
-
-bool Parser::match(Token::Kind kind)
-{
-    if (!peek(kind))
-        return false;
-
-    eat(kind);
-    return true;
-}
-
-Span Parser::to_span(Token token)
-{
-    return Span(
-        token.line,
-        token.column,
-        token.position,
-        token.str.length(),
-        token.kind == Token::Line,
-        source);
 }
 
 bool Parser::end_of_file()
@@ -138,6 +132,19 @@ void Parser::skip_to_end_of_current_block()
 {
     skip_to_block_nesting(current_block_nesting - 1);
 }
+
+Span Parser::to_span(Token token)
+{
+    return Span(
+        token.line,
+        token.column,
+        token.position,
+        token.str.length(),
+        token.kind == Token::Line,
+        source);
+}
+
+// SCOPES //
 
 void Parser::declare(ptr<Scope> scope, Scope::LookupValue value)
 {

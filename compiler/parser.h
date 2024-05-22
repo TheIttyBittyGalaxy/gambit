@@ -23,14 +23,15 @@ private:
     size_t current_block_nesting;
     bool panic_mode = false;
 
-    // UTILITY //
+    // TOKENS //
     Token current_token();
     Token previous_token();
+
     bool peek(Token::Kind kind);
+    bool check(Token::Kind kind);
     Token eat(Token::Kind kind);
     Token skip();
     bool match(Token::Kind kind);
-    Span to_span(Token token);
 
     bool end_of_file();
     void skip_whitespace();
@@ -38,6 +39,9 @@ private:
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
+    Span to_span(Token token);
+
+    // SCOPES //
     void declare(ptr<Scope> scope, Scope::LookupValue value);
 
     // ERROR HANDLING //
