@@ -553,8 +553,12 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         return stmt;
     }
 
-    if (!peek(Token::EndOfFile))
-        eat(Token::Line);
+    if (!match(Token::Line) && !peek(Token::EndOfFile))
+    {
+        eat(Token::Line); // Cause the corrsponding error to be thrown
+        while (!match(Token::Line) && !peek(Token::EndOfFile))
+            skip();
+    }
 
     return stmt;
 }
