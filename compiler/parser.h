@@ -23,6 +23,8 @@ private:
     size_t current_block_nesting;
     bool panic_mode = false;
 
+    vector<Span> span_stack;
+
     // TOKENS //
     Token current_token();
     Token previous_token();
@@ -39,7 +41,13 @@ private:
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
+    // SPANS //
+
     Span to_span(Token token);
+
+    void start_span();
+    [[nodiscard]] Span finish_span();
+    void discard_span();
 
     // SCOPES //
     void declare(ptr<Scope> scope, Scope::LookupValue value);

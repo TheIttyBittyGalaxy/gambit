@@ -133,6 +133,8 @@ void Parser::skip_to_end_of_current_block()
     skip_to_block_nesting(current_block_nesting - 1);
 }
 
+// SPANS //
+
 Span Parser::to_span(Token token)
 {
     return Span(
@@ -142,6 +144,35 @@ Span Parser::to_span(Token token)
         token.str.length(),
         token.kind == Token::Line,
         source);
+}
+
+void Parser::start_span()
+{
+    Token token = current_token();
+    auto &span = span_stack.emplace_back(
+        token.line,
+        token.column,
+        token.position,
+        0,     // A correct length will be generated when the span is finished
+        false, // If a span is multiline will be determined when the span is finished
+        source);
+}
+
+Span Parser::finish_span()
+{
+    Span span = *span_stack.end();
+    span_stack.pop_back();
+
+    Token token = current_token();
+    span.length = token.position + token.str.length() - span.position;
+    span.multiline = span.line != token.line;
+
+    return span;
+}
+
+void Parser::discard_span()
+{
+    span_stack.pop_back();
 }
 
 // SCOPES //
