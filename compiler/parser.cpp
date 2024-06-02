@@ -659,7 +659,13 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     else if (peek_variable_declaration())
         stmt = parse_variable_declaration(scope);
     else if (peek_expression())
-        stmt = parse_expression();
+    {
+        auto expr = parse_expression();
+        if (peek_infix_assignment_statement())
+            stmt = parse_infix_assignment_statement(expr, scope);
+        else
+            stmt = expr;
+    }
     else
     {
         // FIXME: Instead of marking just the current token as an invalid statement,
@@ -722,6 +728,23 @@ bool Parser::peek_if_statement()
 
     if_statement->span = finish_span();
     return if_statement;
+}
+
+bool Parser::peek_infix_assignment_statement()
+{
+    return peek(Token::Assign);
+}
+
+ptr<AssignmentStatement> Parser::parse_infix_assignment_statement(Expression subject, ptr<Scope> scope)
+{
+    auto assignment_stmt = CREATE(AssignmentStatement);
+    assignment_stmt->subject = subject;
+
+    confirm_and_consume(Token::Assign);
+    assignment_stmt->value = parse_expression();
+
+    assignment_stmt->span = merge(get_span(assignment_stmt->subject), get_span(assignment_stmt->value));
+    return assignment_stmt;
 }
 
 bool Parser::peek_variable_declaration()

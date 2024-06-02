@@ -97,12 +97,14 @@ using Expression = variant<
     ptr<InvalidExpression>>;
 
 struct IfStatement;
+struct AssignmentStatement;
 struct VariableDeclaration;
 
 using Statement = variant<
     Expression,
     ptr<CodeBlock>,
     ptr<IfStatement>,
+    ptr<AssignmentStatement>,
     ptr<VariableDeclaration>,
     ptr<InvalidStatement>>;
 
@@ -371,6 +373,13 @@ struct IfStatement
     optional<ptr<CodeBlock>> fallback;
 };
 
+struct AssignmentStatement
+{
+    Span span;
+    Expression subject;
+    Expression value;
+};
+
 struct VariableDeclaration
 {
     Span span;
@@ -438,7 +447,8 @@ string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
 string to_json(const IfStatement::Segment &segment, const size_t &depth = 0);
 string to_json(const ptr<IfStatement> &if_statement, const size_t &depth = 0);
-string to_json(const ptr<VariableDeclaration> &assignment_statement, const size_t &depth = 0);
+string to_json(const ptr<AssignmentStatement> &assignment_statement, const size_t &depth = 0);
+string to_json(const ptr<VariableDeclaration> &variable_declaration, const size_t &depth = 0);
 string to_json(const Statement &statement, const size_t &depth = 0);
 
 #endif
