@@ -3,9 +3,11 @@
 
 // Macros
 
+#define STRUCT_FIELD(field) json.add(#field, node.field);
+
 #define STRUCT_PTR_FIELD(field) json.add(#field, node->field);
 
-#define STRUCT_FIELD(field) json.add(#field, node.field);
+#define STRUCT_PTR_FIELD_IDENTITY(field) json.add(#field, node->field->identity);
 
 #define VARIANT(T)   \
     if (IS(node, T)) \
@@ -14,6 +16,10 @@
 #define VARIANT_PTR(T)   \
     if (IS_PTR(node, T)) \
         return to_json(AS_PTR(node, T), depth);
+
+#define VARIANT_PTR_IDENTITY(T) \
+    if (IS_PTR(node, T))        \
+        return to_json(AS_PTR(node, T)->identity, depth);
 
 // Serialisation
 
@@ -266,11 +272,11 @@ string to_json(const Pattern &node, const size_t &depth)
     VARIANT_PTR(AnyPattern);
     VARIANT_PTR(UnionPattern);
     VARIANT_PTR(ListPattern);
-    VARIANT_PTR(IntrinsicType);
-    VARIANT_PTR(EnumType);
-    VARIANT_PTR(Entity);
+    VARIANT_PTR_IDENTITY(IntrinsicType);
+    VARIANT_PTR_IDENTITY(EnumType);
+    VARIANT_PTR_IDENTITY(Entity);
     VARIANT_PTR(IntrinsicValue);
-    VARIANT_PTR(EnumValue);
+    VARIANT_PTR_IDENTITY(EnumValue);
 
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }
@@ -369,7 +375,16 @@ string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
     json.object();
     json.add("node", string("PropertyIndex"));
     STRUCT_PTR_FIELD(expr);
-    STRUCT_PTR_FIELD(property);
+
+    // TODO: Instead of just printing out the identity, print out a signature that
+    //       allows different overloads to be distinguished.
+    if (IS_PTR(node->property, FunctionProperty))
+        json.add("property", AS_PTR(node->property, FunctionProperty)->identity);
+    else if (IS_PTR(node->property, StateProperty))
+        json.add("property", AS_PTR(node->property, StateProperty)->identity);
+    else
+        STRUCT_PTR_FIELD(property)
+
     json.close();
     return (string)json;
 }
@@ -417,8 +432,8 @@ string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
 string to_json(const Expression &node, const size_t &depth)
 {
     VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR(Variable);
-    VARIANT_PTR(EnumValue);
+    VARIANT_PTR_IDENTITY(Variable);
+    VARIANT_PTR_IDENTITY(EnumValue);
     VARIANT_PTR(IntrinsicValue);
     VARIANT_PTR(ListValue);
     VARIANT_PTR(InstanceList);
@@ -470,7 +485,7 @@ string to_json(const ptr<VariableDeclaration> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("VariableDeclaration"));
-    STRUCT_PTR_FIELD(variable);
+    STRUCT_PTR_FIELD_IDENTITY(variable);
     STRUCT_PTR_FIELD(value);
     json.close();
     return (string)json;
