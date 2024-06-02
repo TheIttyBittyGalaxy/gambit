@@ -202,7 +202,7 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
                 return AS_PTR(resolved, Variable);
 
             // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-            source->log_error("Expected value, got '" + identity + "'", get_span(resolved));
+            source->log_error("Expected value, got '" + identity + "'", unresolved_identity->span);
 
             auto invalid_value = CREATE(InvalidValue);
             invalid_value->span = unresolved_identity->span;
