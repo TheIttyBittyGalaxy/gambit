@@ -36,6 +36,7 @@ struct Variable;
 
 struct AnyPattern;
 struct UnionPattern;
+struct ListPattern;
 struct InvalidPattern;
 
 struct EnumType;
@@ -62,6 +63,7 @@ using Pattern = variant<
     ptr<InvalidPattern>,
     ptr<AnyPattern>,
     ptr<UnionPattern>,
+    ptr<ListPattern>,
     ptr<IntrinsicType>,
     ptr<EnumType>,
     ptr<Entity>,
@@ -187,6 +189,13 @@ struct UnionPattern
     Span span;
     string identity;
     vector<Pattern> patterns;
+};
+
+struct ListPattern
+{
+    Span span;
+    Pattern list_of;
+    optional<Expression> fixed_size;
 };
 
 struct InvalidPattern
@@ -396,6 +405,7 @@ string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t 
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<AnyPattern> &any_pattern, const size_t &depth = 0);
 string to_json(const ptr<UnionPattern> &union_pattern, const size_t &depth = 0);
+string to_json(const ptr<ListPattern> &list_pattern, const size_t &depth = 0);
 string to_json(const ptr<InvalidPattern> &invalid_type, const size_t &depth = 0);
 string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
 string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);

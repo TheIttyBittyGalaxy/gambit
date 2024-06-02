@@ -747,7 +747,7 @@ ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
     }
 
     // TODO: Mark this as an "unresolved pattern" that the type checker should then infer from inference
-    variable->pattern = CREATE(AnyPattern);
+    variable->pattern = CREATE(UnresolvedPattern);
 
     // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
     //       an ill-defined variable (i.e. one where this if statement never runs.)
@@ -1288,10 +1288,28 @@ Pattern Parser::parse_pattern(bool allow_intrinsic_values)
         }
     }
 
-    // Unresolved identity
+    // Unresolved identity / list
     else
     {
-        pattern = parse_unresolved_identity();
+        auto unresolved_identity = parse_unresolved_identity();
+        pattern = unresolved_identity;
+
+        if (unresolved_identity->identity == "List")
+        {
+            auto list_pattern = CREATE(ListPattern);
+            if (confirm_and_consume(Token::TrigL))
+            {
+                list_pattern->list_of = parse_pattern(false);
+                if (peek_and_consume(Token::Comma))
+                    list_pattern->fixed_size = parse_expression();
+                confirm_and_consume(Token::TrigR);
+            }
+            else
+            {
+                list_pattern->list_of = CREATE(InvalidPattern);
+            }
+            pattern = list_pattern;
+        }
     }
 
     // Optional pattern

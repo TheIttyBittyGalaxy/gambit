@@ -104,6 +104,8 @@ Span get_span(Pattern pattern)
         return AS_PTR(pattern, AnyPattern)->span;
     if (IS_PTR(pattern, UnionPattern))
         return AS_PTR(pattern, UnionPattern)->span;
+    if (IS_PTR(pattern, ListPattern))
+        return AS_PTR(pattern, ListPattern)->span;
     if (IS_PTR(pattern, EnumType))
         return AS_PTR(pattern, EnumType)->span;
     if (IS_PTR(pattern, Entity))
@@ -237,8 +239,21 @@ Pattern determine_expression_pattern(Expression expression)
     }
     else if (IS_PTR(expression, ExpressionIndex))
     {
-        // TODO: Correctly determine the pattern of an expression index
-        return CREATE(AnyPattern);
+        auto expression_index = AS_PTR(expression, ExpressionIndex);
+        auto subject_pattern = determine_expression_pattern(expression_index->subject);
+
+        if (IS_PTR(subject_pattern, ListPattern))
+        {
+            auto subject_list_pattern = AS_PTR(subject_pattern, ListPattern);
+            return subject_list_pattern->list_of;
+        }
+
+        if (IS_PTR(subject_pattern, InvalidPattern))
+        {
+            return CREATE(InvalidPattern);
+        }
+
+        throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
     }
     else if (IS_PTR(expression, PropertyIndex))
     {
@@ -351,6 +366,10 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     // If patterns are the same, subset is confirmed
     if (subset == superset)
         return true;
+
+    // List patterns
+    if (IS_PTR(subset, ListPattern) && IS_PTR(superset, ListPattern))
+        return is_pattern_subset_of_superset(AS_PTR(subset, ListPattern)->list_of, AS_PTR(superset, ListPattern)->list_of);
 
     // Union patterns
     bool subset_is_union = IS_PTR(subset, UnionPattern);

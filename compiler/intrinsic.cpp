@@ -36,11 +36,10 @@ namespace Intrinsic
 
     ptr<Variable> variable_game = ptr<Variable>(new Variable({Span(), "game", entity_game, false}));
 
-    // FIXME: Pattern should be a list of players
     ptr<StateProperty> state_game_players = ptr<StateProperty>(new StateProperty({
         Span(),                                                       // span
         "players",                                                    // identity
-        CREATE(AnyPattern),                                           // pattern
+        ptr<ListPattern>(new ListPattern({Span(), entity_player})),   // pattern
         CREATE(Scope),                                                // scope
         {ptr<Variable>(new Variable({Span(), "game", entity_game}))}, // parameters
         {}                                                            // initial_value

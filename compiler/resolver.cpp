@@ -451,6 +451,12 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pa
             return union_pattern->patterns[0];
     }
 
+    else if (IS_PTR(pattern, ListPattern))
+    {
+        auto list_pattern = AS_PTR(pattern, ListPattern);
+        list_pattern->list_of = resolve_pattern(list_pattern->list_of, scope);
+    }
+
     return pattern;
 }
 

@@ -126,6 +126,17 @@ string to_json(const ptr<UnionPattern> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<ListPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ListPattern"));
+    STRUCT_PTR_FIELD(list_of);
+    STRUCT_PTR_FIELD(fixed_size);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<InvalidPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -244,6 +255,7 @@ string to_json(const Pattern &node, const size_t &depth)
     VARIANT_PTR(InvalidPattern);
     VARIANT_PTR(AnyPattern);
     VARIANT_PTR(UnionPattern);
+    VARIANT_PTR(ListPattern);
     VARIANT_PTR(IntrinsicType);
     VARIANT_PTR(EnumType);
     VARIANT_PTR(Entity);
