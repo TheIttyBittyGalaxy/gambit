@@ -80,6 +80,8 @@ Span get_span(Expression expr)
         return AS_PTR(expr, Unary)->span;
     if (IS_PTR(expr, Binary))
         return AS_PTR(expr, Binary)->span;
+    if (IS_PTR(expr, ExpressionIndex))
+        return AS_PTR(expr, ExpressionIndex)->span;
     if (IS_PTR(expr, PropertyIndex))
         return AS_PTR(expr, PropertyIndex)->span;
     if (IS_PTR(expr, Match))
@@ -232,6 +234,11 @@ Pattern determine_expression_pattern(Expression expression)
         // FIXME: Depending on the operation and arguments, sometimes the pattern can actually be `int` or `amt`
         if (op == "+" || op == "*" || op == "-" || op == "/")
             return Intrinsic::type_num;
+    }
+    else if (IS_PTR(expression, ExpressionIndex))
+    {
+        // TODO: Correctly determine the pattern of an expression index
+        return CREATE(AnyPattern);
     }
     else if (IS_PTR(expression, PropertyIndex))
     {

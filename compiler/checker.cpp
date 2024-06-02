@@ -183,6 +183,8 @@ void Checker::check_expression(Expression expression, ptr<Scope> scope)
         check_unary(AS_PTR(expression, Unary), scope);
     else if (IS_PTR(expression, Binary))
         check_binary(AS_PTR(expression, Binary), scope);
+    else if (IS_PTR(expression, ExpressionIndex))
+        check_expression_index(AS_PTR(expression, ExpressionIndex), scope);
     else if (IS_PTR(expression, PropertyIndex))
         check_property_index(AS_PTR(expression, PropertyIndex), scope);
     else if (IS_PTR(expression, Match))
@@ -220,6 +222,15 @@ void Checker::check_match(ptr<Match> match, ptr<Scope> scope)
         if (!do_patterns_overlap(rule.pattern, subject_pattern))
             source->log_error("This rule's pattern will never match.", get_span(rule.pattern));
     }
+}
+
+void Checker::check_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope)
+{
+    check_expression(expression_index->subject, scope);
+    check_expression(expression_index->index, scope);
+
+    // TODO: Check that the subject is an array/list
+    // TODO: Check that the index is an integer
 }
 
 void Checker::check_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope)

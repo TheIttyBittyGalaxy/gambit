@@ -34,6 +34,7 @@ private:
     void resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});

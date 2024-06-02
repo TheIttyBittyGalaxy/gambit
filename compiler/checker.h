@@ -32,6 +32,7 @@ private:
     void check_list_value(ptr<ListValue> list, ptr<Scope> scope);
     void check_instance_list(ptr<InstanceList> list, ptr<Scope> scope);
     void check_match(ptr<Match> match, ptr<Scope> scope);
+    void check_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope);
     void check_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope);
     void check_unary(ptr<Unary> unary, ptr<Scope> scope);
     void check_binary(ptr<Binary> binary, ptr<Scope> scope);

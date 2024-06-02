@@ -72,6 +72,7 @@ struct ListValue;
 struct InstanceList;
 struct Unary;
 struct Binary;
+struct ExpressionIndex;
 struct PropertyIndex;
 struct Match;
 struct InvalidValue;
@@ -85,6 +86,7 @@ using Expression = variant<
     ptr<InstanceList>,
     ptr<Unary>,
     ptr<Binary>,
+    ptr<ExpressionIndex>,
     ptr<PropertyIndex>,
     ptr<Match>,
     ptr<InvalidValue>,
@@ -301,6 +303,13 @@ struct Binary
     Expression rhs;
 };
 
+struct ExpressionIndex
+{
+    Span span;
+    Expression subject;
+    Expression index;
+};
+
 struct PropertyIndex
 {
     Span span;
@@ -401,6 +410,7 @@ string to_json(const Pattern &pattern, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
 string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
 string to_json(const Match::Rule &rule, const size_t &depth = 0);
+string to_json(const ptr<ExpressionIndex> &expr_index, const size_t &depth = 0);
 string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0);
 string to_json(const ptr<Match> &match, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);

@@ -213,6 +213,9 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, Binary))
         resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
 
+    else if (IS_PTR(expression, ExpressionIndex))
+        resolve_expression_index(AS_PTR(expression, ExpressionIndex), scope, pattern_hint);
+
     else if (IS_PTR(expression, PropertyIndex))
         resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
 
@@ -250,6 +253,12 @@ void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Patter
         rule.pattern = resolve_pattern(rule.pattern, scope, subject_pattern);
         rule.result = resolve_expression(rule.result, scope, pattern_hint);
     }
+}
+
+void Resolver::resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    expression_index->subject = resolve_expression(expression_index->subject, scope);
+    expression_index->index = resolve_expression(expression_index->index, scope);
 }
 
 // NOTE: Currently, when resolving which property is being used in a property index, we look at

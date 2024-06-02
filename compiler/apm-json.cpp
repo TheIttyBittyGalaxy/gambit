@@ -330,6 +330,17 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<ExpressionIndex> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ExpressionIndex"));
+    STRUCT_PTR_FIELD(subject);
+    STRUCT_PTR_FIELD(index);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -391,6 +402,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(InstanceList);
     VARIANT_PTR(Unary);
     VARIANT_PTR(Binary);
+    VARIANT_PTR(ExpressionIndex);
     VARIANT_PTR(PropertyIndex);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);

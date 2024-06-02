@@ -847,6 +847,8 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_factor(lhs);
         else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
             lhs = parse_infix_term(lhs);
+        else if (peek_infix_expression_index() && operator_should_bind(Precedence::Index, caller_precedence))
+            lhs = parse_infix_expression_index(lhs);
         else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_property_index(lhs);
         else if (peek_infix_compare_relative() && operator_should_bind(Precedence::CompareRelative, caller_precedence))
@@ -1180,6 +1182,32 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
 
     expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
     return expr;
+}
+
+bool Parser::peek_infix_expression_index()
+{
+    return peek(Token::SquareL);
+}
+
+ptr<ExpressionIndex> Parser::parse_infix_expression_index(Expression lhs)
+{
+    auto expression_index = CREATE(ExpressionIndex);
+    expression_index->subject = lhs;
+
+    if (confirm_and_consume(Token::SquareL))
+    {
+        expression_index->index = parse_expression();
+        confirm_and_consume(Token::SquareR);
+    }
+    else
+    {
+        // FIXME: This error exists solely to avoid having a `expression_index` with ain in valid `index`
+        //        What should the proper solution to this be?
+        throw CompilerError("Attempt to `parse_infix_expression_index`, however a `[` token could not be consumed.");
+    }
+
+    expression_index->span = merge(get_span(expression_index->subject), get_span(expression_index->index));
+    return expression_index;
 }
 
 bool Parser::peek_infix_property_index()
