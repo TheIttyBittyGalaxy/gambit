@@ -59,6 +59,7 @@ const map<Token::Kind, string> token_name = {
     {Token::KeyUntil, "KeyUntil"},
     {Token::KeyChoose, "KeyChoose"},
     {Token::KeyFilter, "KeyFilter"},
+    {Token::KeyInsert, "KeyInsert"},
     {Token::KeyMap, "KeyMap"},
     {Token::KeyAnd, "KeyAnd"},
     {Token::KeyOr, "KeyOr"},
@@ -125,6 +126,7 @@ const map<string, Token::Kind> keyword_match_rules = {
 
     {"choose", Token::KeyChoose},
     {"filter", Token::KeyFilter},
+    {"insert", Token::KeyInsert},
     {"map", Token::KeyMap},
 
     {"and", Token::Kind ::KeyAnd},

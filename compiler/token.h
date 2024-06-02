@@ -57,6 +57,7 @@ struct Token
         KeyUntil,
         KeyChoose,
         KeyFilter,
+        KeyInsert,
         KeyMap,
         KeyAnd,
         KeyOr,

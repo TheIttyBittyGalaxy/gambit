@@ -92,6 +92,8 @@ private:
     [[nodiscard]] ptr<AssignmentStatement> parse_infix_assignment_statement(Expression subject, ptr<Scope> scope);
     bool peek_variable_declaration();
     [[nodiscard]] ptr<VariableDeclaration> parse_variable_declaration(ptr<Scope> scope);
+    bool peek_infix_insert_statement();
+    [[nodiscard]] Expression parse_infix_insert_statement(Expression subject, ptr<Scope> scope);
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);

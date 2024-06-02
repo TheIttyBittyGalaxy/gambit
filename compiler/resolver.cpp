@@ -373,6 +373,12 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
         auto lhs_pattern = determine_expression_pattern(binary->lhs);
         binary->rhs = resolve_expression(binary->rhs, scope, lhs_pattern);
     }
+    else if (binary->op == "insert")
+    {
+        binary->lhs = resolve_expression(binary->lhs, scope);
+        auto lhs_pattern = determine_expression_pattern(binary->lhs);
+        binary->rhs = resolve_expression(binary->rhs, scope, lhs_pattern);
+    }
     else
     {
         binary->lhs = resolve_expression(binary->lhs, scope);

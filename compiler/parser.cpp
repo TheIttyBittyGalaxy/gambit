@@ -666,6 +666,8 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         auto expr = parse_expression();
         if (peek_infix_assignment_statement())
             stmt = parse_infix_assignment_statement(expr, scope);
+        else if (peek_infix_insert_statement())
+            stmt = parse_infix_insert_statement(expr, scope);
         else
             stmt = expr;
     }
@@ -827,6 +829,24 @@ ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
     assignment_stmt->span = span;
     variable->span = span;
     return assignment_stmt;
+}
+
+bool Parser::peek_infix_insert_statement()
+{
+    return peek(Token::KeyInsert);
+}
+
+Expression Parser::parse_infix_insert_statement(Expression subject, ptr<Scope> scope)
+{
+    auto insert_oper = CREATE(Binary);
+    insert_oper->op = "insert";
+    insert_oper->lhs = subject;
+
+    confirm_and_consume(Token::KeyInsert);
+    insert_oper->rhs = parse_expression();
+
+    insert_oper->span = merge(get_span(insert_oper->lhs), get_span(insert_oper->rhs));
+    return insert_oper;
 }
 
 // EXPRESSIONS //
