@@ -29,12 +29,15 @@ private:
     Token current_token();
     Token previous_token();
 
+    // TOKEN PARSING //
     bool peek(Token::Kind kind);
-    bool check(Token::Kind kind);
-    Token eat(Token::Kind kind);
-    Token skip();
-    bool match(Token::Kind kind);
+    bool confirm(Token::Kind kind);
+    Token consume(Token::Kind kind);
+    Token consume();
+    bool peek_and_consume(Token::Kind kind);
+    bool confirm_and_consume(Token::Kind kind);
 
+    // TOKEN PARSING UTILITY //
     bool end_of_file();
     void skip_whitespace();
     void skip_to_end_of_line();
@@ -42,7 +45,6 @@ private:
     void skip_to_end_of_current_block();
 
     // SPANS //
-
     Span to_span(Token token);
 
     void start_span();

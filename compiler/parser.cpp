@@ -35,6 +35,16 @@ Token Parser::previous_token()
     return source->tokens.at(current_token_index - 1);
 }
 
+// TOKEN PARSING //
+
+// | METHOD              | OPTIONAL | CONSUMES | THROWS   |
+// | ------              | -------- | -------- | ------   |
+// | peek                | YES      | NO       | NEVER    |
+// | confirm             | NO       | NO       | GAMBIT   |
+// | comsume             | NO       | YES      | COMPILER |
+// | peek_and_consume    | YES      | YES      | NEVER    |
+// | comfirm_and_consume | NO       | YES      | GAMBIT   |
+
 bool Parser::peek(Token::Kind kind)
 {
     if (current_token().kind == kind)
@@ -47,7 +57,7 @@ bool Parser::peek(Token::Kind kind)
     return source->tokens.at(i).kind == kind;
 }
 
-bool Parser::check(Token::Kind kind)
+bool Parser::confirm(Token::Kind kind)
 {
     if (peek(kind))
         return true;
@@ -57,7 +67,7 @@ bool Parser::check(Token::Kind kind)
     return false;
 }
 
-Token Parser::eat(Token::Kind kind)
+Token Parser::consume(Token::Kind kind)
 {
     if (!peek(kind))
     {
@@ -81,18 +91,7 @@ Token Parser::eat(Token::Kind kind)
     return token;
 }
 
-bool Parser::match(Token::Kind kind)
-{
-    if (peek(kind))
-    {
-        eat(kind);
-        return true;
-    }
-
-    return false;
-}
-
-Token Parser::skip()
+Token Parser::consume()
 {
     Token token = current_token();
 
@@ -105,6 +104,30 @@ Token Parser::skip()
     return token;
 }
 
+bool Parser::peek_and_consume(Token::Kind kind)
+{
+    if (peek(kind))
+    {
+        consume(kind);
+        return true;
+    }
+
+    return false;
+}
+
+bool Parser::confirm_and_consume(Token::Kind kind)
+{
+    if (confirm(kind))
+    {
+        consume(kind);
+        return true;
+    }
+
+    return false;
+}
+
+// TOKEN PARSING UTILITY //
+
 bool Parser::end_of_file()
 {
     return peek(Token::EndOfFile);
@@ -112,20 +135,20 @@ bool Parser::end_of_file()
 
 void Parser::skip_whitespace()
 {
-    while (match(Token::Line))
+    while (peek_and_consume(Token::Line))
         ;
 }
 
 void Parser::skip_to_end_of_line()
 {
-    while (!end_of_file() && !match(Token::Line))
-        skip();
+    while (!end_of_file() && !peek_and_consume(Token::Line))
+        consume();
 }
 
 void Parser::skip_to_block_nesting(size_t target_nesting)
 {
     while (!end_of_file() && current_block_nesting != target_nesting)
-        skip();
+        consume();
 }
 
 void Parser::skip_to_end_of_current_block()
@@ -282,11 +305,8 @@ void Parser::parse_program()
     declare(program->global_scope, Intrinsic::variable_game);
     declare(program->global_scope, Intrinsic::state_game_players);
 
-    while (true)
+    while (!peek_and_consume(Token::EndOfFile))
     {
-        if (match(Token::EndOfFile))
-            break;
-
         if (peek_entity_definition())
             parse_entity_definition(program->global_scope);
         else if (peek_enum_definition())
@@ -324,20 +344,20 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     code_block->scope = CREATE(Scope);
     code_block->scope->parent = scope;
 
-    // Singleton code blocks
-    if (peek(Token::Colon))
-    {
-        auto colon = eat(Token::Colon);
+    start_span();
 
-        // This means that the "Expected statement" error will appear on the next
-        // line, which is more appropriate if the rest of the line is blank
+    // Singleton code blocks
+    if (peek_and_consume(Token::Colon))
+    {
+        // If there is no statement and the line is blank, skip to the next line.
+        // This means that the "Expected statement" error will appear on the next line
         if (!peek_statement() && peek(Token::Line))
             skip_to_end_of_line();
 
         auto statement = parse_statement(code_block->scope);
         code_block->statements.emplace_back(statement);
+
         code_block->singleton_block = true;
-        code_block->span = merge(to_span(colon), get_span(statement));
 
         // Code block statements are not allowed inside of singleton blocks
         if (IS_PTR(statement, CodeBlock))
@@ -348,23 +368,20 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
             else
                 gambit_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
         }
-
-        return code_block;
     }
 
     // Regular code blocks
-    auto curly_l = eat(Token::CurlyL);
-    eat(Token::Line);
-
-    while (!peek_statement())
+    else if (confirm_and_consume(Token::CurlyL))
     {
-        auto statement = parse_statement(code_block->scope);
-        code_block->statements.emplace_back(statement);
+        while (peek_statement())
+        {
+            auto statement = parse_statement(code_block->scope);
+            code_block->statements.emplace_back(statement);
+        }
+        confirm_and_consume(Token::CurlyR);
     }
 
-    auto curly_r = eat(Token::CurlyR);
-    code_block->span = merge(to_span(curly_l), to_span(curly_r));
-
+    code_block->span = finish_span();
     return code_block;
 }
 
@@ -378,41 +395,53 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     auto enum_type = CREATE(EnumType);
     auto union_pattern = CREATE(UnionPattern);
 
-    auto keyword = eat(Token::KeyEnum);
-    enum_type->identity = eat(Token::Identity).str;
-
-    eat(Token::CurlyL);
-    do
+    start_span();
+    confirm_and_consume(Token::KeyEnum);
+    if (!confirm(Token::Identity))
     {
-        if (peek_intrinsic_value())
+        discard_span();
+        return;
+    }
+    enum_type->identity = consume(Token::Identity).str;
+
+    // Enum values
+    if (confirm_and_consume(Token::CurlyL))
+    {
+        do
         {
-            auto expr = parse_intrinsic_value();
-            if (IS_PTR(expr, IntrinsicValue))
+            if (peek_intrinsic_value())
             {
-                auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
-                union_pattern->patterns.push_back(intrinsic_value);
+                auto expr = parse_intrinsic_value();
+                if (IS_PTR(expr, IntrinsicValue))
+                {
+                    auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
+                    union_pattern->patterns.push_back(intrinsic_value);
+                }
+                else
+                {
+                    // FIXME: In this case expr is an invalid value - what should we do?
+                }
             }
-            else
+            else if (confirm(Token::Identity))
             {
-                // FIXME: In this case expr is an invalid value - what should we do?
+                auto identity_token = consume(Token::Identity);
+
+                auto enum_value = CREATE(EnumValue);
+                enum_value->identity = identity_token.str;
+                enum_value->type = enum_type;
+                enum_value->span = to_span(identity_token);
+
+                enum_type->values.emplace_back(enum_value);
             }
-        }
-        else if (peek(Token::Identity))
-        {
-            auto identity_token = eat(Token::Identity);
+        } while (peek_and_consume(Token::Comma));
 
-            auto enum_value = CREATE(EnumValue);
-            enum_value->identity = identity_token.str;
-            enum_value->type = enum_type;
-            enum_value->span = to_span(identity_token);
+        confirm_and_consume(Token::CurlyR);
+    }
 
-            enum_type->values.emplace_back(enum_value);
-        }
-    } while (match(Token::Comma));
-    auto curly_r = eat(Token::CurlyR);
+    confirm_and_consume(Token::Line);
 
-    enum_type->span = merge(to_span(keyword), to_span(curly_r));
-
+    // Declare enum
+    enum_type->span = finish_span();
     if (union_pattern->patterns.size() == 0)
     {
         declare(scope, enum_type);
@@ -435,12 +464,19 @@ void Parser::parse_entity_definition(ptr<Scope> scope)
 {
     auto entity = CREATE(Entity);
 
-    auto keyword = eat(Token::KeyEntity);
-    auto identity_token = eat(Token::Identity);
-    entity->identity = identity_token.str;
-    entity->span = merge(to_span(keyword), to_span(identity_token));
-    eat(Token::Line);
+    start_span();
+    confirm_and_consume(Token::KeyEntity);
 
+    if (!confirm(Token::Identity))
+    {
+        discard_span();
+        return;
+    }
+    entity->identity = consume(Token::Identity).str;
+
+    confirm_and_consume(Token::Line);
+
+    entity->span = finish_span();
     declare(scope, entity);
 }
 
@@ -455,32 +491,47 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
     state->scope = CREATE(Scope);
     state->scope->parent = scope;
 
-    auto keyword = eat(Token::KeyState);
+    start_span();
+    confirm_and_consume(Token::KeyState);
+
     state->pattern = parse_pattern(false);
 
-    eat(Token::ParenL);
-    do
+    if (confirm_and_consume(Token::ParenL))
     {
-        auto parameter = CREATE(Variable);
-        parameter->pattern = parse_pattern(false);
-        auto identity_token = eat(Token::Identity);
-        parameter->identity = identity_token.str;
-        parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
+        do
+        {
+            start_span();
+            auto parameter = CREATE(Variable);
+            parameter->pattern = parse_pattern(false);
 
-        state->parameters.emplace_back(parameter);
-        declare(state->scope, parameter);
-    } while (match(Token::Comma));
-    eat(Token::ParenR);
+            if (!confirm(Token::Identity))
+            {
+                discard_span();
+                continue;
+            }
+            parameter->identity = consume(Token::Identity).str;
 
-    eat(Token::Dot);
+            parameter->span = finish_span();
+            state->parameters.emplace_back(parameter);
+            declare(state->scope, parameter);
+        } while (peek_and_consume(Token::Comma));
 
-    auto identity_token = eat(Token::Identity);
-    state->identity = identity_token.str;
-    state->span = merge(to_span(keyword), to_span(identity_token));
+        confirm_and_consume(Token::ParenR);
+    }
 
+    confirm_and_consume(Token::Dot);
+
+    if (!confirm(Token::Identity))
+    {
+        discard_span();
+        return;
+    }
+    state->identity = consume(Token::Identity).str;
+
+    state->span = finish_span();
     declare(scope, state);
 
-    if (match(Token::Colon))
+    if (peek_and_consume(Token::Colon))
         state->initial_value = parse_expression();
 }
 
@@ -495,29 +546,44 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     funct->scope = CREATE(Scope);
     funct->scope->parent = scope;
 
-    auto keyword = eat(Token::KeyFn);
+    start_span();
+    confirm_and_consume(Token::KeyFn);
+
     funct->pattern = parse_pattern(false);
 
-    eat(Token::ParenL);
-    do
+    if (confirm_and_consume(Token::ParenL))
     {
-        auto parameter = CREATE(Variable);
-        parameter->pattern = parse_pattern(false);
-        auto identity_token = eat(Token::Identity);
-        parameter->identity = identity_token.str;
-        parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
+        do
+        {
+            start_span();
+            auto parameter = CREATE(Variable);
+            parameter->pattern = parse_pattern(false);
 
-        funct->parameters.emplace_back(parameter);
-        declare(funct->scope, parameter);
-    } while (match(Token::Comma));
-    eat(Token::ParenR);
+            if (!confirm(Token::Identity))
+            {
+                discard_span();
+                continue;
+            }
+            parameter->identity = consume(Token::Identity).str;
 
-    eat(Token::Dot);
+            parameter->span = finish_span();
+            funct->parameters.emplace_back(parameter);
+            declare(funct->scope, parameter);
+        } while (peek_and_consume(Token::Comma));
 
-    auto identity_token = eat(Token::Identity);
-    funct->identity = identity_token.str;
-    funct->span = merge(to_span(keyword), to_span(identity_token));
+        confirm_and_consume(Token::ParenR);
+    }
 
+    confirm_and_consume(Token::Dot);
+
+    if (!confirm(Token::Identity))
+    {
+        discard_span();
+        return;
+    }
+    funct->identity = consume(Token::Identity).str;
+
+    funct->span = finish_span();
     declare(scope, funct);
 
     if (peek_code_block())
@@ -531,33 +597,43 @@ bool Parser::peek_procedure_definition()
 
 void Parser::parse_procedure_definition(ptr<Scope> scope)
 {
+    if (!confirm(Token::Identity))
+        return;
+
     auto proc = CREATE(Procedure);
     proc->scope = CREATE(Scope);
     proc->scope->parent = scope;
 
-    auto identity_token = eat(Token::Identity);
-    proc->identity = identity_token.str;
+    start_span();
+    proc->identity = consume(Token::Identity).str;
 
-    eat(Token::ParenL);
-    if (peek_pattern(false))
+    if (confirm_and_consume(Token::ParenL))
     {
-        do
+        if (peek_pattern(false))
         {
-            auto parameter = CREATE(Variable);
-            parameter->pattern = parse_pattern(false);
-            auto identity_token = eat(Token::Identity);
-            parameter->identity = identity_token.str;
-            parameter->span = merge(get_span(parameter->pattern), to_span(identity_token));
+            do
+            {
+                start_span();
+                auto parameter = CREATE(Variable);
+                parameter->pattern = parse_pattern(false);
 
-            proc->parameters.emplace_back(parameter);
-            declare(proc->scope, parameter);
-        } while (match(Token::Comma));
+                if (!confirm(Token::Identity))
+                {
+                    discard_span();
+                    continue;
+                }
+                parameter->identity = consume(Token::Identity).str;
+
+                parameter->span = finish_span();
+                proc->parameters.emplace_back(parameter);
+                declare(proc->scope, parameter);
+            } while (peek_and_consume(Token::Comma));
+        }
+
+        confirm_and_consume(Token::ParenR);
     }
 
-    auto paren_token = eat(Token::ParenR);
-
-    proc->span = merge(to_span(identity_token), to_span(paren_token));
-
+    proc->span = finish_span();
     declare(scope, proc);
 
     proc->body = parse_code_block(proc->scope);
@@ -586,7 +662,7 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     {
         // FIXME: Instead of marking just the current token as an invalid statement,
         //        we should mark everything up to the end of the line as invalid.
-        Token token = skip();
+        Token token = consume();
         gambit_error("Expected statement", token);
 
         auto stmt = CREATE(InvalidStatement);
@@ -594,11 +670,9 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         return stmt;
     }
 
-    if (!match(Token::Line) && !peek(Token::EndOfFile))
+    if (!end_of_file() && !confirm_and_consume(Token::Line))
     {
-        eat(Token::Line); // Cause the corrsponding error to be thrown
-        while (!match(Token::Line) && !peek(Token::EndOfFile))
-            skip();
+        skip_to_end_of_line();
     }
 
     return stmt;
@@ -613,38 +687,38 @@ bool Parser::peek_if_statement()
 {
     auto if_statement = CREATE(IfStatement);
 
-    auto keyword = eat(Token::KeyIf);
+    start_span();
+    start_span();
+    confirm_and_consume(Token::KeyIf);
 
     IfStatement::Segment segment;
     segment.condition = parse_expression();
     segment.code_block = parse_code_block(scope);
-    segment.span = merge(to_span(keyword), get_span(segment.code_block));
-
+    segment.span = finish_span();
     if_statement->segments.push_back(segment);
-    Span last_span = segment.span;
 
     while (peek(Token::KeyElse))
     {
-        Token keyword = eat(Token::KeyElse);
+        start_span();
+        consume(Token::KeyElse);
 
-        if (!match(Token::KeyIf))
+        if (peek_and_consume(Token::KeyIf))
         {
-            auto code_block = parse_code_block(scope);
-            if_statement->fallback = code_block;
-            last_span = get_span(code_block);
+            IfStatement::Segment segment;
+            segment.condition = parse_expression();
+            segment.code_block = parse_code_block(scope);
+            segment.span = finish_span();
+            if_statement->segments.push_back(segment);
+        }
+        else
+        {
+            if_statement->fallback = parse_code_block(scope);
+            discard_span();
             break;
         }
-
-        IfStatement::Segment segment;
-        segment.condition = parse_expression();
-        segment.code_block = parse_code_block(scope);
-        segment.span = merge(to_span(keyword), get_span(segment.code_block));
-
-        last_span = segment.span;
-        if_statement->segments.push_back(segment);
     }
 
-    if_statement->span = merge(segment.span, last_span);
+    if_statement->span = finish_span();
     return if_statement;
 }
 
@@ -659,36 +733,38 @@ ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
     auto variable = CREATE(Variable);
     assignment_stmt->variable = variable;
 
-    Token opening_token;
-    if (peek(Token::KeyVar))
+    start_span();
+    if (peek_and_consume(Token::KeyVar))
     {
-        opening_token = eat(Token::KeyVar);
         variable->is_mutable = true;
     }
     else
     {
-        opening_token = eat(Token::KeyLet);
+        confirm_and_consume(Token::KeyLet);
         variable->is_mutable = false;
     }
 
     // TODO: Mark this as an "unresolved pattern" that the type checker should then infer from inference
     variable->pattern = CREATE(AnyPattern);
 
-    Token identity = eat(Token::Identity);
-    variable->identity = identity.str;
-    Span last_span = to_span(identity);
-
-    if (!variable->is_mutable || peek(Token::Assign))
+    // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
+    //       an ill-defined variable (i.e. one where this if statement never runs.)
+    if (confirm(Token::Identity))
     {
-        eat(Token::Assign);
-        auto value = parse_expression();
-        assignment_stmt->value = value;
-        last_span = get_span(value);
+        variable->identity = consume(Token::Identity).str;
+
+        if (!variable->is_mutable || peek(Token::Assign))
+        {
+            confirm_and_consume(Token::Assign);
+            assignment_stmt->value = parse_expression();
+        }
+
+        declare(scope, variable);
     }
 
-    declare(scope, variable);
-
-    assignment_stmt->span = merge(to_span(opening_token), last_span);
+    Span span = finish_span();
+    assignment_stmt->span = span;
+    variable->span = span;
     return assignment_stmt;
 }
 
@@ -703,10 +779,11 @@ bool Parser::operator_should_bind(Precedence operator_precedence, Precedence cal
         return operator_precedence >= caller_precedence;
 }
 
+// FIXME: This function will throw compiler error when the tokens expected are not present
 ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 {
     auto identity = CREATE(UnresolvedIdentity);
-    auto token = eat(Token::Identity);
+    auto token = consume(Token::Identity);
     identity->identity = token.str;
     identity->span = to_span(token);
     return identity;
@@ -754,7 +831,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         // FIXME: Currently, only the current token is turned into an invalid expression,
         //        should some larger portion of the code become invalid? (e.g. until the)
         //        end of the current line? maybe the current brackets?)
-        Token token = skip();
+        Token token = consume();
         gambit_error("Expected expression", token);
 
         auto expr = CREATE(InvalidExpression);
@@ -792,15 +869,18 @@ bool Parser::peek_paren_expr()
 
 Expression Parser::parse_paren_expr()
 {
-    auto paren_l = eat(Token::ParenL);
+    start_span();
+    confirm_and_consume(Token::ParenL);
 
     auto expr = parse_expression();
 
     // Bracketed expression
     if (!peek(Token::Comma))
     {
-        eat(Token::ParenR);
+        confirm_and_consume(Token::ParenR);
         // FIXME: Update the expression's span to include the parentheses
+        // expr->span = finish_span();
+        discard_span();
         return expr;
     }
 
@@ -808,12 +888,11 @@ Expression Parser::parse_paren_expr()
     auto instance_list = CREATE(InstanceList);
     instance_list->values.emplace_back(expr);
 
-    while (match(Token::Comma))
+    while (peek_and_consume(Token::Comma))
         instance_list->values.emplace_back(parse_expression());
 
-    auto paren_r = eat(Token::ParenR);
-
-    instance_list->span = merge(to_span(paren_l), to_span(paren_r));
+    confirm_and_consume(Token::ParenR);
+    instance_list->span = finish_span();
 
     auto property_index = parse_infix_property_index(instance_list);
     return property_index;
@@ -828,28 +907,34 @@ ptr<Match> Parser::parse_match()
 {
     auto match = CREATE(Match);
 
-    auto keyword = eat(Token::KeyMatch);
+    start_span();
+    confirm_and_consume(Token::KeyMatch);
+
     match->subject = parse_expression();
 
-    eat(Token::CurlyL);
-    while (peek_pattern(true) && !match->has_fallback_rule)
+    if (confirm_and_consume(Token::CurlyL))
     {
-        Match::Rule rule;
+        while (peek_pattern(true) && !match->has_fallback_rule)
+        {
+            Match::Rule rule;
 
-        rule.pattern = parse_pattern(true);
-        if (IS_PTR(rule.pattern, AnyPattern))
-            match->has_fallback_rule = true;
+            start_span();
+            rule.pattern = parse_pattern(true);
+            if (IS_PTR(rule.pattern, AnyPattern))
+                match->has_fallback_rule = true;
 
-        eat(Token::Colon);
-        rule.result = parse_expression();
-        rule.span = merge(get_span(rule.pattern), get_span(rule.result));
-        eat(Token::Line);
+            confirm_and_consume(Token::Colon);
+            rule.result = parse_expression();
+            rule.span = finish_span();
+            confirm_and_consume(Token::Line);
 
-        match->rules.emplace_back(rule);
+            match->rules.emplace_back(rule);
+        }
+
+        confirm_and_consume(Token::CurlyR);
     }
-    auto curly_r = eat(Token::CurlyR);
 
-    match->span = merge(to_span(keyword), to_span(curly_r));
+    match->span = finish_span();
     return match;
 }
 
@@ -865,18 +950,20 @@ ptr<Unary> Parser::parse_unary()
     auto expr = CREATE(Unary);
     Token op_token;
 
+    start_span();
+
     if (peek(Token::Add))
-        op_token = eat(Token::Add);
+        op_token = consume(Token::Add);
     else if (peek(Token::Sub))
-        op_token = eat(Token::Sub);
+        op_token = consume(Token::Sub);
     else if (peek(Token::KeyNot))
-        op_token = eat(Token::KeyNot);
+        op_token = consume(Token::KeyNot);
     else
         throw CompilerError("Expected unary expression, got " + to_string(current_token()) + " token");
 
     expr->op = op_token.str;
     expr->value = parse_expression(Precedence::Unary);
-    expr->span = merge(to_span(op_token), get_span(expr->value));
+    expr->span = finish_span();
 
     return expr;
 }
@@ -890,11 +977,11 @@ bool Parser::peek_intrinsic_value()
 
 Expression Parser::parse_intrinsic_value()
 {
-    if (peek(Token::Number))
-    {
-        auto intrinsic_value = CREATE(IntrinsicValue);
-        auto token = eat(Token::Number);
+    auto intrinsic_value = CREATE(IntrinsicValue);
+    auto token = consume();
 
+    if (token.kind == Token::Number)
+    {
         if (token.str.find(".") != std::string::npos)
         {
             intrinsic_value->value = stod(token.str);
@@ -905,38 +992,30 @@ Expression Parser::parse_intrinsic_value()
             intrinsic_value->value = stoi(token.str);
             intrinsic_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
         }
-
-        intrinsic_value->span = to_span(token);
-        return intrinsic_value;
     }
 
-    if (peek(Token::String))
+    else if (token.kind == Token::String)
     {
-        auto intrinsic_value = CREATE(IntrinsicValue);
-        auto token = eat(Token::String);
-
         intrinsic_value->value = token.str;
         intrinsic_value->type = Intrinsic::type_str;
-        intrinsic_value->span = to_span(token);
-        return intrinsic_value;
     }
 
-    if (peek(Token::Boolean))
+    else if (token.kind == Token::Boolean)
     {
-        auto intrinsic_value = CREATE(IntrinsicValue);
-        auto token = eat(Token::Boolean);
-
         intrinsic_value->value = token.str == "true";
         intrinsic_value->type = Intrinsic::type_bool;
-        intrinsic_value->span = to_span(token);
-        return intrinsic_value;
     }
 
-    Token token = skip();
-    gambit_error("Expected literal", token);
-    auto value = CREATE(InvalidValue);
-    value->span = to_span(token);
-    return value;
+    else
+    {
+        gambit_error("Expected literal", token);
+        auto invalid_value = CREATE(InvalidValue);
+        invalid_value->span = to_span(token);
+        return invalid_value;
+    }
+
+    intrinsic_value->span = to_span(token);
+    return intrinsic_value;
 }
 
 bool Parser::peek_list_value()
@@ -948,17 +1027,22 @@ ptr<ListValue> Parser::parse_list_value()
 {
     auto list = CREATE(ListValue);
 
-    auto square_l = eat(Token::SquareL);
-    if (peek_expression())
-    {
-        do
-        {
-            list->values.push_back(parse_expression());
-        } while (match(Token::Comma));
-    }
-    auto square_r = eat(Token::SquareR);
+    start_span();
 
-    list->span = merge(to_span(square_l), to_span(square_r));
+    if (confirm_and_consume(Token::SquareL))
+    {
+        if (peek_expression())
+        {
+            do
+            {
+                list->values.push_back(parse_expression());
+            } while (peek_and_consume(Token::Comma));
+        }
+
+        confirm_and_consume(Token::SquareR);
+    }
+
+    list->span = finish_span();
     return list;
 }
 
@@ -970,9 +1054,10 @@ bool Parser::peek_infix_logical_or()
 ptr<Binary> Parser::parse_infix_logical_or(Expression lhs)
 {
     auto expr = CREATE(Binary);
+    confirm_and_consume(Token::KeyOr);
 
     expr->lhs = lhs;
-    expr->op = eat(Token::KeyOr).str;
+    expr->op = "or";
     expr->rhs = parse_expression(Precedence::LogicalOr);
 
     expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
@@ -987,9 +1072,10 @@ bool Parser::peek_infix_logical_and()
 ptr<Binary> Parser::parse_infix_logical_and(Expression lhs)
 {
     auto expr = CREATE(Binary);
+    confirm_and_consume(Token::KeyAnd);
 
     expr->lhs = lhs;
-    expr->op = eat(Token::KeyAnd).str;
+    expr->op = "and";
     expr->rhs = parse_expression(Precedence::LogicalAnd);
 
     expr->span = merge(get_span(expr->lhs), get_span(expr->rhs));
@@ -1007,10 +1093,10 @@ ptr<Binary> Parser::parse_infix_compare_equal(Expression lhs)
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
-    if (peek(Token::Equal))
-        expr->op = eat(Token::Equal).str;
-    else if (peek(Token::NotEqual))
-        expr->op = eat(Token::NotEqual).str;
+    if (peek_and_consume(Token::Equal))
+        expr->op = "==";
+    else if (peek_and_consume(Token::NotEqual))
+        expr->op = "!=";
     else
         throw CompilerError("Expected infix compare equal expression, got " + to_string(current_token()) + " token");
     expr->rhs = parse_expression(Precedence::CompareEqual);
@@ -1032,14 +1118,14 @@ ptr<Binary> Parser::parse_infix_compare_relative(Expression lhs)
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
-    if (peek(Token::TrigL))
-        expr->op = eat(Token::TrigL).str;
-    else if (peek(Token::LessThanEqual))
-        expr->op = eat(Token::LessThanEqual).str;
-    else if (peek(Token::TrigR))
-        expr->op = eat(Token::TrigR).str;
-    else if (peek(Token::GreaterThanEqual))
-        expr->op = eat(Token::GreaterThanEqual).str;
+    if (peek_and_consume(Token::TrigL))
+        expr->op = "<";
+    else if (peek_and_consume(Token::LessThanEqual))
+        expr->op = "<=";
+    else if (peek_and_consume(Token::TrigR))
+        expr->op = ">";
+    else if (peek_and_consume(Token::GreaterThanEqual))
+        expr->op = ">=";
     else
         throw CompilerError("Expected infix compare relative expression, got " + to_string(current_token()) + " token");
     expr->rhs = parse_expression(Precedence::CompareRelative);
@@ -1059,10 +1145,10 @@ ptr<Binary> Parser::parse_infix_term(Expression lhs)
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
-    if (peek(Token::Add))
-        expr->op = eat(Token::Add).str;
-    else if (peek(Token::Sub))
-        expr->op = eat(Token::Sub).str;
+    if (peek_and_consume(Token::Add))
+        expr->op = "+";
+    else if (peek_and_consume(Token::Sub))
+        expr->op = "-";
     else
         throw CompilerError("Expected infix term expression, got " + to_string(current_token()) + " token");
     expr->rhs = parse_expression(Precedence::Term);
@@ -1082,10 +1168,10 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
     auto expr = CREATE(Binary);
 
     expr->lhs = lhs;
-    if (peek(Token::Mul))
-        expr->op = eat(Token::Mul).str;
-    else if (peek(Token::Div))
-        expr->op = eat(Token::Div).str;
+    if (peek_and_consume(Token::Mul))
+        expr->op = "*";
+    else if (peek_and_consume(Token::Div))
+        expr->op = "/";
     else
         throw CompilerError("Expected infix factor expression, got " + to_string(current_token()) + " token");
     expr->rhs = parse_expression(Precedence::Factor);
@@ -1121,7 +1207,7 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
     auto property_index = CREATE(PropertyIndex);
 
     property_index->expr = lhs;
-    eat(Token::Dot);
+    confirm_and_consume(Token::Dot);
     auto unresolved_identity = parse_unresolved_identity();
     property_index->property = unresolved_identity;
 
@@ -1140,14 +1226,16 @@ bool Parser::peek_pattern(bool allow_intrinsic_values)
 
 Pattern Parser::parse_pattern(bool allow_intrinsic_values)
 {
+    // "Any" pattern
     if (peek(Token::KeyAny))
     {
-        auto keyword = eat(Token::KeyAny);
+        auto keyword = consume(Token::KeyAny);
         auto any_pattern = CREATE(AnyPattern);
         any_pattern->span = to_span(keyword);
         return any_pattern;
     }
 
+    // Intrinsic value pattern
     Pattern pattern;
     if (peek_intrinsic_value() && allow_intrinsic_values)
     {
@@ -1169,14 +1257,17 @@ Pattern Parser::parse_pattern(bool allow_intrinsic_values)
             throw CompilerError("Unable to resolve expression variant when creating pattern from intrinsic value", get_span(expr));
         }
     }
+
+    // Unresolved identity
     else
     {
         pattern = parse_unresolved_identity();
     }
 
+    // Optional pattern
     if (peek(Token::Question))
     {
-        auto question = eat(Token::Question);
+        auto question = consume(Token::Question);
         auto optional_pattern = create_union_pattern(pattern, Intrinsic::none_val);
         optional_pattern->span = merge(get_span(pattern), to_span(question));
         return optional_pattern;

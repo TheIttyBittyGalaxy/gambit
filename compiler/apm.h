@@ -289,14 +289,14 @@ struct InstanceList
 struct Unary
 {
     Span span;
-    string op;
+    string op; // FIXME: Make this an enum instead of a string
     Expression value;
 };
 
 struct Binary
 {
     Span span;
-    string op;
+    string op; // FIXME: Make this an enum instead of a string
     Expression lhs;
     Expression rhs;
 };
