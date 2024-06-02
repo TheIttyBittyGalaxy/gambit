@@ -643,8 +643,10 @@ void Parser::parse_procedure_definition(ptr<Scope> scope)
 
 bool Parser::peek_statement()
 {
-    return peek_code_block() ||
-           peek_expression();
+    return peek_expression() ||
+           peek_code_block() ||
+           peek_if_statement() ||
+           peek_variable_declaration();
 }
 
 Statement Parser::parse_statement(ptr<Scope> scope)
