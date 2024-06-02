@@ -151,9 +151,16 @@ void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, opt
 
 void Resolver::resolve_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope)
 {
-    // TODO: If the pattern of the variable was not specified in the declaration, than we should infer it from the assigned value
     if (stmt->value.has_value())
         stmt->value = resolve_expression(stmt->value.value(), scope, stmt->variable->pattern);
+
+    if (IS_PTR(stmt->variable->pattern, UninferredPattern))
+    {
+        if (stmt->value.has_value())
+            stmt->variable->pattern = determine_expression_pattern(stmt->value.value());
+        else
+            stmt->variable->pattern = CREATE(AnyPattern);
+    }
 }
 
 // EXPRESSIONS //

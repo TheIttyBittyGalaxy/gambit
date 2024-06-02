@@ -739,15 +739,14 @@ ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
     if (peek_and_consume(Token::KeyVar))
     {
         variable->is_mutable = true;
+        variable->pattern = parse_pattern(false);
     }
     else
     {
         confirm_and_consume(Token::KeyLet);
         variable->is_mutable = false;
+        variable->pattern = CREATE(UninferredPattern);
     }
-
-    // TODO: Mark this as an "unresolved pattern" that the type checker should then infer from inference
-    variable->pattern = CREATE(UnresolvedPattern);
 
     // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
     //       an ill-defined variable (i.e. one where this if statement never runs.)

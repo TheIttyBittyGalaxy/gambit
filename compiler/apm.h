@@ -31,6 +31,7 @@ struct Scope;
 struct InvalidStatement;
 
 struct UnresolvedIdentity;
+struct UninferredPattern;
 
 struct Variable;
 
@@ -60,6 +61,7 @@ struct IntrinsicValue;
 
 using Pattern = variant<
     ptr<UnresolvedIdentity>,
+    ptr<UninferredPattern>,
     ptr<InvalidPattern>,
     ptr<AnyPattern>,
     ptr<UnionPattern>,
@@ -155,6 +157,10 @@ struct UnresolvedIdentity
 {
     Span span;
     string identity;
+};
+
+struct UninferredPattern
+{
 };
 
 // Variables
@@ -402,6 +408,7 @@ string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t 
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
 string to_json(const ptr<InvalidStatement> &invalid_statement, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
+string to_json(const ptr<UninferredPattern> &uninferred_pattern, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<AnyPattern> &any_pattern, const size_t &depth = 0);
 string to_json(const ptr<UnionPattern> &union_pattern, const size_t &depth = 0);
