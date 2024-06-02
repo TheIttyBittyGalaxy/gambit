@@ -1,7 +1,7 @@
 /* Gambit intrinsics
     entity Player
     static amt (Player player).number
-    List<Player> players
+    [Player] players
 */
 
 // Suits & Ranks
@@ -55,7 +55,7 @@ fn bool (Card attacker_one, Card attacker_two, Card defender).can_attack:
 
 // Player
 state int (Player player).tokens
-state List<Card> (Player player).cards
+state [Card] (Player player).cards
 
 // Main
 main() {
@@ -65,7 +65,7 @@ main() {
     player_one.tokens = 10
     player_two.tokens = 10
 
-    List<Card, 52> deck
+    var [Card, 52] deck
     for suit in Suit:
         for rank in Rank:
             deck insert Card(suit: suit, rank: rank)
@@ -95,7 +95,7 @@ main() {
 
         // Attack
         if #current_player.cards >= 2 and (current_player choose bool ("Would you like to attack?")) {
-            let attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `List<Card, 2>`
+            let attackers = current_player choose[2] current_player.cards ("Who would you like to attack with?") // Infer type `[Card, 2]`
             let attacker_one = attackers[1]
             let attacker_two = attackers[2]
 

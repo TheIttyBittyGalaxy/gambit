@@ -1310,28 +1310,24 @@ Pattern Parser::parse_pattern(bool allow_intrinsic_values)
         }
     }
 
-    // Unresolved identity / list
+    // FIXME: When intrinsic values are allows as patterns, there are ambiguities that need to be handled by the resolver
+    //        E.g. `[x]` will become either a list pattern or a list value depending on whether `x` represents a pattern or a value.
+
+    // Lists
+    else if (peek_and_consume(Token::SquareL))
+    {
+        auto list_pattern = CREATE(ListPattern);
+        list_pattern->list_of = parse_pattern(false);
+        if (peek_and_consume(Token::Comma))
+            list_pattern->fixed_size = parse_expression();
+        confirm_and_consume(Token::SquareR);
+        pattern = list_pattern;
+    }
+
+    // Unresolved identity
     else
     {
-        auto unresolved_identity = parse_unresolved_identity();
-        pattern = unresolved_identity;
-
-        if (unresolved_identity->identity == "List")
-        {
-            auto list_pattern = CREATE(ListPattern);
-            if (confirm_and_consume(Token::TrigL))
-            {
-                list_pattern->list_of = parse_pattern(false);
-                if (peek_and_consume(Token::Comma))
-                    list_pattern->fixed_size = parse_expression();
-                confirm_and_consume(Token::TrigR);
-            }
-            else
-            {
-                list_pattern->list_of = CREATE(InvalidPattern);
-            }
-            pattern = list_pattern;
-        }
+        pattern = parse_unresolved_identity();
     }
 
     // Optional pattern
