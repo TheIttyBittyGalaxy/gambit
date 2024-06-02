@@ -86,6 +86,8 @@ private:
     [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
     bool peek_if_statement();
     [[nodiscard]] ptr<IfStatement> parse_if_statement(ptr<Scope> scope);
+    bool peek_for_statement();
+    [[nodiscard]] ptr<ForStatement> parse_for_statement(ptr<Scope> scope);
     bool peek_infix_assignment_statement();
     [[nodiscard]] ptr<AssignmentStatement> parse_infix_assignment_statement(Expression subject, ptr<Scope> scope);
     bool peek_variable_declaration();

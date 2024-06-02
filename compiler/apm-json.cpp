@@ -469,6 +469,19 @@ string to_json(const ptr<IfStatement> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<ForStatement> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ForStatement"));
+    STRUCT_PTR_FIELD(variable);
+    STRUCT_PTR_FIELD(range);
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(body);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const ptr<AssignmentStatement> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -496,6 +509,7 @@ string to_json(const Statement &node, const size_t &depth)
     VARIANT(Expression);
     VARIANT_PTR(CodeBlock);
     VARIANT_PTR(IfStatement);
+    VARIANT_PTR(ForStatement);
     VARIANT_PTR(AssignmentStatement);
     VARIANT_PTR(VariableDeclaration);
     VARIANT_PTR(InvalidStatement);

@@ -646,6 +646,7 @@ bool Parser::peek_statement()
     return peek_expression() ||
            peek_code_block() ||
            peek_if_statement() ||
+           peek_for_statement() ||
            peek_variable_declaration();
 }
 
@@ -656,6 +657,8 @@ Statement Parser::parse_statement(ptr<Scope> scope)
         stmt = parse_code_block(scope);
     else if (peek_if_statement())
         stmt = parse_if_statement(scope);
+    else if (peek_for_statement())
+        stmt = parse_for_statement(scope);
     else if (peek_variable_declaration())
         stmt = parse_variable_declaration(scope);
     else if (peek_expression())
@@ -691,7 +694,7 @@ bool Parser::peek_if_statement()
     return peek(Token::KeyIf);
 }
 
-[[nodiscard]] ptr<IfStatement> Parser::parse_if_statement(ptr<Scope> scope)
+ptr<IfStatement> Parser::parse_if_statement(ptr<Scope> scope)
 {
     auto if_statement = CREATE(IfStatement);
 
@@ -728,6 +731,40 @@ bool Parser::peek_if_statement()
 
     if_statement->span = finish_span();
     return if_statement;
+}
+
+bool Parser::peek_for_statement()
+{
+    return peek(Token::KeyFor);
+}
+
+ptr<ForStatement> Parser::parse_for_statement(ptr<Scope> scope)
+{
+    auto for_statement = CREATE(ForStatement);
+    for_statement->scope = CREATE(Scope);
+    for_statement->scope->parent = scope;
+
+    start_span();
+    confirm_and_consume(Token::KeyFor);
+
+    start_span();
+    auto variable = CREATE(Variable);
+    variable->identity = consume(Token::Identity).str;
+    variable->is_mutable = false;
+    variable->pattern = CREATE(UninferredPattern);
+    variable->span = finish_span();
+
+    for_statement->variable = variable;
+    declare(for_statement->scope, variable);
+
+    confirm_and_consume(Token::KeyIn);
+
+    for_statement->range = parse_pattern(true);
+
+    for_statement->body = parse_code_block(for_statement->scope);
+
+    for_statement->span = finish_span();
+    return for_statement;
 }
 
 bool Parser::peek_infix_assignment_statement()

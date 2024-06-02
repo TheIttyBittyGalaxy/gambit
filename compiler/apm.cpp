@@ -54,6 +54,8 @@ Span get_span(Statement stmt)
         return AS_PTR(stmt, CodeBlock)->span;
     if (IS_PTR(stmt, IfStatement))
         return AS_PTR(stmt, IfStatement)->span;
+    if (IS_PTR(stmt, ForStatement))
+        return AS_PTR(stmt, ForStatement)->span;
     if (IS_PTR(stmt, AssignmentStatement))
         return AS_PTR(stmt, AssignmentStatement)->span;
     if (IS_PTR(stmt, VariableDeclaration))

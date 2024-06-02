@@ -125,6 +125,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, IfStatement))
         resolve_if_statement(AS_PTR(stmt, IfStatement), scope, pattern_hint);
 
+    else if (IS_PTR(stmt, ForStatement))
+        resolve_for_statement(AS_PTR(stmt, ForStatement), scope, pattern_hint);
+
     else if (IS_PTR(stmt, AssignmentStatement))
         resolve_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
 
@@ -150,6 +153,14 @@ void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, opt
 
     if (stmt->fallback.has_value())
         resolve_code_block(stmt->fallback.value(), pattern_hint);
+}
+
+void Resolver::resolve_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    stmt->range = resolve_pattern(stmt->range, scope);
+    // TODO: Infer pattern for the variable
+    stmt->variable->pattern = stmt->range;
+    resolve_code_block(stmt->body);
 }
 
 void Resolver::resolve_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope)
