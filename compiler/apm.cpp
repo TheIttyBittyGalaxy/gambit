@@ -88,6 +88,8 @@ Span get_span(Expression expr)
         return AS_PTR(expr, ExpressionIndex)->span;
     if (IS_PTR(expr, PropertyIndex))
         return AS_PTR(expr, PropertyIndex)->span;
+    if (IS_PTR(expr, Call))
+        return AS_PTR(expr, Call)->span;
     if (IS_PTR(expr, Match))
         return AS_PTR(expr, Match)->span;
     if (IS_PTR(expr, InvalidValue))
@@ -276,6 +278,11 @@ Pattern determine_expression_pattern(Expression expression)
         }
 
         throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
+    }
+    else if (IS_PTR(expression, Call))
+    {
+        // TODO: Return the correct pattern
+        return CREATE(AnyPattern);
     }
     else if (IS_PTR(expression, Match))
     {

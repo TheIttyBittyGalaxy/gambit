@@ -78,6 +78,7 @@ struct Unary;
 struct Binary;
 struct ExpressionIndex;
 struct PropertyIndex;
+struct Call;
 struct Match;
 struct InvalidValue;
 struct InvalidExpression;
@@ -92,6 +93,7 @@ using Expression = variant<
     ptr<Binary>,
     ptr<ExpressionIndex>,
     ptr<PropertyIndex>,
+    ptr<Call>,
     ptr<Match>,
     ptr<InvalidValue>,
     ptr<InvalidExpression>>;
@@ -336,6 +338,20 @@ struct PropertyIndex
     Property property;
 };
 
+struct Call
+{
+    Span span;
+    struct Argument
+    {
+        Span span;
+        bool named;
+        string name;
+        Expression value;
+    };
+    Expression callee;
+    vector<Argument> arguments;
+};
+
 struct Match
 {
     Span span;
@@ -449,6 +465,8 @@ string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
 string to_json(const Match::Rule &rule, const size_t &depth = 0);
 string to_json(const ptr<ExpressionIndex> &expr_index, const size_t &depth = 0);
 string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0);
+string to_json(const ptr<Call> &call, const size_t &depth = 0);
+string to_json(const Call::Argument &argument, const size_t &depth = 0);
 string to_json(const ptr<Match> &match, const size_t &depth = 0);
 string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
 string to_json(const ptr<InvalidExpression> &invalid_expression, const size_t &depth = 0);

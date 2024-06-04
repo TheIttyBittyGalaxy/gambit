@@ -13,6 +13,7 @@ enum class Precedence
     Factor,
     Unary,
     Index,
+    Call,
     Match,
 }; // Happens first
 

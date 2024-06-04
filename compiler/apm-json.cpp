@@ -389,6 +389,27 @@ string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<Call> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Call"));
+    STRUCT_PTR_FIELD(callee);
+    STRUCT_PTR_FIELD(arguments);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const Call::Argument &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(name);
+    STRUCT_FIELD(value);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Match::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -441,6 +462,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Binary);
     VARIANT_PTR(ExpressionIndex);
     VARIANT_PTR(PropertyIndex);
+    VARIANT_PTR(Call);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
     VARIANT_PTR(InvalidExpression);

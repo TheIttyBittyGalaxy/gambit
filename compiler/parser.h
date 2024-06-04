@@ -129,6 +129,8 @@ private:
     [[nodiscard]] ptr<ExpressionIndex> parse_infix_expression_index(Expression lhs);
     bool peek_infix_property_index();
     [[nodiscard]] ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
+    bool peek_infix_call();
+    [[nodiscard]] ptr<Call> parse_infix_call(Expression lhs);
 
     // PATTERNS //
     bool peek_pattern(bool allow_intrinsic_values);

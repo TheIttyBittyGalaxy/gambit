@@ -205,6 +205,8 @@ void Checker::check_expression(Expression expression, ptr<Scope> scope)
         check_expression_index(AS_PTR(expression, ExpressionIndex), scope);
     else if (IS_PTR(expression, PropertyIndex))
         check_property_index(AS_PTR(expression, PropertyIndex), scope);
+    else if (IS_PTR(expression, Call))
+        check_call(AS_PTR(expression, Call), scope);
     else if (IS_PTR(expression, Match))
         check_match(AS_PTR(expression, Match), scope);
     else if (IS_PTR(expression, InvalidValue))
@@ -225,6 +227,14 @@ void Checker::check_instance_list(ptr<InstanceList> list, ptr<Scope> scope)
 {
     for (auto value : list->values)
         check_expression(value, scope);
+}
+
+void Checker::check_call(ptr<Call> call, ptr<Scope> scope)
+{
+    // TODO: Check callee / arguments
+
+    for (auto &argument : call->arguments)
+        check_expression(argument.value, scope);
 }
 
 void Checker::check_match(ptr<Match> match, ptr<Scope> scope)

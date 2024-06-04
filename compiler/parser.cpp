@@ -921,7 +921,9 @@ Expression Parser::parse_expression(Precedence caller_precedence)
 
     while (true)
     {
-        if (peek_infix_factor() && operator_should_bind(Precedence::Factor, caller_precedence))
+        if (peek_infix_call() && operator_should_bind(Precedence::Call, caller_precedence))
+            lhs = parse_infix_call(lhs);
+        else if (peek_infix_factor() && operator_should_bind(Precedence::Factor, caller_precedence))
             lhs = parse_infix_factor(lhs);
         else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
             lhs = parse_infix_term(lhs);
@@ -1321,6 +1323,52 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 
     property_index->span = merge(get_span(property_index->expr), unresolved_identity->span);
     return property_index;
+}
+
+bool Parser::peek_infix_call()
+{
+    return peek(Token::ParenL);
+}
+
+ptr<Call> Parser::parse_infix_call(Expression lhs)
+{
+    auto call = CREATE(Call);
+    call->callee = lhs;
+
+    start_span();
+    confirm_and_consume(Token::ParenL);
+
+    if (peek_expression())
+    {
+        do
+        {
+            Call::Argument argument;
+
+            start_span();
+            Expression expr = parse_expression();
+
+            if (IS_PTR(expr, UnresolvedIdentity) && peek_and_consume(Token::Colon))
+            {
+                argument.named = true;
+                argument.name = AS_PTR(expr, UnresolvedIdentity)->identity;
+                argument.value = parse_expression();
+            }
+            else
+            {
+                argument.named = false;
+                argument.value = expr;
+            }
+
+            argument.span = finish_span();
+            call->arguments.emplace_back(argument);
+        } while (peek_and_consume(Token::Comma));
+    }
+
+    confirm_and_consume(Token::ParenR);
+
+    auto span = finish_span();
+    call->span = merge(get_span(lhs), span);
+    return call;
 }
 
 // PATTERNS

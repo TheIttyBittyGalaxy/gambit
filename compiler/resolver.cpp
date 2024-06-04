@@ -247,6 +247,9 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, PropertyIndex))
         resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
 
+    else if (IS_PTR(expression, Call))
+        resolve_call(AS_PTR(expression, Call), scope, pattern_hint);
+
     else if (IS_PTR(expression, Match))
         resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
 
@@ -268,6 +271,17 @@ void Resolver::resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, o
     {
         auto value = list->values[i];
         list->values[i] = resolve_expression(value, scope, pattern_hint);
+    }
+}
+
+void Resolver::resolve_call(ptr<Call> call, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    // TODO: Resolve callee
+
+    for (size_t i = 0; i < call->arguments.size(); i++)
+    {
+        auto argument = call->arguments[i];
+        call->arguments[i].value = resolve_expression(argument.value, scope, pattern_hint);
     }
 }
 
