@@ -17,7 +17,7 @@ Span merge(Span start, Span end)
         start, end = end, start;
 
     if (start.source == nullptr || end.source == nullptr)
-        throw CompilerError("Attempt to merge null span");
+        throw CompilerError("Attempt to merge null span", start, end);
 
     if (start.source != end.source)
         throw CompilerError("Attempt to merge spans from different sources", start, end);
