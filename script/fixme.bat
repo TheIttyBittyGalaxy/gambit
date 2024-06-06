@@ -1,1 +1,1 @@
-findstr /s /i "FIXME TODO" *.* | find /v "" /c
+findstr /s /i /n /p "TODO FIXME" compiler/*
