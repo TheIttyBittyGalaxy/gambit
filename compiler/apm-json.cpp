@@ -114,6 +114,7 @@ string to_json(const UnresolvedLiteral &node, const size_t &depth)
     VARIANT_PTR(PrimitiveLiteral);
     VARIANT_PTR(ListLiteral);
     VARIANT_PTR(IdentityLiteral);
+    VARIANT_PTR(OptionLiteral);
 
     throw json_serialisation_error("Could not serialise UnresolvedLiteral variant.");
 }
@@ -168,6 +169,16 @@ string to_json(const ptr<IdentityLiteral> &node, const size_t &depth)
 }
 
 #endif
+
+string to_json(const ptr<OptionLiteral> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("OptionLiteral"));
+    STRUCT_PTR_FIELD(literal);
+    json.close();
+    return (string)json;
+}
 
 // VALUES
 

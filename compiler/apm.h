@@ -39,10 +39,12 @@ struct Variable;
 struct PrimitiveLiteral;
 struct ListLiteral;
 struct IdentityLiteral;
+struct OptionLiteral;
 using UnresolvedLiteral = variant<
     ptr<PrimitiveLiteral>,
     ptr<ListLiteral>,
-    ptr<IdentityLiteral>>;
+    ptr<IdentityLiteral>,
+    ptr<OptionLiteral>>;
 
 // Values
 struct PrimitiveValue;
@@ -238,6 +240,12 @@ struct IdentityLiteral
 {
     Span span;
     string identity;
+};
+
+struct OptionLiteral
+{
+    Span span;
+    UnresolvedLiteral literal;
 };
 
 // VALUES
@@ -523,6 +531,7 @@ string to_json(const UnresolvedLiteral &node, const size_t &depth = 0);
 string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth = 0);
 string to_json(const ptr<ListLiteral> &node, const size_t &depth = 0);
 string to_json(const ptr<IdentityLiteral> &node, const size_t &depth = 0);
+string to_json(const ptr<OptionLiteral> &node, const size_t &depth = 0);
 
 // Values
 string to_json(const ptr<PrimitiveValue> &node, const size_t &depth = 0);

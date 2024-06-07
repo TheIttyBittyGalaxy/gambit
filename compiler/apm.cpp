@@ -542,6 +542,8 @@ Span get_span(UnresolvedLiteral stmt)
         return AS_PTR(stmt, ListLiteral)->span;
     if (IS_PTR(stmt, IdentityLiteral))
         return AS_PTR(stmt, IdentityLiteral)->span;
+    if (IS_PTR(stmt, OptionLiteral))
+        return AS_PTR(stmt, OptionLiteral)->span;
 
     throw CompilerError("Could not get span of UnresolvedLiteral variant.");
 }

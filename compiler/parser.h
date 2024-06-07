@@ -127,9 +127,9 @@ private:
     bool peek_infix_call();
     [[nodiscard]] ptr<Call> parse_infix_call(Expression lhs);
 
-    // PATTERNS //
-    bool peek_pattern(bool allow_primitive_values);
-    ptr<PatternLiteral> parse_pattern_literal(bool allow_primitive_values);
+    // LITERALS //
+    bool peek_literal(bool allow_primitive_values);
+    UnresolvedLiteral parse_literal(bool allow_primitive_values);
 };
 
 #endif

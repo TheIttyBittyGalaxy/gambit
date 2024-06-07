@@ -590,7 +590,30 @@ ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unres
     else if (IS_PTR(unresolved_literal, ListLiteral))
     {
         auto list_literal = AS_PTR(unresolved_literal, ListLiteral);
-        throw CompilerError("Parsing a list literal as a pattern literal not yet implemented.");
+
+        if (list_literal->values.size() == 1 || list_literal->values.size() == 2)
+        {
+            auto list_type = CREATE(ListType);
+
+            auto inner_expr = list_literal->values[0];
+            if (!IS(inner_expr, UnresolvedLiteral))
+            {
+                // FIXME: We should return a user error if the `inner_expr` 'literal' cannot be recast as a pattern literal.
+                throw CompilerError("Cannot resolve ListLiteral as a pattern as the inner expression is not a UnresolvedLiteral", list_literal->span);
+            }
+            auto inner_literal = AS(inner_expr, UnresolvedLiteral);
+            list_type->list_of = resolve_literal_as_pattern(inner_literal, scope, pattern_hint);
+
+            // TODO: Resolve the 'fixed size' (once the resolver is done, there should be no UnresolvedLiterals)
+            if (list_literal->values.size() == 2)
+                list_type->fixed_size = list_literal->values[1];
+
+            pattern_literal->pattern = list_type;
+        }
+        else
+        {
+            throw CompilerError("Cannot resolve ListLiteral as pattern - Not yet implemented.", list_literal->span);
+        }
     }
 
     // Identity literals
