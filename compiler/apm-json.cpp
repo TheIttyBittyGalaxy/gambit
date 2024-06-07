@@ -119,7 +119,7 @@ string to_json(const UnresolvedLiteral &node, const size_t &depth)
 
 string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth)
 {
-    return to_json(node->value);
+    return to_json(node->value, depth);
 }
 
 string to_json(const ptr<ListLiteral> &node, const size_t &depth)
@@ -294,7 +294,7 @@ string to_json(const Pattern &node, const size_t &depth)
 
 string to_json(const ptr<PatternLiteral> &node, const size_t &depth)
 {
-    return to_json(node->pattern);
+    return to_json(node->pattern, depth);
 }
 
 string to_json(const ptr<AnyPattern> &node, const size_t &depth)
@@ -366,7 +366,7 @@ string to_json(const Expression &node, const size_t &depth)
 
 string to_json(const ptr<ExpressionLiteral> &node, const size_t &depth)
 {
-    return to_json(node->expr);
+    return to_json(node->expr, depth);
 }
 
 string to_json(const ptr<Unary> &node, const size_t &depth)
