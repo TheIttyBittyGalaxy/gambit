@@ -28,6 +28,9 @@ void Lexer::tokenise(Source &source)
     bool is_line_comment = false;
     bool panic_mode = false;
 
+    Token phantom_newline;
+    bool insert_phantom_newline = false;
+
     while (position < source.length)
     {
         bool error_occurred = false;
@@ -38,7 +41,6 @@ void Lexer::tokenise(Source &source)
         {
             if (next == "\n")
             {
-                source.tokens.emplace_back(Token(Token::Line, "\n", line, column, position));
                 advance_line();
                 is_line_comment = false;
             }
@@ -50,6 +52,12 @@ void Lexer::tokenise(Source &source)
 
         else if (next_two == "/*")
         {
+            if (multi_line_comment_nesting == 0)
+            {
+                phantom_newline = Token(Token::Line, "\n", line, column, position);
+                insert_phantom_newline = false;
+            }
+
             multi_line_comment_nesting++;
             advance(2);
         }
@@ -60,10 +68,16 @@ void Lexer::tokenise(Source &source)
             {
                 multi_line_comment_nesting--;
                 advance(2);
+
+                if (multi_line_comment_nesting == 0 && insert_phantom_newline)
+                {
+                    source.tokens.emplace_back(phantom_newline);
+                }
             }
             else if (next == "\n")
             {
                 advance_line();
+                insert_phantom_newline = true;
             }
             else
             {
@@ -73,6 +87,7 @@ void Lexer::tokenise(Source &source)
 
         else if (next_two == "//")
         {
+            source.tokens.emplace_back(Token(Token::Line, "\n", line, column, position));
             is_line_comment = true;
             advance(2);
         }
