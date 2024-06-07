@@ -348,24 +348,23 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
     // Singleton code blocks
     if (peek_and_consume(Token::Colon))
     {
-        // If there is no statement and the line is blank, skip to the next line.
-        // This means that the "Expected statement" error will appear on the next line
-        if (!peek_statement() && peek(Token::Line))
-            skip_to_end_of_line();
-
-        auto statement = parse_statement(code_block->scope);
-        code_block->statements.emplace_back(statement);
-
         code_block->singleton_block = true;
 
-        // Code block statements are not allowed inside of singleton blocks
-        if (IS_PTR(statement, CodeBlock))
+        auto maybe_statement = parse_statement(code_block->scope);
+        if (maybe_statement.has_value())
         {
-            auto code_block_statement = AS_PTR(statement, CodeBlock);
-            if (code_block_statement->singleton_block)
-                gambit_error("Too many colons.", code_block->span);
-            else
-                gambit_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
+            auto statement = maybe_statement.value();
+            code_block->statements.emplace_back(statement);
+
+            // Code block statements are not allowed inside of singleton blocks
+            if (IS_PTR(statement, CodeBlock))
+            {
+                auto code_block_statement = AS_PTR(statement, CodeBlock);
+                if (code_block_statement->singleton_block)
+                    gambit_error("Too many colons.", code_block->span);
+                else
+                    gambit_error("Syntax `: { ... }` is invalid. Either use `: ... ` for a single statement, or `{ ... }` for multiple statements.", code_block->span);
+            }
         }
     }
 
@@ -375,7 +374,8 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
         while (peek_statement())
         {
             auto statement = parse_statement(code_block->scope);
-            code_block->statements.emplace_back(statement);
+            if (statement.has_value())
+                code_block->statements.emplace_back(statement.value());
         }
         confirm_and_consume(Token::CurlyR);
     }
@@ -649,7 +649,7 @@ bool Parser::peek_statement()
            peek_variable_declaration();
 }
 
-Statement Parser::parse_statement(ptr<Scope> scope)
+optional<Statement> Parser::parse_statement(ptr<Scope> scope)
 {
     Statement stmt;
     if (peek_code_block(false))
@@ -674,12 +674,11 @@ Statement Parser::parse_statement(ptr<Scope> scope)
     {
         // FIXME: Instead of marking just the current token as an invalid statement,
         //        we should mark everything up to the end of the line as invalid.
-        Token token = consume();
-        gambit_error("Expected statement", token);
-
-        auto stmt = CREATE(InvalidStatement);
-        stmt->span = to_span(token);
-        return stmt;
+        start_span();
+        skip_to_end_of_line();
+        auto span = finish_span();
+        gambit_error("Expected statement", span);
+        return {};
     }
 
     if (!end_of_file() && !confirm_and_consume(Token::Line))

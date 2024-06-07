@@ -60,8 +60,6 @@ Span get_span(Statement stmt)
         return AS_PTR(stmt, AssignmentStatement)->span;
     if (IS_PTR(stmt, VariableDeclaration))
         return AS_PTR(stmt, VariableDeclaration)->span;
-    if (IS_PTR(stmt, InvalidStatement))
-        return AS_PTR(stmt, InvalidStatement)->span;
 
     throw CompilerError("Could not get span of Statement variant.");
 }

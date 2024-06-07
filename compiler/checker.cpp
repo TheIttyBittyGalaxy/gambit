@@ -132,8 +132,6 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
     else if (IS_PTR(stmt, VariableDeclaration))
         check_variable_declaration(AS_PTR(stmt, VariableDeclaration), scope);
-    else if (IS_PTR(stmt, InvalidStatement))
-        ; // pass
     else
         throw CompilerError("Cannot check Statement variant.", get_span(stmt));
 }

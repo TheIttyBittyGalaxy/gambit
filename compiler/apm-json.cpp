@@ -81,15 +81,6 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<InvalidStatement> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("InvalidStatement"));
-    json.close();
-    return (string)json;
-}
-
 string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -534,7 +525,6 @@ string to_json(const Statement &node, const size_t &depth)
     VARIANT_PTR(ForStatement);
     VARIANT_PTR(AssignmentStatement);
     VARIANT_PTR(VariableDeclaration);
-    VARIANT_PTR(InvalidStatement);
 
     throw json_serialisation_error("Could not serialise Statement variant.");
 };

@@ -7,6 +7,7 @@
 #include "span.h"
 #include "token.h"
 #include "utilty.h"
+#include <optional>
 #include <vector>
 using namespace std;
 
@@ -83,7 +84,7 @@ private:
 
     // STATEMENTS //
     bool peek_statement();
-    [[nodiscard]] Statement parse_statement(ptr<Scope> scope);
+    [[nodiscard]] optional<Statement> parse_statement(ptr<Scope> scope);
     bool peek_if_statement();
     [[nodiscard]] ptr<IfStatement> parse_if_statement(ptr<Scope> scope);
     bool peek_for_statement();

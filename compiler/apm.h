@@ -28,8 +28,6 @@ struct Program;
 struct CodeBlock;
 struct Scope;
 
-struct InvalidStatement;
-
 struct UnresolvedIdentity;
 struct UninferredPattern;
 
@@ -109,8 +107,7 @@ using Statement = variant<
     ptr<IfStatement>,
     ptr<ForStatement>,
     ptr<AssignmentStatement>,
-    ptr<VariableDeclaration>,
-    ptr<InvalidStatement>>;
+    ptr<VariableDeclaration>>;
 
 // Program
 
@@ -150,11 +147,6 @@ struct Scope
 
     wptr<Scope> parent;
     unordered_map<string, LookupValue> lookup;
-};
-
-struct InvalidStatement
-{
-    Span span;
 };
 
 // Unresolved Identity
@@ -442,7 +434,6 @@ string to_json(const ptr<CodeBlock> &code_block, const size_t &depth = 0);
 string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
 string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
 string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
-string to_json(const ptr<InvalidStatement> &invalid_statement, const size_t &depth = 0);
 string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
 string to_json(const ptr<UninferredPattern> &uninferred_pattern, const size_t &depth = 0);
 string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);

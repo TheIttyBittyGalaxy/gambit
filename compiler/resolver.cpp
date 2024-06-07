@@ -99,8 +99,12 @@ void Resolver::resolve_code_block(ptr<CodeBlock> code_block, optional<Pattern> p
     if (code_block->singleton_block)
     {
         // Unlike in regular code blocks, the statement of a singleton code block is given the pattern hint.
-        auto stmt = code_block->statements[0];
-        code_block->statements[0] = resolve_statement(stmt, code_block->scope, pattern_hint);
+        // Codeblock may not contain a statements if an error occurred while parsing the statement.
+        if (code_block->statements.size() > 0)
+        {
+            auto stmt = code_block->statements[0];
+            code_block->statements[0] = resolve_statement(stmt, code_block->scope, pattern_hint);
+        }
     }
     else
     {
@@ -133,9 +137,6 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
 
     else if (IS_PTR(stmt, VariableDeclaration))
         resolve_variable_declaration(AS_PTR(stmt, VariableDeclaration), scope);
-
-    else if (IS_PTR(stmt, InvalidStatement))
-        ; // pass
 
     else
         throw CompilerError("Cannot resolve Statement variant.", get_span(stmt));
