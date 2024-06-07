@@ -87,38 +87,52 @@ vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity
 
 Pattern determine_expression_pattern(Expression expression)
 {
-    // TODO: Complete implementation of all expression variants
 
+    // Literals
     if (IS(expression, UnresolvedLiteral))
     {
         auto unresolved_literal = AS(expression, UnresolvedLiteral);
         throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", get_span(unresolved_literal));
     }
 
-    else if (IS_PTR(expression, ExpressionLiteral))
+    if (IS_PTR(expression, ExpressionLiteral))
     {
         return determine_expression_pattern(AS_PTR(expression, ExpressionLiteral)->expr);
     }
 
-    else if (IS_PTR(expression, Variable))
+    // Values
+    if (IS_PTR(expression, PrimitiveValue))
+    {
+        return AS_PTR(expression, PrimitiveValue);
+    }
+
+    if (IS_PTR(expression, ListValue))
+    {
+        auto list_value AS_PTR(expression, ListValue);
+        auto union_pattern = CREATE(UnionPattern);
+
+        for (auto value : list_value->values)
+            union_pattern->patterns.push_back(determine_expression_pattern(value));
+
+        // FIXME: This union pattern is never resolved, which in turn means it is
+        //        never simplified (as of writing, UnionPatterns are simplified
+        //        when they are resolved)
+        return union_pattern;
+    }
+
+    if (IS_PTR(expression, EnumValue))
+    {
+        return AS_PTR(expression, EnumValue);
+    }
+
+    if (IS_PTR(expression, Variable))
     {
         auto variable = AS_PTR(expression, Variable);
         return variable->pattern;
     }
 
-    else if (IS_PTR(expression, PrimitiveValue))
-    {
-        auto intrinsic_value = AS_PTR(expression, PrimitiveValue);
-        return intrinsic_value;
-    }
-
-    else if (IS_PTR(expression, EnumValue))
-    {
-        auto enum_value = AS_PTR(expression, EnumValue);
-        return enum_value;
-    }
-
-    else if (IS_PTR(expression, Unary))
+    // Operations
+    if (IS_PTR(expression, Unary))
     {
         auto unary = AS_PTR(expression, Unary);
         auto op = unary->op;
@@ -134,7 +148,7 @@ Pattern determine_expression_pattern(Expression expression)
             return Intrinsic::type_num;
     }
 
-    else if (IS_PTR(expression, Binary))
+    if (IS_PTR(expression, Binary))
     {
         auto binary = AS_PTR(expression, Binary);
         auto op = binary->op;
@@ -146,7 +160,8 @@ Pattern determine_expression_pattern(Expression expression)
             return Intrinsic::type_num;
     }
 
-    else if (IS_PTR(expression, ExpressionIndex))
+    // Indexing
+    if (IS_PTR(expression, ExpressionIndex))
     {
         auto expression_index = AS_PTR(expression, ExpressionIndex);
         auto subject_pattern = determine_expression_pattern(expression_index->subject);
@@ -165,7 +180,7 @@ Pattern determine_expression_pattern(Expression expression)
         throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
     }
 
-    else if (IS_PTR(expression, PropertyIndex))
+    if (IS_PTR(expression, PropertyIndex))
     {
         auto property_index = AS_PTR(expression, PropertyIndex);
         auto property = property_index->property;
@@ -184,13 +199,15 @@ Pattern determine_expression_pattern(Expression expression)
         throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
     }
 
-    else if (IS_PTR(expression, Call))
+    // Calls
+    if (IS_PTR(expression, Call))
     {
         // TODO: Return the correct pattern
         return CREATE(AnyPattern);
     }
 
-    else if (IS_PTR(expression, IfExpression))
+    // "Statements style" expressions
+    if (IS_PTR(expression, IfExpression))
     {
         auto if_expression = AS_PTR(expression, IfExpression);
 
@@ -211,7 +228,7 @@ Pattern determine_expression_pattern(Expression expression)
         return union_pattern;
     }
 
-    else if (IS_PTR(expression, MatchExpression))
+    if (IS_PTR(expression, MatchExpression))
     {
         auto match = AS_PTR(expression, MatchExpression);
 
@@ -232,7 +249,8 @@ Pattern determine_expression_pattern(Expression expression)
         return union_pattern;
     }
 
-    else if (IS_PTR(expression, InvalidExpression))
+    // Invalid expression
+    if (IS_PTR(expression, InvalidExpression))
     {
         return CREATE(InvalidPattern);
     }
@@ -438,8 +456,7 @@ bool is_pattern_optional(Pattern pattern)
 {
     if (IS_PTR(pattern, PrimitiveValue))
     {
-        auto intrinsic_value = AS_PTR(pattern, PrimitiveValue);
-        return intrinsic_value == Intrinsic::none_val;
+        return AS_PTR(pattern, PrimitiveValue) == Intrinsic::none_val;
     }
 
     if (IS_PTR(pattern, PrimitiveType))
@@ -448,9 +465,7 @@ bool is_pattern_optional(Pattern pattern)
         //       only really exists so that the intrinsic value has something to point to.
         //       If we do hit this code path, it might be worth exploring why the intrinsic
         //       value wasn't used instead.
-
-        auto intrinsic_type = AS_PTR(pattern, PrimitiveType);
-        return intrinsic_type == Intrinsic::type_none;
+        return AS_PTR(pattern, PrimitiveType) == Intrinsic::type_none;
     }
 
     if (IS_PTR(pattern, UnionPattern))
