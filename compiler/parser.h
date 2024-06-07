@@ -38,6 +38,8 @@ private:
     bool peek_and_consume(Token::Kind kind);
     bool confirm_and_consume(Token::Kind kind);
 
+    bool peek_next(Token::Kind kind);
+
     // TOKEN PARSING UTILITY //
     bool end_of_file();
     void skip_whitespace();
@@ -95,6 +97,8 @@ private:
 
     bool peek_paren_expr();
     Expression parse_paren_expr();
+    bool peek_if_expression();
+    [[nodiscard]] ptr<IfExpression> parse_if_expression();
     bool peek_match();
     [[nodiscard]] ptr<Match> parse_match();
     bool peek_unary();

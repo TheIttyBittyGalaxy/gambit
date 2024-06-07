@@ -401,6 +401,27 @@ string to_json(const Call::Argument &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const IfExpression::Rule &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(condition);
+    STRUCT_FIELD(result);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<IfExpression> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("IfExpression"));
+    STRUCT_PTR_FIELD(rules);
+    STRUCT_PTR_FIELD(has_else);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Match::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -418,7 +439,7 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     json.add("node", string("Match"));
     STRUCT_PTR_FIELD(subject);
     STRUCT_PTR_FIELD(rules);
-    STRUCT_PTR_FIELD(has_fallback_rule);
+    STRUCT_PTR_FIELD(has_else);
     json.close();
     return (string)json;
 }
@@ -454,6 +475,7 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(ExpressionIndex);
     VARIANT_PTR(PropertyIndex);
     VARIANT_PTR(Call);
+    VARIANT_PTR(IfExpression);
     VARIANT_PTR(Match);
     VARIANT_PTR(InvalidValue);
     VARIANT_PTR(InvalidExpression);
@@ -461,7 +483,7 @@ string to_json(const Expression &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Expression variant.");
 };
 
-string to_json(const IfStatement::Segment &node, const size_t &depth)
+string to_json(const IfStatement::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
@@ -476,8 +498,8 @@ string to_json(const ptr<IfStatement> &node, const size_t &depth)
     JsonContainer json(depth);
     json.object();
     json.add("node", string("IfStatement"));
-    STRUCT_PTR_FIELD(segments);
-    STRUCT_PTR_FIELD(fallback);
+    STRUCT_PTR_FIELD(rules);
+    STRUCT_PTR_FIELD(else_block);
     json.close();
     return (string)json;
 }

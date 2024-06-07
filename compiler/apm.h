@@ -77,6 +77,7 @@ struct Binary;
 struct ExpressionIndex;
 struct PropertyIndex;
 struct Call;
+struct IfExpression;
 struct Match;
 struct InvalidValue;
 struct InvalidExpression;
@@ -92,6 +93,7 @@ using Expression = variant<
     ptr<ExpressionIndex>,
     ptr<PropertyIndex>,
     ptr<Call>,
+    ptr<IfExpression>,
     ptr<Match>,
     ptr<InvalidValue>,
     ptr<InvalidExpression>>;
@@ -344,6 +346,19 @@ struct Call
     vector<Argument> arguments;
 };
 
+struct IfExpression
+{
+    Span span;
+    struct Rule
+    {
+        Span span;
+        Expression condition;
+        Expression result;
+    };
+    vector<Rule> rules;
+    bool has_else = false;
+};
+
 struct Match
 {
     Span span;
@@ -355,7 +370,7 @@ struct Match
     };
     Expression subject;
     vector<Rule> rules;
-    bool has_fallback_rule = false;
+    bool has_else = false;
 };
 
 struct InvalidValue
@@ -373,14 +388,14 @@ struct InvalidExpression
 struct IfStatement
 {
     Span span;
-    struct Segment
+    struct Rule
     {
         Span span;
         Expression condition;
         ptr<CodeBlock> code_block;
     };
-    vector<Segment> segments;
-    optional<ptr<CodeBlock>> fallback;
+    vector<Rule> rules;
+    optional<ptr<CodeBlock>> else_block;
 };
 
 struct ForStatement
@@ -453,6 +468,8 @@ string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0
 string to_json(const Pattern &pattern, const size_t &depth = 0);
 string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
 string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
+string to_json(const IfExpression::Rule &rule, const size_t &depth = 0);
+string to_json(const ptr<IfExpression> &if_expression, const size_t &depth = 0);
 string to_json(const Match::Rule &rule, const size_t &depth = 0);
 string to_json(const ptr<ExpressionIndex> &expr_index, const size_t &depth = 0);
 string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0);
@@ -465,7 +482,7 @@ string to_json(const ptr<IntrinsicValue> &intrinsic_value, const size_t &depth =
 string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
 string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
 string to_json(const Expression &expression, const size_t &depth = 0);
-string to_json(const IfStatement::Segment &segment, const size_t &depth = 0);
+string to_json(const IfStatement::Rule &rule, const size_t &depth = 0);
 string to_json(const ptr<IfStatement> &if_statement, const size_t &depth = 0);
 string to_json(const ptr<ForStatement> &for_statement, const size_t &depth = 0);
 string to_json(const ptr<AssignmentStatement> &assignment_statement, const size_t &depth = 0);

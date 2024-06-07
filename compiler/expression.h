@@ -14,7 +14,7 @@ enum class Precedence
     Unary,
     Index,
     Call,
-    Match,
+    ExpressionStatement, // e.g. `Match`, `IfExpression`
 }; // Happens first
 
 #endif

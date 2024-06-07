@@ -138,20 +138,20 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
 
 void Checker::check_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope)
 {
-    for (auto segment : stmt->segments)
+    for (auto rule : stmt->rules)
     {
-        check_expression(segment.condition, scope);
-        check_code_block(segment.code_block);
+        check_expression(rule.condition, scope);
+        check_code_block(rule.code_block);
 
-        auto condition_pattern = determine_expression_pattern(segment.condition);
+        auto condition_pattern = determine_expression_pattern(rule.condition);
         bool is_bool_condition = is_pattern_subset_of_superset(condition_pattern, Intrinsic::type_bool);
         bool is_optional_condition = is_pattern_optional(condition_pattern);
         if (!is_bool_condition && !is_optional_condition)
-            source->log_error("If statement conditions must evaluate either to true or false, or potentially to none. This condition will never be true, false, or none.", segment.span);
+            source->log_error("Condition must evaluate either to true or false, or potentially to none. This condition will never be true, false, or none.", rule.span);
     }
 
-    if (stmt->fallback.has_value())
-        check_code_block(stmt->fallback.value());
+    if (stmt->else_block.has_value())
+        check_code_block(stmt->else_block.value());
 }
 
 void Checker::check_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope)
@@ -205,6 +205,8 @@ void Checker::check_expression(Expression expression, ptr<Scope> scope)
         check_property_index(AS_PTR(expression, PropertyIndex), scope);
     else if (IS_PTR(expression, Call))
         check_call(AS_PTR(expression, Call), scope);
+    else if (IS_PTR(expression, IfExpression))
+        check_if_expression(AS_PTR(expression, IfExpression), scope);
     else if (IS_PTR(expression, Match))
         check_match(AS_PTR(expression, Match), scope);
     else if (IS_PTR(expression, InvalidValue))
@@ -233,6 +235,21 @@ void Checker::check_call(ptr<Call> call, ptr<Scope> scope)
 
     for (auto &argument : call->arguments)
         check_expression(argument.value, scope);
+}
+
+void Checker::check_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope)
+{
+    for (auto &rule : if_expression->rules)
+    {
+        check_expression(rule.condition, scope);
+        check_expression(rule.result, scope);
+
+        auto condition_pattern = determine_expression_pattern(rule.condition);
+        bool is_bool_condition = is_pattern_subset_of_superset(condition_pattern, Intrinsic::type_bool);
+        bool is_optional_condition = is_pattern_optional(condition_pattern);
+        if (!is_bool_condition && !is_optional_condition)
+            source->log_error("Condition must evaluate either to true or false, or potentially to none. This condition will never be true, false, or none.", rule.span);
+    }
 }
 
 void Checker::check_match(ptr<Match> match, ptr<Scope> scope)

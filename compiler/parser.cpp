@@ -126,6 +126,28 @@ bool Parser::confirm_and_consume(Token::Kind kind)
     return false;
 }
 
+bool Parser::peek_next(Token::Kind kind)
+{
+    // Skip lines before the current token
+    size_t i = current_token_index;
+    while (source->tokens.at(i).kind == Token::Line && i < source->tokens.size())
+        i++;
+
+    // Skip the current token
+    i++;
+
+    // Peek next
+    if (source->tokens.at(i).kind == kind)
+        return true;
+
+    // Skip lines before the "next" token
+    while (source->tokens.at(i).kind == Token::Line && i < source->tokens.size())
+        i++;
+
+    // Peek next
+    return source->tokens.at(i).kind == kind;
+}
+
 // TOKEN PARSING UTILITY //
 
 bool Parser::end_of_file()
@@ -662,19 +684,19 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         stmt = parse_code_block(scope);
     }
 
-    // IF STATEMENT
-    else if (peek(Token::KeyIf))
+    // IF STATEMENT (Ignore if expressions)
+    else if (peek(Token::KeyIf) && !peek_next(Token::CurlyL))
     {
         auto if_statement = CREATE(IfStatement);
 
         start_span();
         consume(Token::KeyIf);
 
-        IfStatement::Segment segment;
-        segment.condition = parse_expression();
-        segment.code_block = parse_code_block(scope);
-        segment.span = finish_span();
-        if_statement->segments.push_back(segment);
+        IfStatement::Rule rule;
+        rule.condition = parse_expression();
+        rule.code_block = parse_code_block(scope);
+        rule.span = finish_span();
+        if_statement->rules.push_back(rule);
 
         while (peek(Token::KeyElse))
         {
@@ -683,15 +705,15 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
 
             if (peek_and_consume(Token::KeyIf))
             {
-                IfStatement::Segment segment;
-                segment.condition = parse_expression();
-                segment.code_block = parse_code_block(scope);
-                segment.span = finish_span();
-                if_statement->segments.push_back(segment);
+                IfStatement::Rule rule;
+                rule.condition = parse_expression();
+                rule.code_block = parse_code_block(scope);
+                rule.span = finish_span();
+                if_statement->rules.push_back(rule);
             }
             else
             {
-                if_statement->fallback = parse_code_block(scope);
+                if_statement->else_block = parse_code_block(scope);
                 if_statement->span = finish_span();
                 break;
             }
@@ -847,6 +869,7 @@ ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
 bool Parser::peek_expression()
 {
     return peek_paren_expr() ||
+           peek_if_expression() ||
            peek_match() ||
            peek_unary() ||
            peek(Token::Identity) ||
@@ -865,10 +888,12 @@ Expression Parser::parse_expression(Precedence caller_precedence)
     //        making expressions such as `--1` illegal. I think this is a good way to go?
     //
     //        I think most of the remaining nuds can be left without a check, as they all
-    //        represent values, and so defacto have the highest precedence. Only one I
-    //        have no idea about is `match`.
+    //        represent values, and so defacto have the highest precedence. Only ones I
+    //        have no idea about are `match` and `if_expression`.
     if (peek_unary() && operator_should_bind(Precedence::Unary, caller_precedence))
         lhs = parse_unary();
+    else if (peek_if_expression())
+        lhs = parse_if_expression();
     else if (peek_match())
         lhs = parse_match();
 
@@ -957,6 +982,54 @@ Expression Parser::parse_paren_expr()
     return property_index;
 }
 
+bool Parser::peek_if_expression()
+{
+    return peek(Token::KeyIf);
+}
+
+ptr<IfExpression> Parser::parse_if_expression()
+{
+    auto if_expression = CREATE(IfExpression);
+
+    start_span();
+    confirm_and_consume(Token::KeyIf);
+
+    if (confirm_and_consume(Token::CurlyL))
+    {
+        while ((peek_pattern(true) || peek(Token::KeyElse)) && !if_expression->has_else)
+        {
+            IfExpression::Rule rule;
+
+            start_span();
+            if (peek_and_consume(Token::KeyElse))
+            {
+                if_expression->has_else = true;
+                // FIXME: Should we really be creating a whole new intrinsic value like this?
+                auto true_value = CREATE(IntrinsicValue);
+                true_value->value = true;
+                true_value->type = Intrinsic::type_bool;
+                rule.condition = true_value;
+            }
+            else
+            {
+                rule.condition = parse_expression();
+            }
+
+            confirm_and_consume(Token::Colon);
+            rule.result = parse_expression();
+            rule.span = finish_span();
+            confirm_and_consume(Token::Line);
+
+            if_expression->rules.emplace_back(rule);
+        }
+
+        confirm_and_consume(Token::CurlyR);
+    }
+
+    if_expression->span = finish_span();
+    return if_expression;
+}
+
 bool Parser::peek_match()
 {
     return peek(Token::KeyMatch);
@@ -973,14 +1046,20 @@ ptr<Match> Parser::parse_match()
 
     if (confirm_and_consume(Token::CurlyL))
     {
-        while (peek_pattern(true) && !match->has_fallback_rule)
+        while ((peek_pattern(true) || peek(Token::KeyElse)) && !match->has_else)
         {
             Match::Rule rule;
 
             start_span();
-            rule.pattern = parse_pattern(true);
-            if (IS_PTR(rule.pattern, AnyPattern))
-                match->has_fallback_rule = true;
+            if (peek_and_consume(Token::KeyElse))
+            {
+                match->has_else = true;
+                rule.pattern = CREATE(AnyPattern);
+            }
+            else
+            {
+                rule.pattern = parse_pattern(true);
+            }
 
             confirm_and_consume(Token::Colon);
             rule.result = parse_expression();

@@ -10,23 +10,24 @@ enum Rank { ACE, 2, 3, 4, 5, 6, 7, 8, 9, 10, JACK, QUEEN, KING }
 enum Colour { BLACK, RED }
 
 fn bool (Rank rank).is_picture: match rank {
-    ACE: true
-    JACK: true
-    QUEEN: true
-    KING: true
-    any: false
+    ACE   : true
+    JACK  : true
+    QUEEN : true
+    KING  : true
+    else  : false
 }
 
-fn int (Rank rank).value:
-    if rank == ACE: 11
-    else if rank.is_picture: 10
-    else: rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
+fn int (Rank rank).value: if {
+    rank == ACE     : 11
+    rank.is_picture : 10
+    else            : rank // Allowed by the type checker, becase all remaining values in the domain of Rank match `int`
+}
 
 fn Colour (Suit suit).colour: match suit {
-    SPADE: BLACK
-    CLUB: BLACK
-    HEART: RED
-    DIAMOND: RED
+    SPADE   : BLACK
+    CLUB    : BLACK
+    HEART   : RED
+    DIAMOND : RED
 }
 
 // Cards
@@ -110,13 +111,11 @@ main() {
             other_player.cards remove defender
             current_player.tokens += defender.power
 
-            let weakest_attacker = 
-                if attacker_one.power > attacker_two.power:
-                    attacker_one
-                else if attacker_one.power < attacker_two.power: 
-                    attacker_two
-                else: 
-                    current_player choose [attacker_one, attacker_two] ("Which attacker would you like to discard?")
+            let weakest_attacker = if {
+                attacker_one.power > attacker_two.power : attacker_one
+                attacker_one.power < attacker_two.power : attacker_two
+                else : current_player choose [attacker_one, attacker_two] ("Which attacker would you like to discard?")
+            }
 
             current_player.cards remove weakest_attacker
             current_player.tokens += weakest_attacker.tokens
@@ -124,12 +123,11 @@ main() {
 
         // Determine winner
         if #current_player.cards < 2 and #other_player.cards < 2 {
-            if current_player.tokens > other_player.tokens:
-                current_player wins
-            else if current_player.tokens < other_player.tokens:
-                other_player wins
-            else:
-                draw
+            if {
+                current_player.tokens > other_player.tokens : current_player wins
+                current_player.tokens < other_player.tokens : other_player wins
+                else : draw
+            }
         }
 
         // Next turn

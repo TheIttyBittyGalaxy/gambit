@@ -88,6 +88,8 @@ Span get_span(Expression expr)
         return AS_PTR(expr, PropertyIndex)->span;
     if (IS_PTR(expr, Call))
         return AS_PTR(expr, Call)->span;
+    if (IS_PTR(expr, IfExpression))
+        return AS_PTR(expr, IfExpression)->span;
     if (IS_PTR(expr, Match))
         return AS_PTR(expr, Match)->span;
     if (IS_PTR(expr, InvalidValue))
@@ -281,6 +283,26 @@ Pattern determine_expression_pattern(Expression expression)
     {
         // TODO: Return the correct pattern
         return CREATE(AnyPattern);
+    }
+    else if (IS_PTR(expression, IfExpression))
+    {
+        auto if_expression = AS_PTR(expression, IfExpression);
+
+        // FIXME: This is a silly thing to check (given that a one rule if is
+        //        useless). However, as of writing, `is_pattern_subset_of_superset`
+        //        assumes that union patterns never have just one child.
+        if (if_expression->rules.size() == 1)
+            return determine_expression_pattern(if_expression->rules[0].result);
+
+        auto union_pattern = CREATE(UnionPattern);
+
+        for (auto rule : if_expression->rules)
+            union_pattern->patterns.push_back(determine_expression_pattern(rule.result));
+
+        // FIXME: This union pattern is never resolved, which in turn means it is
+        //        never simplified (as of writing, UnionPatterns are simplified
+        //        when they are resolved)
+        return union_pattern;
     }
     else if (IS_PTR(expression, Match))
     {

@@ -146,14 +146,14 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
 
 void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    for (auto segment : stmt->segments)
+    for (auto rule : stmt->rules)
     {
-        segment.condition = resolve_expression(segment.condition, scope);
-        resolve_code_block(segment.code_block, pattern_hint);
+        rule.condition = resolve_expression(rule.condition, scope);
+        resolve_code_block(rule.code_block, pattern_hint);
     }
 
-    if (stmt->fallback.has_value())
-        resolve_code_block(stmt->fallback.value(), pattern_hint);
+    if (stmt->else_block.has_value())
+        resolve_code_block(stmt->else_block.value(), pattern_hint);
 }
 
 void Resolver::resolve_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
@@ -251,6 +251,9 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, Call))
         resolve_call(AS_PTR(expression, Call), scope, pattern_hint);
 
+    else if (IS_PTR(expression, IfExpression))
+        resolve_if_expression(AS_PTR(expression, IfExpression), scope, pattern_hint);
+
     else if (IS_PTR(expression, Match))
         resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
 
@@ -283,6 +286,15 @@ void Resolver::resolve_call(ptr<Call> call, ptr<Scope> scope, optional<Pattern> 
     {
         auto argument = call->arguments[i];
         call->arguments[i].value = resolve_expression(argument.value, scope, pattern_hint);
+    }
+}
+
+void Resolver::resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    for (auto &rule : if_expression->rules)
+    {
+        rule.condition = resolve_expression(rule.condition, scope);
+        rule.result = resolve_expression(rule.result, scope, pattern_hint);
     }
 }
 
