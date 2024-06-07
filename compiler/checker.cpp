@@ -38,30 +38,25 @@ void Checker::check_scope(ptr<Scope> scope)
 void Checker::check_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
 {
 
-    if (IS_PTR(value, Variable))
+    if (IS_PTR(value, Scope::OverloadedIdentity))
     {
-        // pass
+        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
+        for (auto overload : overloaded_identity->overloads)
+            check_scope_lookup_value(overload, scope);
+
+        // TODO: Check that no overloads share the same signature
     }
 
-    else if (IS_PTR(value, UnionPattern))
+    else if (IS_PTR(value, Procedure))
     {
-        // pass
+        auto proc = AS_PTR(value, Procedure);
+        check_code_block(proc->body);
+
+        // FIXME: If the body is a singleton, check the statement as if it were a return expression
     }
 
-    else if (IS_PTR(value, IntrinsicType))
-    {
-        // pass
-    }
-
-    else if (IS_PTR(value, EnumType))
-    {
-        // pass
-    }
-
-    else if (IS_PTR(value, Entity))
-    {
-        // pass
-    }
+    else if (IS_PTR(value, Variable))
+        ; // pass
 
     else if (IS_PTR(value, StateProperty))
     {
@@ -86,27 +81,11 @@ void Checker::check_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scop
         // FIXME: If the body is a singleton, check the statement as if it were a return expression
     }
 
-    else if (IS_PTR(value, Procedure))
-    {
-        auto proc = AS_PTR(value, Procedure);
-        check_code_block(proc->body);
-
-        // FIXME: If the body is a singleton, check the statement as if it were a return expression
-    }
-
-    else if (IS_PTR(value, Scope::OverloadedIdentity))
-    {
-        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
-        for (auto overload : overloaded_identity->overloads)
-            check_scope_lookup_value(overload, scope);
-
-        // TODO: Check that no overloads share the same signature
-    }
+    else if (IS(value, Pattern))
+        ; // pass
 
     else
-    {
         throw CompilerError("Unable to check Scope Lookup Value");
-    }
 }
 
 void Checker::check_code_block(ptr<CodeBlock> code_block)
@@ -120,11 +99,7 @@ void Checker::check_code_block(ptr<CodeBlock> code_block)
 
 void Checker::check_statement(Statement stmt, ptr<Scope> scope)
 {
-    if (IS(stmt, Expression))
-        check_expression(AS(stmt, Expression), scope);
-    else if (IS_PTR(stmt, CodeBlock))
-        check_code_block(AS_PTR(stmt, CodeBlock));
-    else if (IS_PTR(stmt, IfStatement))
+    if (IS_PTR(stmt, IfStatement))
         check_if_statement(AS_PTR(stmt, IfStatement), scope);
     else if (IS_PTR(stmt, ForStatement))
         check_for_statement(AS_PTR(stmt, ForStatement), scope);
@@ -132,6 +107,12 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
     else if (IS_PTR(stmt, VariableDeclaration))
         check_variable_declaration(AS_PTR(stmt, VariableDeclaration), scope);
+
+    else if (IS_PTR(stmt, CodeBlock))
+        check_code_block(AS_PTR(stmt, CodeBlock));
+    else if (IS(stmt, Expression))
+        check_expression(AS(stmt, Expression), scope);
+
     else
         throw CompilerError("Cannot check Statement variant.", get_span(stmt));
 }
@@ -180,41 +161,48 @@ void Checker::check_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scop
 
 // EXPRESSIONS //
 
-void Checker::check_expression(Expression expression, ptr<Scope> scope)
+void Checker::check_expression(Expression expr, ptr<Scope> scope)
 {
 
-    if (IS_PTR(expression, UnresolvedIdentity))
-        throw CompilerError("Attempt to check UnresolvedIdentity. This should have already been resolved.");
-    else if (IS_PTR(expression, Variable))
+    if (IS(expr, UnresolvedLiteral))
+        throw CompilerError("Attempt to check UnresolvedLiteral. This should have already been resolved.");
+    else if (IS_PTR(expr, ExpressionLiteral))
+        check_expression(AS_PTR(expr, ExpressionLiteral)->expr, scope);
+
+    else if (IS_PTR(expr, PrimitiveValue))
         ; // skip
-    else if (IS_PTR(expression, EnumValue))
+    else if (IS_PTR(expr, ListValue))
+        check_list_value(AS_PTR(expr, ListValue), scope);
+    else if (IS_PTR(expr, EnumValue))
         ; // skip
-    else if (IS_PTR(expression, IntrinsicValue))
+    else if (IS_PTR(expr, Variable))
         ; // skip
-    else if (IS_PTR(expression, ListValue))
-        check_list_value(AS_PTR(expression, ListValue), scope);
-    else if (IS_PTR(expression, InstanceList))
-        check_instance_list(AS_PTR(expression, InstanceList), scope);
-    else if (IS_PTR(expression, Unary))
-        check_unary(AS_PTR(expression, Unary), scope);
-    else if (IS_PTR(expression, Binary))
-        check_binary(AS_PTR(expression, Binary), scope);
-    else if (IS_PTR(expression, ExpressionIndex))
-        check_expression_index(AS_PTR(expression, ExpressionIndex), scope);
-    else if (IS_PTR(expression, PropertyIndex))
-        check_property_index(AS_PTR(expression, PropertyIndex), scope);
-    else if (IS_PTR(expression, Call))
-        check_call(AS_PTR(expression, Call), scope);
-    else if (IS_PTR(expression, IfExpression))
-        check_if_expression(AS_PTR(expression, IfExpression), scope);
-    else if (IS_PTR(expression, Match))
-        check_match(AS_PTR(expression, Match), scope);
-    else if (IS_PTR(expression, InvalidValue))
+
+    else if (IS_PTR(expr, Unary))
+        check_unary(AS_PTR(expr, Unary), scope);
+    else if (IS_PTR(expr, Binary))
+        check_binary(AS_PTR(expr, Binary), scope);
+
+    else if (IS_PTR(expr, InstanceList))
+        check_instance_list(AS_PTR(expr, InstanceList), scope);
+    else if (IS_PTR(expr, ExpressionIndex))
+        check_expression_index(AS_PTR(expr, ExpressionIndex), scope);
+    else if (IS_PTR(expr, PropertyIndex))
+        check_property_index(AS_PTR(expr, PropertyIndex), scope);
+
+    else if (IS_PTR(expr, Call))
+        check_call(AS_PTR(expr, Call), scope);
+
+    else if (IS_PTR(expr, IfExpression))
+        check_if_expression(AS_PTR(expr, IfExpression), scope);
+    else if (IS_PTR(expr, MatchExpression))
+        check_match(AS_PTR(expr, MatchExpression), scope);
+
+    else if (IS_PTR(expr, InvalidExpression))
         ; // skip
-    else if (IS_PTR(expression, InvalidExpression))
-        ; // skip
+
     else
-        throw CompilerError("Cannot check Expression variant.", get_span(expression));
+        throw CompilerError("Cannot check Expression variant.", get_span(expr));
 }
 
 void Checker::check_list_value(ptr<ListValue> list, ptr<Scope> scope)
@@ -252,7 +240,7 @@ void Checker::check_if_expression(ptr<IfExpression> if_expression, ptr<Scope> sc
     }
 }
 
-void Checker::check_match(ptr<Match> match, ptr<Scope> scope)
+void Checker::check_match(ptr<MatchExpression> match, ptr<Scope> scope)
 {
     check_expression(match->subject, scope);
     auto subject_pattern = determine_expression_pattern(match->subject);

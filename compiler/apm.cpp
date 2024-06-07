@@ -3,26 +3,37 @@
 #include "intrinsic.h"
 #include "source.h"
 
+// DECLARATION AND FETCHING
+
 string identity_of(Scope::LookupValue value)
 {
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return AS_PTR(value, Scope::OverloadedIdentity)->identity;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->identity;
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->identity;
-    if (IS_PTR(value, UnionPattern))
-        return AS_PTR(value, UnionPattern)->identity;
-    if (IS_PTR(value, IntrinsicType))
-        return AS_PTR(value, IntrinsicType)->identity;
-    if (IS_PTR(value, EnumType))
-        return AS_PTR(value, EnumType)->identity;
-    if (IS_PTR(value, Entity))
-        return AS_PTR(value, Entity)->identity;
+
     if (IS_PTR(value, StateProperty))
         return AS_PTR(value, StateProperty)->identity;
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
-    if (IS_PTR(value, Procedure))
-        return AS_PTR(value, Procedure)->identity;
-    if (IS_PTR(value, Scope::OverloadedIdentity))
-        return AS_PTR(value, Scope::OverloadedIdentity)->identity;
+
+    if (IS(value, Pattern))
+    {
+        auto pattern = AS(value, Pattern);
+
+        if (IS_PTR(pattern, PrimitiveType))
+            return AS_PTR(pattern, PrimitiveType)->identity;
+        if (IS_PTR(pattern, EnumType))
+            return AS_PTR(pattern, EnumType)->identity;
+        if (IS_PTR(pattern, EntityType))
+            return AS_PTR(pattern, EntityType)->identity;
+        if (IS_PTR(pattern, UnionPattern))
+            return AS_PTR(pattern, UnionPattern)->identity;
+
+        throw CompilerError("Cannot get identity of Scope::LookupValue Pattern variant", get_span(value));
+    }
 
     throw CompilerError("Cannot get identity of Scope::LookupValue variant", get_span(value));
 }
@@ -44,116 +55,6 @@ bool is_overloadable(Scope::LookupValue value)
 {
     return IS_PTR(value, StateProperty) ||
            IS_PTR(value, FunctionProperty);
-}
-
-Span get_span(Statement stmt)
-{
-    if (IS(stmt, Expression))
-        return get_span(AS(stmt, Expression));
-    if (IS_PTR(stmt, CodeBlock))
-        return AS_PTR(stmt, CodeBlock)->span;
-    if (IS_PTR(stmt, IfStatement))
-        return AS_PTR(stmt, IfStatement)->span;
-    if (IS_PTR(stmt, ForStatement))
-        return AS_PTR(stmt, ForStatement)->span;
-    if (IS_PTR(stmt, AssignmentStatement))
-        return AS_PTR(stmt, AssignmentStatement)->span;
-    if (IS_PTR(stmt, VariableDeclaration))
-        return AS_PTR(stmt, VariableDeclaration)->span;
-
-    throw CompilerError("Could not get span of Statement variant.");
-}
-
-Span get_span(Expression expr)
-{
-    if (IS_PTR(expr, UnresolvedIdentity))
-        return AS_PTR(expr, UnresolvedIdentity)->span;
-    if (IS_PTR(expr, Variable))
-        return AS_PTR(expr, Variable)->span;
-    if (IS_PTR(expr, EnumValue))
-        return AS_PTR(expr, EnumValue)->span;
-    if (IS_PTR(expr, IntrinsicValue))
-        return AS_PTR(expr, IntrinsicValue)->span;
-    if (IS_PTR(expr, ListValue))
-        return AS_PTR(expr, ListValue)->span;
-    if (IS_PTR(expr, InstanceList))
-        return AS_PTR(expr, InstanceList)->span;
-    if (IS_PTR(expr, Unary))
-        return AS_PTR(expr, Unary)->span;
-    if (IS_PTR(expr, Binary))
-        return AS_PTR(expr, Binary)->span;
-    if (IS_PTR(expr, ExpressionIndex))
-        return AS_PTR(expr, ExpressionIndex)->span;
-    if (IS_PTR(expr, PropertyIndex))
-        return AS_PTR(expr, PropertyIndex)->span;
-    if (IS_PTR(expr, Call))
-        return AS_PTR(expr, Call)->span;
-    if (IS_PTR(expr, IfExpression))
-        return AS_PTR(expr, IfExpression)->span;
-    if (IS_PTR(expr, Match))
-        return AS_PTR(expr, Match)->span;
-    if (IS_PTR(expr, InvalidValue))
-        return AS_PTR(expr, InvalidValue)->span;
-    if (IS_PTR(expr, InvalidExpression))
-        return AS_PTR(expr, InvalidExpression)->span;
-
-    throw CompilerError("Could not get span of Expression variant.");
-}
-
-Span get_span(Pattern pattern)
-{
-    if (IS_PTR(pattern, UnresolvedIdentity))
-        return AS_PTR(pattern, UnresolvedIdentity)->span;
-    if (IS_PTR(pattern, InvalidPattern))
-        return AS_PTR(pattern, InvalidPattern)->span;
-    if (IS_PTR(pattern, AnyPattern))
-        return AS_PTR(pattern, AnyPattern)->span;
-    if (IS_PTR(pattern, UnionPattern))
-        return AS_PTR(pattern, UnionPattern)->span;
-    if (IS_PTR(pattern, ListPattern))
-        return AS_PTR(pattern, ListPattern)->span;
-    if (IS_PTR(pattern, EnumType))
-        return AS_PTR(pattern, EnumType)->span;
-    if (IS_PTR(pattern, Entity))
-        return AS_PTR(pattern, Entity)->span;
-    if (IS_PTR(pattern, EnumValue))
-        return AS_PTR(pattern, EnumValue)->span;
-    if (IS_PTR(pattern, IntrinsicValue))
-        return AS_PTR(pattern, IntrinsicValue)->span;
-
-    if (IS_PTR(pattern, IntrinsicType))
-    {
-        auto intrinsic = AS_PTR(pattern, IntrinsicType);
-        throw CompilerError("Attempt to get the span of an intrinsic type.");
-    }
-
-    throw CompilerError("Could not get span of Pattern variant.");
-}
-
-Span get_span(Scope::LookupValue value)
-{
-    if (IS_PTR(value, Variable))
-        return AS_PTR(value, Variable)->span;
-    if (IS_PTR(value, UnionPattern))
-        return AS_PTR(value, UnionPattern)->span;
-    if (IS_PTR(value, EnumType))
-        return AS_PTR(value, EnumType)->span;
-    if (IS_PTR(value, Entity))
-        return AS_PTR(value, Entity)->span;
-    if (IS_PTR(value, StateProperty))
-        return AS_PTR(value, StateProperty)->span;
-    if (IS_PTR(value, FunctionProperty))
-        return AS_PTR(value, FunctionProperty)->span;
-    if (IS_PTR(value, Procedure))
-        return AS_PTR(value, Procedure)->span;
-
-    if (IS_PTR(value, Scope::OverloadedIdentity))
-        return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?
-
-    if (IS_PTR(value, IntrinsicType))
-        throw CompilerError("Attempt to get the span of an intrinsic type.");
-
-    throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }
 
 Scope::LookupValue fetch(ptr<Scope> scope, string identity)
@@ -191,33 +92,56 @@ vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity
     }
 }
 
+// PATTERN ANALYSIS
+
 Pattern determine_expression_pattern(Expression expression)
 {
-    // TODO: Complete implementation of all expression variants
 
-    if (IS_PTR(expression, UnresolvedIdentity))
+    // Literals
+    if (IS(expression, UnresolvedLiteral))
     {
-        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-        throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->span);
+        auto unresolved_literal = AS(expression, UnresolvedLiteral);
+        throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", get_span(unresolved_literal));
     }
-    else if (IS_PTR(expression, Variable))
+
+    if (IS_PTR(expression, ExpressionLiteral))
+    {
+        return determine_expression_pattern(AS_PTR(expression, ExpressionLiteral)->expr);
+    }
+
+    // Values
+    if (IS_PTR(expression, PrimitiveValue))
+    {
+        return AS_PTR(expression, PrimitiveValue);
+    }
+
+    if (IS_PTR(expression, ListValue))
+    {
+        auto list_value AS_PTR(expression, ListValue);
+        auto union_pattern = CREATE(UnionPattern);
+
+        for (auto value : list_value->values)
+            union_pattern->patterns.push_back(determine_expression_pattern(value));
+
+        // FIXME: This union pattern is never resolved, which in turn means it is
+        //        never simplified (as of writing, UnionPatterns are simplified
+        //        when they are resolved)
+        return union_pattern;
+    }
+
+    if (IS_PTR(expression, EnumValue))
+    {
+        return AS_PTR(expression, EnumValue);
+    }
+
+    if (IS_PTR(expression, Variable))
     {
         auto variable = AS_PTR(expression, Variable);
         return variable->pattern;
     }
-    else if (IS_PTR(expression, IntrinsicValue))
-    {
-        auto intrinsic_value = AS_PTR(expression, IntrinsicValue);
-        return intrinsic_value;
-    }
-    // else if (IS_PTR(expression, ListValue))
-    // else if (IS_PTR(expression, InstanceList))
-    else if (IS_PTR(expression, EnumValue))
-    {
-        auto enum_value = AS_PTR(expression, EnumValue);
-        return enum_value;
-    }
-    else if (IS_PTR(expression, Unary))
+
+    // Operations
+    if (IS_PTR(expression, Unary))
     {
         auto unary = AS_PTR(expression, Unary);
         auto op = unary->op;
@@ -232,7 +156,8 @@ Pattern determine_expression_pattern(Expression expression)
         if (op == "-")
             return Intrinsic::type_num;
     }
-    else if (IS_PTR(expression, Binary))
+
+    if (IS_PTR(expression, Binary))
     {
         auto binary = AS_PTR(expression, Binary);
         auto op = binary->op;
@@ -243,15 +168,17 @@ Pattern determine_expression_pattern(Expression expression)
         if (op == "+" || op == "*" || op == "-" || op == "/")
             return Intrinsic::type_num;
     }
-    else if (IS_PTR(expression, ExpressionIndex))
+
+    // Indexing
+    if (IS_PTR(expression, ExpressionIndex))
     {
         auto expression_index = AS_PTR(expression, ExpressionIndex);
         auto subject_pattern = determine_expression_pattern(expression_index->subject);
 
-        if (IS_PTR(subject_pattern, ListPattern))
+        if (IS_PTR(subject_pattern, ListType))
         {
-            auto subject_list_pattern = AS_PTR(subject_pattern, ListPattern);
-            return subject_list_pattern->list_of;
+            auto subject_list_type = AS_PTR(subject_pattern, ListType);
+            return subject_list_type->list_of;
         }
 
         if (IS_PTR(subject_pattern, InvalidPattern))
@@ -261,7 +188,8 @@ Pattern determine_expression_pattern(Expression expression)
 
         throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
     }
-    else if (IS_PTR(expression, PropertyIndex))
+
+    if (IS_PTR(expression, PropertyIndex))
     {
         auto property_index = AS_PTR(expression, PropertyIndex);
         auto property = property_index->property;
@@ -271,20 +199,24 @@ Pattern determine_expression_pattern(Expression expression)
             return AS_PTR(property, FunctionProperty)->pattern;
         if (IS_PTR(property, InvalidProperty))
             return CREATE(InvalidPattern);
-        if (IS_PTR(property, UnresolvedIdentity))
+        if (IS_PTR(property, IdentityLiteral))
         {
-            auto unresolved_identity = AS_PTR(property, UnresolvedIdentity);
-            throw CompilerError("Cannot determine pattern of expression before unresolved identities have been resolved.", unresolved_identity->span);
+            auto identity_literal = AS_PTR(property, IdentityLiteral);
+            throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", identity_literal->span);
         }
 
         throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
     }
-    else if (IS_PTR(expression, Call))
+
+    // Calls
+    if (IS_PTR(expression, Call))
     {
         // TODO: Return the correct pattern
         return CREATE(AnyPattern);
     }
-    else if (IS_PTR(expression, IfExpression))
+
+    // "Statements style" expressions
+    if (IS_PTR(expression, IfExpression))
     {
         auto if_expression = AS_PTR(expression, IfExpression);
 
@@ -304,9 +236,10 @@ Pattern determine_expression_pattern(Expression expression)
         //        when they are resolved)
         return union_pattern;
     }
-    else if (IS_PTR(expression, Match))
+
+    if (IS_PTR(expression, MatchExpression))
     {
-        auto match = AS_PTR(expression, Match);
+        auto match = AS_PTR(expression, MatchExpression);
 
         // FIXME: This is a silly thing to check (given that a one rule match is
         //        useless). However, as of writing, `is_pattern_subset_of_superset`
@@ -325,11 +258,8 @@ Pattern determine_expression_pattern(Expression expression)
         return union_pattern;
     }
 
-    else if (IS_PTR(expression, InvalidExpression))
-    {
-        return CREATE(InvalidPattern);
-    }
-    else if (IS_PTR(expression, InvalidValue))
+    // Invalid expression
+    if (IS_PTR(expression, InvalidExpression))
     {
         return CREATE(InvalidPattern);
     }
@@ -372,12 +302,24 @@ ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b)
 
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 {
-    // Cannot determine result if either pattern is invalid or unresolved
-    // FIXME: Make clear in the error message which pattern is the UnresolvedIdentity
+    // Cannot determine result if either pattern is an unresolved literal
+    // FIXME: Make clear in the error message which pattern is the UnresolvedLiteral
     if (
-        IS_PTR(subset, UnresolvedIdentity) ||
-        IS_PTR(superset, UnresolvedIdentity))
-        throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved identities in it's patterns", get_span(subset), get_span(superset));
+        IS(subset, UnresolvedLiteral) ||
+        IS(superset, UnresolvedLiteral))
+        throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved literals in it's patterns", get_span(subset), get_span(superset));
+
+    // Unwrap PatternLiteral nodes
+    bool subset_is_literal = IS_PTR(subset, PatternLiteral);
+    bool superset_is_literal = IS_PTR(superset, PatternLiteral);
+    if (subset_is_literal && superset_is_literal)
+        return is_pattern_subset_of_superset(AS_PTR(subset, PatternLiteral)->pattern, AS_PTR(superset, PatternLiteral)->pattern);
+
+    if (subset_is_literal)
+        return is_pattern_subset_of_superset(AS_PTR(subset, PatternLiteral)->pattern, superset);
+
+    if (superset_is_literal)
+        return is_pattern_subset_of_superset(subset, AS_PTR(superset, PatternLiteral)->pattern);
 
     // TODO: For now, invalid patterns are considered to be subsets and supersets
     //       of every possible pattern. I'm not sure if this is the correct
@@ -398,9 +340,9 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     if (subset == superset)
         return true;
 
-    // List patterns
-    if (IS_PTR(subset, ListPattern) && IS_PTR(superset, ListPattern))
-        return is_pattern_subset_of_superset(AS_PTR(subset, ListPattern)->list_of, AS_PTR(superset, ListPattern)->list_of);
+    // List types
+    if (IS_PTR(subset, ListType) && IS_PTR(superset, ListType))
+        return is_pattern_subset_of_superset(AS_PTR(subset, ListType)->list_of, AS_PTR(superset, ListType)->list_of);
 
     // Union patterns
     bool subset_is_union = IS_PTR(subset, UnionPattern);
@@ -475,10 +417,10 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     }
 
     // Intrinsic types
-    if (IS_PTR(subset, IntrinsicType) && IS_PTR(superset, IntrinsicType))
+    if (IS_PTR(subset, PrimitiveType) && IS_PTR(superset, PrimitiveType))
     {
-        auto subtype = AS_PTR(subset, IntrinsicType);
-        auto supertype = AS_PTR(superset, IntrinsicType);
+        auto subtype = AS_PTR(subset, PrimitiveType);
+        auto supertype = AS_PTR(superset, PrimitiveType);
 
         if (subtype == Intrinsic::type_amt && (supertype == Intrinsic::type_int ||
                                                supertype == Intrinsic::type_num))
@@ -491,31 +433,31 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
     }
 
     // Intrinsic values
-    if (IS_PTR(subset, IntrinsicValue) && IS_PTR(superset, IntrinsicType))
+    if (IS_PTR(subset, PrimitiveValue) && IS_PTR(superset, PrimitiveType))
     {
-        auto sub_value = AS_PTR(subset, IntrinsicValue);
-        auto super_type = AS_PTR(superset, IntrinsicType);
+        auto sub_value = AS_PTR(subset, PrimitiveValue);
+        auto super_type = AS_PTR(superset, PrimitiveType);
         return is_pattern_subset_of_superset(sub_value->type, super_type);
     }
 
-    if (IS_PTR(subset, IntrinsicValue) && IS_PTR(superset, IntrinsicValue))
+    if (IS_PTR(subset, PrimitiveValue) && IS_PTR(superset, PrimitiveValue))
     {
-        auto sub_value = AS_PTR(subset, IntrinsicValue);
-        auto super_value = AS_PTR(superset, IntrinsicValue);
+        auto sub_value = AS_PTR(subset, PrimitiveValue);
+        auto super_value = AS_PTR(superset, PrimitiveValue);
         return is_pattern_subset_of_superset(sub_value->type, super_value->type) &&
                sub_value->value == super_value->value;
     }
 
     // None edge case
-    if (IS_PTR(subset, IntrinsicType) && IS_PTR(superset, IntrinsicValue))
+    if (IS_PTR(subset, PrimitiveType) && IS_PTR(superset, PrimitiveValue))
     {
         // NOTE: I don't we will ever _actually_ hit this code path, as the intrinsic type
         //       only really exists so that the intrinsic value has something to point to.
         //       If we do hit this code path, it might be worth exploring why the intrinsic
         //       value wasn't used instead.
 
-        auto sub_type = AS_PTR(subset, IntrinsicType);
-        auto super_value = AS_PTR(superset, IntrinsicValue);
+        auto sub_type = AS_PTR(subset, PrimitiveType);
+        auto super_value = AS_PTR(superset, PrimitiveValue);
 
         if (sub_type == Intrinsic::type_none && super_value == Intrinsic::none_val)
             return true;
@@ -533,21 +475,18 @@ bool do_patterns_overlap(Pattern a, Pattern b)
 
 bool is_pattern_optional(Pattern pattern)
 {
-    if (IS_PTR(pattern, IntrinsicValue))
+    if (IS_PTR(pattern, PrimitiveValue))
     {
-        auto intrinsic_value = AS_PTR(pattern, IntrinsicValue);
-        return intrinsic_value == Intrinsic::none_val;
+        return AS_PTR(pattern, PrimitiveValue) == Intrinsic::none_val;
     }
 
-    if (IS_PTR(pattern, IntrinsicType))
+    if (IS_PTR(pattern, PrimitiveType))
     {
         // NOTE: I don't we will ever _actually_ hit this code path, as the intrinsic type
         //       only really exists so that the intrinsic value has something to point to.
         //       If we do hit this code path, it might be worth exploring why the intrinsic
         //       value wasn't used instead.
-
-        auto intrinsic_type = AS_PTR(pattern, IntrinsicType);
-        return intrinsic_type == Intrinsic::type_none;
+        return AS_PTR(pattern, PrimitiveType) == Intrinsic::type_none;
     }
 
     if (IS_PTR(pattern, UnionPattern))
@@ -591,4 +530,138 @@ bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector
     }
 
     return true;
+}
+
+// SPANS
+
+Span get_span(UnresolvedLiteral stmt)
+{
+    if (IS_PTR(stmt, PrimitiveLiteral))
+        return AS_PTR(stmt, PrimitiveLiteral)->span;
+    if (IS_PTR(stmt, ListLiteral))
+        return AS_PTR(stmt, ListLiteral)->span;
+    if (IS_PTR(stmt, IdentityLiteral))
+        return AS_PTR(stmt, IdentityLiteral)->span;
+    if (IS_PTR(stmt, OptionLiteral))
+        return AS_PTR(stmt, OptionLiteral)->span;
+
+    throw CompilerError("Could not get span of UnresolvedLiteral variant.");
+}
+
+Span get_span(Pattern pattern)
+{
+    if (IS(pattern, UnresolvedLiteral))
+        return get_span(AS(pattern, UnresolvedLiteral));
+    if (IS_PTR(pattern, PatternLiteral))
+        return AS_PTR(pattern, PatternLiteral)->span;
+
+    // if (IS_PTR(pattern, AnyPattern))
+    //     return AS_PTR(pattern, AnyPattern)->span;
+
+    // if (IS_PTR(pattern, UnionPattern))
+    //     return AS_PTR(pattern, UnionPattern)->span;
+
+    // if (IS_PTR(pattern, PrimitiveValue))
+    //     return AS_PTR(pattern, PrimitiveValue)->span;
+    if (IS_PTR(pattern, EnumValue))
+        return AS_PTR(pattern, EnumValue)->span;
+
+    // if (IS_PTR(pattern, PrimitiveType))
+    //     return AS_PTR(pattern, PrimitiveType)->span;
+    // if (IS_PTR(pattern, ListType))
+    //     return AS_PTR(pattern, ListType)->span;
+    if (IS_PTR(pattern, EnumType))
+        return AS_PTR(pattern, EnumType)->span;
+    if (IS_PTR(pattern, EntityType))
+        return AS_PTR(pattern, EntityType)->span;
+
+    // if (IS_PTR(pattern, UninferredPattern))
+    //     return AS_PTR(pattern, UninferredPattern)->span;
+
+    // if (IS_PTR(pattern, InvalidPattern))
+    //     return AS_PTR(pattern, InvalidPattern)->span;
+
+    throw CompilerError("Could not get span of Pattern variant.");
+}
+
+Span get_span(Expression expr)
+{
+    if (IS(expr, UnresolvedLiteral))
+        return get_span(AS(expr, UnresolvedLiteral));
+    if (IS_PTR(expr, ExpressionLiteral))
+        return AS_PTR(expr, ExpressionLiteral)->span;
+
+    // if (IS_PTR(expr, PrimitiveValue))
+    //     return AS_PTR(expr, PrimitiveValue)->span;
+    // if (IS_PTR(expr, ListValue))
+    //     return AS_PTR(expr, ListValue)->span;
+    if (IS_PTR(expr, EnumValue))
+        return AS_PTR(expr, EnumValue)->span;
+    if (IS_PTR(expr, Variable))
+        return AS_PTR(expr, Variable)->span;
+
+    if (IS_PTR(expr, Unary))
+        return AS_PTR(expr, Unary)->span;
+    if (IS_PTR(expr, Binary))
+        return AS_PTR(expr, Binary)->span;
+
+    if (IS_PTR(expr, InstanceList))
+        return AS_PTR(expr, InstanceList)->span;
+    if (IS_PTR(expr, ExpressionIndex))
+        return AS_PTR(expr, ExpressionIndex)->span;
+    if (IS_PTR(expr, PropertyIndex))
+        return AS_PTR(expr, PropertyIndex)->span;
+
+    if (IS_PTR(expr, Call))
+        return AS_PTR(expr, Call)->span;
+
+    if (IS_PTR(expr, IfExpression))
+        return AS_PTR(expr, IfExpression)->span;
+    if (IS_PTR(expr, MatchExpression))
+        return AS_PTR(expr, MatchExpression)->span;
+
+    // if (IS_PTR(expr, InvalidExpression))
+    //     return AS_PTR(expr, InvalidExpression)->span;
+
+    throw CompilerError("Could not get span of Expression variant.");
+}
+
+Span get_span(Statement stmt)
+{
+    if (IS_PTR(stmt, IfStatement))
+        return AS_PTR(stmt, IfStatement)->span;
+    if (IS_PTR(stmt, ForStatement))
+        return AS_PTR(stmt, ForStatement)->span;
+    if (IS_PTR(stmt, AssignmentStatement))
+        return AS_PTR(stmt, AssignmentStatement)->span;
+    if (IS_PTR(stmt, VariableDeclaration))
+        return AS_PTR(stmt, VariableDeclaration)->span;
+
+    if (IS_PTR(stmt, CodeBlock))
+        return AS_PTR(stmt, CodeBlock)->span;
+
+    if (IS(stmt, Expression))
+        return get_span(AS(stmt, Expression));
+
+    throw CompilerError("Could not get span of Statement variant.");
+}
+
+Span get_span(Scope::LookupValue value)
+{
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?
+    if (IS_PTR(value, Variable))
+        return AS_PTR(value, Variable)->span;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->span;
+
+    if (IS_PTR(value, StateProperty))
+        return AS_PTR(value, StateProperty)->span;
+    if (IS_PTR(value, FunctionProperty))
+        return AS_PTR(value, FunctionProperty)->span;
+
+    if (IS(value, Pattern))
+        return get_span(AS(value, Pattern));
+
+    throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }

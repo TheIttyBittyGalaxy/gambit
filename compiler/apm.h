@@ -22,96 +22,157 @@ side-effects be managed by the 'actual' compiler.
 #include <vector>
 using namespace std;
 
-// Forward declarations
+// FORWARD DECLARATIONS
 
+// Program
 struct Program;
 struct CodeBlock;
 struct Scope;
 
-struct UnresolvedIdentity;
-struct UninferredPattern;
-
+struct Procedure;
 struct Variable;
 
-struct AnyPattern;
-struct UnionPattern;
-struct ListPattern;
-struct InvalidPattern;
+// Literals
+// NOTE: The Parser produces UnresolvedLiterals in place of expressions and patterns.
+//
+//       The Resolver turns these into either a PatternLiteral or a ExpressionLiteral.
+//       The new node takes the span from the UnresolvedLiteral so we can track where
+//       the pattern or expression was originally written in the source. The child node
+//       of the new node is then a Pattern/Expression.
+//
+//       Because of this, these literals should cease to exist after the Resolver stage.
 
-struct EnumType;
+struct PrimitiveLiteral;
+struct ListLiteral;
+struct IdentityLiteral;
+struct OptionLiteral;
+using UnresolvedLiteral = variant<
+    ptr<PrimitiveLiteral>,
+    ptr<ListLiteral>,
+    ptr<IdentityLiteral>,
+    ptr<OptionLiteral>>;
+
+// Values
+struct PrimitiveValue;
+struct ListValue;
 struct EnumValue;
 
-struct Entity;
+// Types
+struct PrimitiveType;
+struct ListType;
+struct EnumType;
+struct EntityType;
 
+// Properties
 struct StateProperty;
 struct FunctionProperty;
 struct InvalidProperty;
 using Property = variant<
-    ptr<UnresolvedIdentity>,
+    ptr<IdentityLiteral>,
     ptr<StateProperty>,
     ptr<FunctionProperty>,
     ptr<InvalidProperty>>;
 
-struct Procedure;
+// Patterns
+struct PatternLiteral;
+struct AnyPattern;
+struct UnionPattern;
 
-struct IntrinsicType;
-struct IntrinsicValue;
+struct UninferredPattern;
+struct InvalidPattern;
 
 using Pattern = variant<
-    ptr<UnresolvedIdentity>,
-    ptr<UninferredPattern>,
-    ptr<InvalidPattern>,
-    ptr<AnyPattern>,
-    ptr<UnionPattern>,
-    ptr<ListPattern>,
-    ptr<IntrinsicType>,
-    ptr<EnumType>,
-    ptr<Entity>,
-    ptr<IntrinsicValue>,
-    ptr<EnumValue>>;
+    // Literals
+    UnresolvedLiteral,
+    ptr<PatternLiteral>,
 
-struct ListValue;
-struct InstanceList;
+    // The "any pattern" - matches all values
+    ptr<AnyPattern>,
+
+    // Union pattern - matches only if at least one sub-pattern matches
+    ptr<UnionPattern>,
+
+    // Value pattern - matches a specific value
+    ptr<PrimitiveValue>,
+    ptr<EnumValue>,
+
+    // Type pattern - matches any value of a specific type
+    ptr<PrimitiveType>,
+    ptr<ListType>,
+    ptr<EnumType>,
+    ptr<EntityType>,
+
+    // Uninfered pattern - the pattern is yet to be inferred by the compiler
+    ptr<UninferredPattern>,
+
+    // Invalid pattern - the pattern has been deemed invalid at some point during compilation
+    ptr<InvalidPattern> //
+    >;
+
+// Expressions
+struct ExpressionLiteral;
+
 struct Unary;
 struct Binary;
+
+struct InstanceList;
 struct ExpressionIndex;
 struct PropertyIndex;
+
 struct Call;
+
 struct IfExpression;
-struct Match;
-struct InvalidValue;
+struct MatchExpression;
+
 struct InvalidExpression;
+
 using Expression = variant<
-    ptr<UnresolvedIdentity>,
-    ptr<Variable>,
-    ptr<EnumValue>,
-    ptr<IntrinsicValue>,
+    // Literals
+    UnresolvedLiteral,
+    ptr<ExpressionLiteral>,
+
+    // Values
+    ptr<PrimitiveValue>,
     ptr<ListValue>,
-    ptr<InstanceList>,
+    ptr<EnumValue>,
+    ptr<Variable>,
+
+    // Operations
     ptr<Unary>,
     ptr<Binary>,
+
+    // Indexing
+    ptr<InstanceList>,
     ptr<ExpressionIndex>,
     ptr<PropertyIndex>,
-    ptr<Call>,
-    ptr<IfExpression>,
-    ptr<Match>,
-    ptr<InvalidValue>,
-    ptr<InvalidExpression>>;
 
+    // Calls
+    ptr<Call>,
+
+    // "Statement style" expressions
+    ptr<IfExpression>,
+    ptr<MatchExpression>,
+
+    // Invalid expression - the expression has been deemed invalid at some point during compilation
+    ptr<InvalidExpression> //
+    >;
+
+// Statements
 struct IfStatement;
 struct ForStatement;
 struct AssignmentStatement;
 struct VariableDeclaration;
 
 using Statement = variant<
-    Expression,
-    ptr<CodeBlock>,
     ptr<IfStatement>,
     ptr<ForStatement>,
     ptr<AssignmentStatement>,
-    ptr<VariableDeclaration>>;
+    ptr<VariableDeclaration>,
 
-// Program
+    ptr<CodeBlock>,
+    Expression>;
+
+// PROGRAM
 
 struct Program
 {
@@ -131,15 +192,14 @@ struct Scope
     struct OverloadedIdentity;
 
     using LookupValue = variant<
+        ptr<OverloadedIdentity>,
+        ptr<Procedure>,
         ptr<Variable>,
-        ptr<UnionPattern>,
-        ptr<IntrinsicType>,
-        ptr<EnumType>,
-        ptr<Entity>,
+
         ptr<StateProperty>,
         ptr<FunctionProperty>,
-        ptr<Procedure>,
-        ptr<OverloadedIdentity>>;
+
+        Pattern>;
 
     struct OverloadedIdentity
     {
@@ -151,65 +211,86 @@ struct Scope
     unordered_map<string, LookupValue> lookup;
 };
 
-// Unresolved Identity
-
-struct UnresolvedIdentity
+struct Procedure
 {
     Span span;
     string identity;
+    ptr<Scope> scope;
+    vector<ptr<Variable>> parameters;
+    ptr<CodeBlock> body;
 };
-
-struct UninferredPattern
-{
-};
-
-// Variables
 
 struct Variable
 {
     Span span;
     string identity;
     Pattern pattern;
-    bool is_mutable;
+    bool is_constant;
 };
 
-// Patterns
+// LITERALS
 
-// TODO: If the only serious use of the any pattern is in match rules, perhaps it could be
-//       replaced with an 'else' syntax (meant to mirror the syntax of else/ifs statements)
-
-// TODO: A semantics question to figure out is if the "Any Pattern" should match against `none`.
-//       The compiler currently says yes, so that match 'any rules' can still cover none,
-//       but it might be worth giving some thought as to what should apply in other cases.
-struct AnyPattern
+struct PrimitiveLiteral
 {
     Span span;
+    ptr<PrimitiveValue> value;
 };
 
-// TODO: Current UnionPattern has an identity field and is part of the Scope::LookupValue variant
-//       as when an enum is declared with both enums and intrinsic values, we represent that as
-//       a UnionPattern declared in the scope. However, most UnionPatterns are anonymous.
-//       I'm not sure if this is the best solution for this?
-struct UnionPattern
+struct ListLiteral
+{
+    Span span;
+    vector<Expression> values;
+};
+
+struct IdentityLiteral
 {
     Span span;
     string identity;
-    vector<Pattern> patterns;
 };
 
-struct ListPattern
+struct OptionLiteral
 {
     Span span;
+    UnresolvedLiteral literal;
+};
+
+// VALUES
+
+// TODO: Through the program, we maintain pointers to PrimitiveValues that have
+//       been dynamically allocated to the heap. This is a bit naff. It would be
+//       better if PrimitiveValue was treated like a regular value-struct, rather
+//       than a APM node.
+struct PrimitiveValue
+{
+    variant<double, int, bool, string> value;
+    ptr<PrimitiveType> type;
+};
+
+struct ListValue
+{
+    vector<Expression> values;
+};
+
+struct EnumValue
+{
+    Span span; // The span where the enum value was declared
+    string identity;
+    ptr<EnumType> type;
+};
+
+// TYPES
+
+struct PrimitiveType
+{
+    string identity;
+    string cpp_identity;
+};
+
+struct ListType
+{
     Pattern list_of;
     optional<Expression> fixed_size;
 };
-
-struct InvalidPattern
-{
-    Span span;
-};
-
-// Enums
 
 struct EnumType
 {
@@ -218,22 +299,13 @@ struct EnumType
     vector<ptr<EnumValue>> values;
 };
 
-struct EnumValue
-{
-    Span span;
-    string identity;
-    ptr<EnumType> type;
-};
-
-// Entities
-
-struct Entity
+struct EntityType
 {
     Span span;
     string identity;
 };
 
-// Properties
+// PROPERTIES
 
 struct StateProperty
 {
@@ -260,47 +332,44 @@ struct InvalidProperty
     Span span;
 };
 
-// Procedures
+// PATTERNS
 
-struct Procedure
+struct PatternLiteral
 {
     Span span;
+    Pattern pattern;
+};
+
+// FIXME: Is there a better way of representing this?
+// FIXME: Should "any" include "none"?
+struct AnyPattern
+{
+};
+
+// TODO: Current UnionPattern has an identity field and is part of the Scope::LookupValue variant
+//       as when an enum is declared with both enums and intrinsic values, we represent that as
+//       a UnionPattern declared in the scope. However, most UnionPatterns are anonymous.
+//       I'm not sure if this is the best solution for this?
+struct UnionPattern
+{
     string identity;
-    ptr<Scope> scope;
-    vector<ptr<Variable>> parameters;
-    ptr<CodeBlock> body;
+    vector<Pattern> patterns;
 };
 
-// Types
-
-struct IntrinsicType
+struct UninferredPattern
 {
-    string identity;
-    string cpp_identity;
 };
 
-// Expressions
+struct InvalidPattern
+{
+};
 
-struct IntrinsicValue
+// EXPRESSIONS
+
+struct ExpressionLiteral
 {
     Span span;
-    variant<double, int, bool, string> value;
-    ptr<IntrinsicType> type;
-};
-
-struct ListValue
-{
-    Span span;
-    vector<Expression> values;
-};
-
-// FIXME: For now I've named value lists (lists of values that correspond to patterns)
-//        `InstanceLists` to avoid confusion with 'list' values. Go in and fix the
-//        terminology at some point. (perhaps 'lists' need to be called arrays?)
-struct InstanceList
-{
-    Span span;
-    vector<Expression> values;
+    Expression expr;
 };
 
 struct Unary
@@ -316,6 +385,14 @@ struct Binary
     string op; // FIXME: Make this an enum instead of a string
     Expression lhs;
     Expression rhs;
+};
+
+// FIXME: I'm not sure if this node is really required? I think
+//        it's just used temporarily when parsing property indexes
+struct InstanceList
+{
+    Span span;
+    vector<Expression> values;
 };
 
 struct ExpressionIndex
@@ -359,7 +436,7 @@ struct IfExpression
     bool has_else = false;
 };
 
-struct Match
+struct MatchExpression
 {
     Span span;
     struct Rule
@@ -373,17 +450,11 @@ struct Match
     bool has_else = false;
 };
 
-struct InvalidValue
-{
-    Span span;
-};
-
 struct InvalidExpression
 {
-    Span span;
 };
 
-// Statements
+// STATEMENTS
 
 struct IfStatement
 {
@@ -421,72 +492,109 @@ struct VariableDeclaration
     optional<Expression> value;
 };
 
-// Methods
+// APM METHODS
 
-string identity_of(Scope::LookupValue value);
-bool directly_declared_in_scope(ptr<Scope> scope, string identity);
-bool declared_in_scope(ptr<Scope> scope, string identity);
-bool is_overloadable(Scope::LookupValue value);
-Span get_span(Statement stmt);
-Span get_span(Expression expr);
-Span get_span(Pattern pattern);
-Span get_span(Scope::LookupValue value);
+// Declaration and fetching
+[[nodiscard]] string identity_of(Scope::LookupValue value);
+[[nodiscard]] bool directly_declared_in_scope(ptr<Scope> scope, string identity);
+[[nodiscard]] bool declared_in_scope(ptr<Scope> scope, string identity);
+[[nodiscard]] bool is_overloadable(Scope::LookupValue value);
 
-Scope::LookupValue fetch(ptr<Scope> scope, string identity);
-vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
+[[nodiscard]] Scope::LookupValue fetch(ptr<Scope> scope, string identity);
+[[nodiscard]] vector<Scope::LookupValue> fetch_all_overloads(ptr<Scope> scope, string identity);
 
+// Pattern analysis
 [[nodiscard]] Pattern determine_expression_pattern(Expression expr);
 [[nodiscard]] ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b);
-bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
-bool do_patterns_overlap(Pattern a, Pattern b);
-bool is_pattern_optional(Pattern pattern);
-bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters);
+[[nodiscard]] bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
+[[nodiscard]] bool do_patterns_overlap(Pattern a, Pattern b);
+[[nodiscard]] bool is_pattern_optional(Pattern pattern);
+[[nodiscard]] bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector<ptr<Variable>> parameters);
 
-// JSON Serialisation
+// Spans
+[[nodiscard]] Span get_span(UnresolvedLiteral stmt);
+[[nodiscard]] Span get_span(Pattern pattern);
+[[nodiscard]] Span get_span(Expression expr);
+[[nodiscard]] Span get_span(Statement stmt);
 
-string to_json(const ptr<Program> &program, const size_t &depth = 0);
-string to_json(const ptr<CodeBlock> &code_block, const size_t &depth = 0);
-string to_json(const Scope::LookupValue &lookup_value, const size_t &depth = 0);
-string to_json(const ptr<Scope::OverloadedIdentity> &lookup_index, const size_t &depth = 0);
-string to_json(const ptr<Scope> &scope, const size_t &depth = 0);
-string to_json(const ptr<UnresolvedIdentity> &unresolved_identity, const size_t &depth = 0);
-string to_json(const ptr<UninferredPattern> &uninferred_pattern, const size_t &depth = 0);
-string to_json(const ptr<Variable> &unresolved_identity, const size_t &depth = 0);
-string to_json(const ptr<AnyPattern> &any_pattern, const size_t &depth = 0);
-string to_json(const ptr<UnionPattern> &union_pattern, const size_t &depth = 0);
-string to_json(const ptr<ListPattern> &list_pattern, const size_t &depth = 0);
-string to_json(const ptr<InvalidPattern> &invalid_type, const size_t &depth = 0);
-string to_json(const ptr<EnumType> &enum_type, const size_t &depth = 0);
-string to_json(const ptr<EnumValue> &enum_value, const size_t &depth = 0);
-string to_json(const ptr<Entity> &entity, const size_t &depth = 0);
-string to_json(const ptr<StateProperty> &state, const size_t &depth = 0);
-string to_json(const ptr<FunctionProperty> &state, const size_t &depth = 0);
-string to_json(const ptr<Procedure> &procedure, const size_t &depth = 0);
-string to_json(const ptr<InvalidProperty> &invalid_property, const size_t &depth = 0);
-string to_json(const Property &property, const size_t &depth = 0);
-string to_json(const ptr<IntrinsicType> &intrinsic_type, const size_t &depth = 0);
-string to_json(const Pattern &pattern, const size_t &depth = 0);
-string to_json(const ptr<Unary> &unary, const size_t &depth = 0);
-string to_json(const ptr<Binary> &binary, const size_t &depth = 0);
-string to_json(const IfExpression::Rule &rule, const size_t &depth = 0);
-string to_json(const ptr<IfExpression> &if_expression, const size_t &depth = 0);
-string to_json(const Match::Rule &rule, const size_t &depth = 0);
-string to_json(const ptr<ExpressionIndex> &expr_index, const size_t &depth = 0);
-string to_json(const ptr<PropertyIndex> &property_index, const size_t &depth = 0);
-string to_json(const ptr<Call> &call, const size_t &depth = 0);
-string to_json(const Call::Argument &argument, const size_t &depth = 0);
-string to_json(const ptr<Match> &match, const size_t &depth = 0);
-string to_json(const ptr<InvalidValue> &invalid_value, const size_t &depth = 0);
-string to_json(const ptr<InvalidExpression> &invalid_expression, const size_t &depth = 0);
-string to_json(const ptr<IntrinsicValue> &intrinsic_value, const size_t &depth = 0);
-string to_json(const ptr<InstanceList> &list_value, const size_t &depth = 0);
-string to_json(const ptr<ListValue> &list_value, const size_t &depth = 0);
-string to_json(const Expression &expression, const size_t &depth = 0);
-string to_json(const IfStatement::Rule &rule, const size_t &depth = 0);
-string to_json(const ptr<IfStatement> &if_statement, const size_t &depth = 0);
-string to_json(const ptr<ForStatement> &for_statement, const size_t &depth = 0);
-string to_json(const ptr<AssignmentStatement> &assignment_statement, const size_t &depth = 0);
-string to_json(const ptr<VariableDeclaration> &variable_declaration, const size_t &depth = 0);
-string to_json(const Statement &statement, const size_t &depth = 0);
+[[nodiscard]] Span get_span(Scope::LookupValue value);
+
+// JSON SERIALISATION
+
+// Program
+string to_json(const ptr<Program> &node, const size_t &depth = 0);
+string to_json(const ptr<CodeBlock> &node, const size_t &depth = 0);
+string to_json(const ptr<Scope> &node, const size_t &depth = 0);
+string to_json(const Scope::LookupValue &node, const size_t &depth = 0);
+string to_json(const ptr<Scope::OverloadedIdentity> &node, const size_t &depth = 0);
+
+string to_json(const ptr<Procedure> &node, const size_t &depth = 0);
+string to_json(const ptr<Variable> &node, const size_t &depth = 0);
+
+// Literals
+string to_json(const UnresolvedLiteral &node, const size_t &depth = 0);
+
+string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth = 0);
+string to_json(const ptr<ListLiteral> &node, const size_t &depth = 0);
+string to_json(const ptr<IdentityLiteral> &node, const size_t &depth = 0);
+string to_json(const ptr<OptionLiteral> &node, const size_t &depth = 0);
+
+// Values
+string to_json(const ptr<PrimitiveValue> &node, const size_t &depth = 0);
+string to_json(const ptr<ListValue> &node, const size_t &depth = 0);
+string to_json(const ptr<EnumValue> &node, const size_t &depth = 0);
+
+// Types
+string to_json(const ptr<PrimitiveType> &node, const size_t &depth = 0);
+string to_json(const ptr<ListType> &node, const size_t &depth = 0);
+string to_json(const ptr<EnumType> &node, const size_t &depth = 0);
+string to_json(const ptr<EntityType> &node, const size_t &depth = 0);
+
+// Properties
+string to_json(const Property &node, const size_t &depth = 0);
+
+string to_json(const ptr<StateProperty> &node, const size_t &depth = 0);
+string to_json(const ptr<FunctionProperty> &node, const size_t &depth = 0);
+string to_json(const ptr<InvalidProperty> &node, const size_t &depth = 0);
+
+// Patterns
+string to_json(const Pattern &node, const size_t &depth = 0);
+string to_json(const ptr<PatternLiteral> &node, const size_t &depth = 0);
+
+string to_json(const ptr<AnyPattern> &node, const size_t &depth = 0);
+string to_json(const ptr<UnionPattern> &node, const size_t &depth = 0);
+
+string to_json(const ptr<UninferredPattern> &node, const size_t &depth = 0);
+string to_json(const ptr<InvalidPattern> &node, const size_t &depth = 0);
+
+// Expressions
+string to_json(const Expression &node, const size_t &depth = 0);
+string to_json(const ptr<ExpressionLiteral> &node, const size_t &depth = 0);
+
+string to_json(const ptr<Unary> &node, const size_t &depth = 0);
+string to_json(const ptr<Binary> &node, const size_t &depth = 0);
+
+string to_json(const ptr<InstanceList> &node, const size_t &depth = 0);
+string to_json(const ptr<ExpressionIndex> &node, const size_t &depth = 0);
+string to_json(const ptr<PropertyIndex> &node, const size_t &depth = 0);
+
+string to_json(const ptr<Call> &node, const size_t &depth = 0);
+string to_json(const Call::Argument &node, const size_t &depth = 0);
+
+string to_json(const ptr<IfExpression> &node, const size_t &depth = 0);
+string to_json(const IfExpression::Rule &node, const size_t &depth = 0);
+string to_json(const ptr<MatchExpression> &node, const size_t &depth = 0);
+string to_json(const MatchExpression::Rule &node, const size_t &depth = 0);
+
+string to_json(const ptr<InvalidExpression> &node, const size_t &depth = 0);
+
+// Statements
+string to_json(const Statement &node, const size_t &depth = 0);
+
+string to_json(const ptr<IfStatement> &node, const size_t &depth = 0);
+string to_json(const IfStatement::Rule &node, const size_t &depth = 0);
+string to_json(const ptr<ForStatement> &node, const size_t &depth = 0);
+string to_json(const ptr<AssignmentStatement> &node, const size_t &depth = 0);
+string to_json(const ptr<VariableDeclaration> &node, const size_t &depth = 0);
 
 #endif

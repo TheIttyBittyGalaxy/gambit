@@ -33,11 +33,12 @@ private:
 
     // EXPRESSIONS //
     [[nodiscard]] Expression resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    [[nodiscard]] ptr<ExpressionLiteral> resolve_literal_as_expression(UnresolvedLiteral unresolved_literal, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_call(ptr<Call> call, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
-    void resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_match(ptr<MatchExpression> match, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
@@ -45,7 +46,8 @@ private:
 
     // PATTERNS //
     [[nodiscard]] Pattern resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
-    [[nodiscard]] variant<ptr<EnumValue>, ptr<InvalidValue>> resolve_identity_from_pattern_hint(ptr<UnresolvedIdentity> unresolved_identity, Pattern hint);
+    [[nodiscard]] ptr<PatternLiteral> resolve_literal_as_pattern(UnresolvedLiteral unresolved_literal, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    [[nodiscard]] optional<ptr<EnumValue>> resolve_identity_from_pattern_hint(ptr<IdentityLiteral> identity_literal, Pattern hint);
 };
 
 #endif

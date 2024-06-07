@@ -8,17 +8,17 @@ namespace Intrinsic
     //        For the purposes of building the compiler however, it would be useful to not have to deal with those compiler
     //        errors yet. (let alone the kind of memory segmentation errors that can occur due to null spans).
 
-    ptr<IntrinsicType> type_str = ptr<IntrinsicType>(new IntrinsicType({"str", "std::string"}));
-    ptr<IntrinsicType> type_num = ptr<IntrinsicType>(new IntrinsicType({"num", "double"}));
-    ptr<IntrinsicType> type_int = ptr<IntrinsicType>(new IntrinsicType({"int", "int"}));
-    ptr<IntrinsicType> type_amt = ptr<IntrinsicType>(new IntrinsicType({"amt", "int"}));
-    ptr<IntrinsicType> type_bool = ptr<IntrinsicType>(new IntrinsicType({"bool", "bool"}));
+    ptr<PrimitiveType> type_str = ptr<PrimitiveType>(new PrimitiveType({"str", "std::string"}));
+    ptr<PrimitiveType> type_num = ptr<PrimitiveType>(new PrimitiveType({"num", "double"}));
+    ptr<PrimitiveType> type_int = ptr<PrimitiveType>(new PrimitiveType({"int", "int"}));
+    ptr<PrimitiveType> type_amt = ptr<PrimitiveType>(new PrimitiveType({"amt", "int"}));
+    ptr<PrimitiveType> type_bool = ptr<PrimitiveType>(new PrimitiveType({"bool", "bool"}));
 
-    ptr<IntrinsicType> type_none = ptr<IntrinsicType>(new IntrinsicType({"none", "void"}));
-    ptr<IntrinsicValue> none_val = ptr<IntrinsicValue>(new IntrinsicValue({Span(), 0, type_none}));
+    ptr<PrimitiveType> type_none = ptr<PrimitiveType>(new PrimitiveType({"none", "void"}));
+    ptr<PrimitiveValue> none_val = ptr<PrimitiveValue>(new PrimitiveValue({0, type_none}));
 
     // FIXME: Is it worth adding an 'IntrinsicEntity' type?
-    ptr<Entity> entity_player = ptr<Entity>(new Entity({Span(), "Player"}));
+    ptr<EntityType> entity_player = ptr<EntityType>(new EntityType({Span(), "Player"}));
 
     // FIXME: As of writing, the `player` parameter is never declared in the state's scope, as normally the parser would
     //        declare it. This may not be an issue for properties that are implemented intrinsically, but worth noting.
@@ -32,14 +32,14 @@ namespace Intrinsic
         {}                                                                // initial_value
     }));
 
-    ptr<Entity> entity_game = ptr<Entity>(new Entity({Span(), "Game"}));
+    ptr<EntityType> entity_game = ptr<EntityType>(new EntityType({Span(), "Game"}));
 
     ptr<Variable> variable_game = ptr<Variable>(new Variable({Span(), "game", entity_game, false}));
 
     ptr<StateProperty> state_game_players = ptr<StateProperty>(new StateProperty({
         Span(),                                                       // span
         "players",                                                    // identity
-        ptr<ListPattern>(new ListPattern({Span(), entity_player})),   // pattern
+        ptr<ListType>(new ListType({entity_player, {}})),             // pattern
         CREATE(Scope),                                                // scope
         {ptr<Variable>(new Variable({Span(), "game", entity_game}))}, // parameters
         {}                                                            // initial_value

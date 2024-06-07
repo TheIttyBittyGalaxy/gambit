@@ -21,6 +21,8 @@ struct Token
         LessThanEqual,
         GreaterThanEqual,
 
+        AssignConstant,
+
         Add,
         Sub,
         Mul,

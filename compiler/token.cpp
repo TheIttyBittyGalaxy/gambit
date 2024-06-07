@@ -23,6 +23,8 @@ const map<Token::Kind, string> token_name = {
     {Token::LessThanEqual, "LessThanEqual"},
     {Token::GreaterThanEqual, "GreaterThanEqual"},
 
+    {Token::AssignConstant, "AssignConstant"},
+
     {Token::Add, "Add"},
     {Token::Sub, "Sub"},
     {Token::Mul, "Mul"},
@@ -80,6 +82,8 @@ const map<Token::Kind, regex> token_match_rules = {
     {Token::NotEqual, regex("!=")},
     {Token::LessThanEqual, regex("<=")},
     {Token::GreaterThanEqual, regex(">=")},
+
+    {Token::AssignConstant, regex("\\:\\:")},
 
     {Token::Add, regex("\\+")},
     {Token::Sub, regex("\\-")},

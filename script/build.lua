@@ -57,7 +57,7 @@ else
 end
 
 -- READ HEADER FILES --
-local header_dir_handle = io.popen("dir compiler\\*.h /t:w /-c")
+local header_dir_handle = io.popen("dir compiler\\*.h /t:w /-c /o:-d")
 if not header_dir_handle then
     error("ERROR: Could not find compiler .h files")
 end
@@ -91,7 +91,7 @@ for line in header_dir_handle:lines() do
 end
 
 -- READ SOURCE FILES --
-local source_dir_handle = io.popen("dir compiler\\*.cpp /t:w /-c")
+local source_dir_handle = io.popen("dir compiler\\*.cpp /t:w /-c /o:-d")
 if not source_dir_handle then
     error("ERROR: Could not find compiler .cpp files")
 end

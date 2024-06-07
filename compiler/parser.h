@@ -87,10 +87,10 @@ private:
     // STATEMENTS //
     bool peek_statement();
     [[nodiscard]] optional<Statement> parse_statement(ptr<Scope> scope, bool require_newline = true);
+    [[nodiscard]] Statement parse_infix_expression_statement(Expression lhs, ptr<Scope> scope);
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
-    [[nodiscard]] ptr<UnresolvedIdentity> parse_unresolved_identity();
 
     bool peek_expression();
     Expression parse_expression(Precedence precedence = Precedence::None);
@@ -100,13 +100,9 @@ private:
     bool peek_if_expression();
     [[nodiscard]] ptr<IfExpression> parse_if_expression();
     bool peek_match();
-    [[nodiscard]] ptr<Match> parse_match();
+    [[nodiscard]] ptr<MatchExpression> parse_match();
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
-    bool peek_intrinsic_value();
-    [[nodiscard]] Expression parse_intrinsic_value();
-    bool peek_list_value();
-    [[nodiscard]] ptr<ListValue> parse_list_value();
 
     bool peek_infix_logical_or();
     [[nodiscard]] ptr<Binary> parse_infix_logical_or(Expression lhs);
@@ -127,9 +123,9 @@ private:
     bool peek_infix_call();
     [[nodiscard]] ptr<Call> parse_infix_call(Expression lhs);
 
-    // PATTERNS //
-    bool peek_pattern(bool allow_intrinsic_values);
-    Pattern parse_pattern(bool allow_intrinsic_values);
+    // LITERALS //
+    bool peek_literal(bool allow_primitive_values);
+    UnresolvedLiteral parse_literal(bool allow_primitive_values);
 };
 
 #endif
