@@ -293,12 +293,24 @@ ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b)
 
 bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 {
-    // Cannot determine result if either pattern is invalid or unresolved
+    // Cannot determine result if either pattern is an unresolved literal
     // FIXME: Make clear in the error message which pattern is the UnresolvedLiteral
     if (
         IS(subset, UnresolvedLiteral) ||
         IS(superset, UnresolvedLiteral))
         throw CompilerError("Call to `is_pattern_subset_of_superset` has one or more unresolved literals in it's patterns", get_span(subset), get_span(superset));
+
+    // Unwrap PatternLiteral nodes
+    bool subset_is_literal = IS_PTR(subset, PatternLiteral);
+    bool superset_is_literal = IS_PTR(superset, PatternLiteral);
+    if (subset_is_literal && superset_is_literal)
+        return is_pattern_subset_of_superset(AS_PTR(subset, PatternLiteral)->pattern, AS_PTR(superset, PatternLiteral)->pattern);
+
+    if (subset_is_literal)
+        return is_pattern_subset_of_superset(AS_PTR(subset, PatternLiteral)->pattern, superset);
+
+    if (superset_is_literal)
+        return is_pattern_subset_of_superset(subset, AS_PTR(superset, PatternLiteral)->pattern);
 
     // TODO: For now, invalid patterns are considered to be subsets and supersets
     //       of every possible pattern. I'm not sure if this is the correct
