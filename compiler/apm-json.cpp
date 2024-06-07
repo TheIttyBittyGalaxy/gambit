@@ -57,15 +57,14 @@ string to_json(const ptr<Scope> &node, const size_t &depth)
 
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
+    VARIANT_PTR(Scope::OverloadedIdentity);
+    VARIANT_PTR(Procedure);
     VARIANT_PTR(Variable);
-    VARIANT_PTR(UnionPattern);
-    VARIANT_PTR(PrimitiveType);
-    VARIANT_PTR(EnumType);
-    VARIANT_PTR(EntityType);
+
     VARIANT_PTR(StateProperty);
     VARIANT_PTR(FunctionProperty);
-    VARIANT_PTR(Procedure);
-    VARIANT_PTR(Scope::OverloadedIdentity);
+
+    VARIANT(Pattern);
 
     throw json_serialisation_error("Could not serialise Scope::LookupValue variant.");
 }

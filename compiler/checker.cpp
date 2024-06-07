@@ -38,30 +38,25 @@ void Checker::check_scope(ptr<Scope> scope)
 void Checker::check_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scope)
 {
 
-    if (IS_PTR(value, Variable))
+    if (IS_PTR(value, Scope::OverloadedIdentity))
     {
-        // pass
+        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
+        for (auto overload : overloaded_identity->overloads)
+            check_scope_lookup_value(overload, scope);
+
+        // TODO: Check that no overloads share the same signature
     }
 
-    else if (IS_PTR(value, UnionPattern))
+    else if (IS_PTR(value, Procedure))
     {
-        // pass
+        auto proc = AS_PTR(value, Procedure);
+        check_code_block(proc->body);
+
+        // FIXME: If the body is a singleton, check the statement as if it were a return expression
     }
 
-    else if (IS_PTR(value, PrimitiveType))
-    {
-        // pass
-    }
-
-    else if (IS_PTR(value, EnumType))
-    {
-        // pass
-    }
-
-    else if (IS_PTR(value, EntityType))
-    {
-        // pass
-    }
+    else if (IS_PTR(value, Variable))
+        ; // pass
 
     else if (IS_PTR(value, StateProperty))
     {
@@ -86,27 +81,11 @@ void Checker::check_scope_lookup_value(Scope::LookupValue value, ptr<Scope> scop
         // FIXME: If the body is a singleton, check the statement as if it were a return expression
     }
 
-    else if (IS_PTR(value, Procedure))
-    {
-        auto proc = AS_PTR(value, Procedure);
-        check_code_block(proc->body);
-
-        // FIXME: If the body is a singleton, check the statement as if it were a return expression
-    }
-
-    else if (IS_PTR(value, Scope::OverloadedIdentity))
-    {
-        auto overloaded_identity = AS_PTR(value, Scope::OverloadedIdentity);
-        for (auto overload : overloaded_identity->overloads)
-            check_scope_lookup_value(overload, scope);
-
-        // TODO: Check that no overloads share the same signature
-    }
+    else if (IS(value, Pattern))
+        ; // pass
 
     else
-    {
         throw CompilerError("Unable to check Scope Lookup Value");
-    }
 }
 
 void Checker::check_code_block(ptr<CodeBlock> code_block)

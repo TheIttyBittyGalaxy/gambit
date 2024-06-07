@@ -19,6 +19,16 @@ void Resolver::resolve_program(ptr<Program> program)
 
 void Resolver::resolve_scope(ptr<Scope> scope)
 {
+    for (auto index : scope->lookup)
+    {
+        auto value = index.second;
+        if (IS(value, Pattern))
+        {
+            auto new_pattern = resolve_pattern(AS(value, Pattern), scope);
+            scope->lookup.insert_or_assign(index.first, new_pattern);
+        }
+    }
+
     // Property signatures need to be resolved before property and procedure bodies so that
     // PropertyIndex nodes can correctly resolve which overload of the property they should use.
     for (auto index : scope->lookup)
@@ -522,6 +532,8 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pa
         // If only one pattern is present in the union, the union is unecessary
         if (union_pattern->patterns.size() == 1)
             return union_pattern->patterns[0];
+
+        return union_pattern;
     }
 
     // Values
@@ -594,20 +606,14 @@ ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unres
         {
             auto resolved = fetch(scope, identity);
 
-            // NOTE: We presume that if a UnionPattern has been declared, then it must
-            //       represent an enum comprised of both enum and intrinsic values.
-            if (IS_PTR(resolved, UnionPattern))
-                pattern = AS_PTR(resolved, UnionPattern);
-            else if (IS_PTR(resolved, PrimitiveType))
-                pattern = AS_PTR(resolved, PrimitiveType);
-            else if (IS_PTR(resolved, EnumType))
-                pattern = AS_PTR(resolved, EnumType);
-            else if (IS_PTR(resolved, EntityType))
-                pattern = AS_PTR(resolved, EntityType);
+            if (IS(resolved, Pattern))
+            {
+                pattern = AS(resolved, Pattern);
+            }
             else
             {
                 // FIXME: Provide information about what the node actually is.
-                source->log_error("'" + identity_of(resolved) + "' is not a type", identity_literal->span);
+                source->log_error("'" + identity_literal->identity + "' is not a type or pattern", identity_literal->span);
                 pattern = CREATE(InvalidPattern);
             }
         }

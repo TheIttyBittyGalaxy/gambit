@@ -7,24 +7,33 @@
 
 string identity_of(Scope::LookupValue value)
 {
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return AS_PTR(value, Scope::OverloadedIdentity)->identity;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->identity;
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->identity;
-    if (IS_PTR(value, UnionPattern))
-        return AS_PTR(value, UnionPattern)->identity;
-    if (IS_PTR(value, PrimitiveType))
-        return AS_PTR(value, PrimitiveType)->identity;
-    if (IS_PTR(value, EnumType))
-        return AS_PTR(value, EnumType)->identity;
-    if (IS_PTR(value, EntityType))
-        return AS_PTR(value, EntityType)->identity;
+
     if (IS_PTR(value, StateProperty))
         return AS_PTR(value, StateProperty)->identity;
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->identity;
-    if (IS_PTR(value, Procedure))
-        return AS_PTR(value, Procedure)->identity;
-    if (IS_PTR(value, Scope::OverloadedIdentity))
-        return AS_PTR(value, Scope::OverloadedIdentity)->identity;
+
+    if (IS(value, Pattern))
+    {
+        auto pattern = AS(value, Pattern);
+
+        if (IS_PTR(pattern, PrimitiveType))
+            return AS_PTR(pattern, PrimitiveType)->identity;
+        if (IS_PTR(pattern, EnumType))
+            return AS_PTR(pattern, EnumType)->identity;
+        if (IS_PTR(pattern, EntityType))
+            return AS_PTR(pattern, EntityType)->identity;
+        if (IS_PTR(pattern, UnionPattern))
+            return AS_PTR(pattern, UnionPattern)->identity;
+
+        throw CompilerError("Cannot get identity of Scope::LookupValue Pattern variant", get_span(value));
+    }
 
     throw CompilerError("Cannot get identity of Scope::LookupValue variant", get_span(value));
 }
@@ -637,26 +646,20 @@ Span get_span(Statement stmt)
 
 Span get_span(Scope::LookupValue value)
 {
+    if (IS_PTR(value, Scope::OverloadedIdentity))
+        return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?
     if (IS_PTR(value, Variable))
         return AS_PTR(value, Variable)->span;
-    // if (IS_PTR(value, UnionPattern))
-    //     return AS_PTR(value, UnionPattern)->span;
-    if (IS_PTR(value, EnumType))
-        return AS_PTR(value, EnumType)->span;
-    if (IS_PTR(value, EntityType))
-        return AS_PTR(value, EntityType)->span;
+    if (IS_PTR(value, Procedure))
+        return AS_PTR(value, Procedure)->span;
+
     if (IS_PTR(value, StateProperty))
         return AS_PTR(value, StateProperty)->span;
     if (IS_PTR(value, FunctionProperty))
         return AS_PTR(value, FunctionProperty)->span;
-    if (IS_PTR(value, Procedure))
-        return AS_PTR(value, Procedure)->span;
 
-    if (IS_PTR(value, Scope::OverloadedIdentity))
-        return get_span(AS_PTR(value, Scope::OverloadedIdentity)->overloads[0]); // FIXME: What span should we really use in this situation?
-
-    if (IS_PTR(value, PrimitiveType))
-        throw CompilerError("Attempt to get the span of an intrinsic type.");
+    if (IS(value, Pattern))
+        return get_span(AS(value, Pattern));
 
     throw CompilerError("Could not get span of Scope::LookupValue variant.");
 }

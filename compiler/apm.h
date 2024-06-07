@@ -184,15 +184,14 @@ struct Scope
     struct OverloadedIdentity;
 
     using LookupValue = variant<
+        ptr<OverloadedIdentity>,
+        ptr<Procedure>,
         ptr<Variable>,
-        ptr<UnionPattern>,
-        ptr<PrimitiveType>,
-        ptr<EnumType>,
-        ptr<EntityType>,
+
         ptr<StateProperty>,
         ptr<FunctionProperty>,
-        ptr<Procedure>,
-        ptr<OverloadedIdentity>>;
+
+        Pattern>;
 
     struct OverloadedIdentity
     {
