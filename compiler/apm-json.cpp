@@ -1,6 +1,8 @@
 #include "apm.h"
 #include "json.h"
 
+#define SHORT_LITERALS
+
 // MACROS
 
 #define STRUCT_FIELD(field) json.add(#field, node.field);
@@ -116,9 +118,33 @@ string to_json(const UnresolvedLiteral &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise UnresolvedLiteral variant.");
 }
 
+#ifdef SHORT_LITERALS
+
 string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth)
 {
     return to_json(node->value, depth);
+}
+
+string to_json(const ptr<ListLiteral> &node, const size_t &depth)
+{
+    return to_json(node->values, depth);
+}
+
+string to_json(const ptr<IdentityLiteral> &node, const size_t &depth)
+{
+    return to_json("<" + node->identity + ">");
+}
+
+#else
+
+string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PrimitiveLiteral"));
+    STRUCT_PTR_FIELD(value);
+    json.close();
+    return (string)json;
 }
 
 string to_json(const ptr<ListLiteral> &node, const size_t &depth)
@@ -133,8 +159,15 @@ string to_json(const ptr<ListLiteral> &node, const size_t &depth)
 
 string to_json(const ptr<IdentityLiteral> &node, const size_t &depth)
 {
-    return to_json("UNRESOLVED<" + node->identity + ">");
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("IdentityLiteral"));
+    STRUCT_PTR_FIELD(identity);
+    json.close();
+    return (string)json;
 }
+
+#endif
 
 // VALUES
 
@@ -291,10 +324,26 @@ string to_json(const Pattern &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }
 
+#ifdef SHORT_LITERALS
+
 string to_json(const ptr<PatternLiteral> &node, const size_t &depth)
 {
     return to_json(node->pattern, depth);
 }
+
+#else
+
+string to_json(const ptr<PatternLiteral> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PatternLiteral"));
+    STRUCT_PTR_FIELD(pattern);
+    json.close();
+    return (string)json;
+}
+
+#endif
 
 string to_json(const ptr<AnyPattern> &node, const size_t &depth)
 {
@@ -363,10 +412,26 @@ string to_json(const Expression &node, const size_t &depth)
     throw json_serialisation_error("Could not serialise Expression variant.");
 };
 
+#ifdef SHORT_LITERALS
+
 string to_json(const ptr<ExpressionLiteral> &node, const size_t &depth)
 {
     return to_json(node->expr, depth);
 }
+
+#else
+
+string to_json(const ptr<ExpressionLiteral> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ExpressionLiteral"));
+    STRUCT_PTR_FIELD(expr);
+    json.close();
+    return (string)json;
+}
+
+#endif
 
 string to_json(const ptr<Unary> &node, const size_t &depth)
 {
