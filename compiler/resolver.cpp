@@ -463,7 +463,14 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pa
         return resolve_literal_as_pattern(AS(pattern, UnresolvedLiteral), scope, pattern_hint);
 
     if (IS_PTR(pattern, PatternLiteral))
-        return pattern; // If a node is a PatternLiteral, that should mean it has already been resolved.
+    {
+        // FIXME: If a node is a PatternLiteral, that should mean it has already been resolved.
+        //        However, as of right now, the parser sometimes outputs PatternLiterals directly.
+
+        auto pattern_literal = AS_PTR(pattern, PatternLiteral);
+        pattern_literal->pattern = resolve_pattern(pattern_literal->pattern, scope, pattern_hint);
+        return pattern_literal;
+    }
 
     // Any pattern
     if (IS_PTR(pattern, AnyPattern))
@@ -590,11 +597,11 @@ ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unres
             //       represent an enum comprised of both enum and intrinsic values.
             if (IS_PTR(resolved, UnionPattern))
                 pattern = AS_PTR(resolved, UnionPattern);
-            if (IS_PTR(resolved, PrimitiveType))
+            else if (IS_PTR(resolved, PrimitiveType))
                 pattern = AS_PTR(resolved, PrimitiveType);
-            if (IS_PTR(resolved, EnumType))
+            else if (IS_PTR(resolved, EnumType))
                 pattern = AS_PTR(resolved, EnumType);
-            if (IS_PTR(resolved, EntityType))
+            else if (IS_PTR(resolved, EntityType))
                 pattern = AS_PTR(resolved, EntityType);
             else
             {
@@ -632,6 +639,12 @@ ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unres
 
 optional<ptr<EnumValue>> Resolver::resolve_identity_from_pattern_hint(ptr<IdentityLiteral> identity_literal, Pattern hint)
 {
+    if (IS_PTR(hint, PatternLiteral))
+    {
+        auto pattern_literal = AS_PTR(hint, PatternLiteral);
+        return resolve_identity_from_pattern_hint(identity_literal, pattern_literal->pattern);
+    }
+
     auto identity = identity_literal->identity;
 
     if (IS_PTR(hint, EnumType))
