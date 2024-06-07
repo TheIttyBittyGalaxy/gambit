@@ -95,6 +95,11 @@ Pattern determine_expression_pattern(Expression expression)
         throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", get_span(unresolved_literal));
     }
 
+    else if (IS_PTR(expression, ExpressionLiteral))
+    {
+        return determine_expression_pattern(AS_PTR(expression, ExpressionLiteral)->expr);
+    }
+
     else if (IS_PTR(expression, Variable))
     {
         auto variable = AS_PTR(expression, Variable);
