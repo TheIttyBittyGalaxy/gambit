@@ -1,7 +1,7 @@
 #include "apm.h"
 #include "json.h"
 
-// Macros
+// MACROS
 
 #define STRUCT_FIELD(field) json.add(#field, node.field);
 
@@ -21,7 +21,7 @@
     if (IS_PTR(node, T))        \
         return to_json(AS_PTR(node, T)->identity, depth);
 
-// Serialisation
+// PROGRAM
 
 string to_json(const ptr<Program> &node, const size_t &depth)
 {
@@ -45,13 +45,23 @@ string to_json(const ptr<CodeBlock> &node, const size_t &depth)
     return (string)json;
 }
 
+string to_json(const ptr<Scope> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("Scope"));
+    STRUCT_PTR_FIELD(lookup);
+    json.close();
+    return (string)json;
+}
+
 string to_json(const Scope::LookupValue &node, const size_t &depth)
 {
     VARIANT_PTR(Variable);
     VARIANT_PTR(UnionPattern);
-    VARIANT_PTR(IntrinsicType);
+    VARIANT_PTR(PrimitiveType);
     VARIANT_PTR(EnumType);
-    VARIANT_PTR(Entity);
+    VARIANT_PTR(EntityType);
     VARIANT_PTR(StateProperty);
     VARIANT_PTR(FunctionProperty);
     VARIANT_PTR(Procedure);
@@ -71,31 +81,15 @@ string to_json(const ptr<Scope::OverloadedIdentity> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<Scope> &node, const size_t &depth)
+string to_json(const ptr<Procedure> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("Scope"));
-    STRUCT_PTR_FIELD(lookup);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<UnresolvedIdentity> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("UnresolvedIdentity"));
+    json.add("node", string("Procedure"));
     STRUCT_PTR_FIELD(identity);
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<UninferredPattern> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("UninferredPattern"));
+    STRUCT_PTR_FIELD(scope);
+    STRUCT_PTR_FIELD(parameters);
+    STRUCT_PTR_FIELD(body);
     json.close();
     return (string)json;
 }
@@ -112,52 +106,58 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<AnyPattern> &node, const size_t &depth)
+// LITERALS
+
+string to_json(const UnresolvedLiteral &node, const size_t &depth)
+{
+    VARIANT_PTR(PrimitiveLiteral);
+    VARIANT_PTR(ListLiteral);
+    VARIANT_PTR(IdentityLiteral);
+
+    throw json_serialisation_error("Could not serialise UnresolvedLiteral variant.");
+}
+
+string to_json(const ptr<PrimitiveLiteral> &node, const size_t &depth)
+{
+    return to_json(node->value);
+}
+
+string to_json(const ptr<ListLiteral> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("AnyPattern"));
+    json.add("node", string("ListLiteral"));
+    STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
 }
 
-string to_json(const ptr<UnionPattern> &node, const size_t &depth)
+string to_json(const ptr<IdentityLiteral> &node, const size_t &depth)
 {
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("UnionPattern"));
-    STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(patterns);
-    json.close();
-    return (string)json;
+    return to_json("UNRESOLVED<" + node->identity + ">");
 }
 
-string to_json(const ptr<ListPattern> &node, const size_t &depth)
+// VALUES
+
+string to_json(const ptr<PrimitiveValue> &node, const size_t &depth)
 {
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("ListPattern"));
-    STRUCT_PTR_FIELD(list_of);
-    STRUCT_PTR_FIELD(fixed_size);
-    json.close();
-    return (string)json;
+    if (IS(node->value, double))
+        return to_json(AS(node->value, double));
+    if (IS(node->value, int))
+        return to_json(AS(node->value, int));
+    if (IS(node->value, bool))
+        return to_json(AS(node->value, bool));
+    if (IS(node->value, string))
+        return to_json(AS(node->value, string));
+
+    throw json_serialisation_error("Could not serialise PrimitiveValue.");
 }
 
-string to_json(const ptr<InvalidPattern> &node, const size_t &depth)
+string to_json(const ptr<ListValue> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("InvalidPattern"));
-    json.close();
-    return (string)json;
-}
-
-string to_json(const ptr<EnumType> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("EnumType"));
-    STRUCT_PTR_FIELD(identity);
+    json.add("node", string("ListValue"));
     STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
@@ -173,14 +173,61 @@ string to_json(const ptr<EnumValue> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<Entity> &node, const size_t &depth)
+// TYPES
+
+string to_json(const ptr<PrimitiveType> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("Entity"));
+    json.add("node", string("PrimitiveType"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(cpp_identity);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<ListType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ListType"));
+    STRUCT_PTR_FIELD(list_of);
+    STRUCT_PTR_FIELD(fixed_size);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<EntityType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("EntityType"));
     STRUCT_PTR_FIELD(identity);
     json.close();
     return (string)json;
+}
+
+string to_json(const ptr<EnumType> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("EnumType"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(values);
+    json.close();
+    return (string)json;
+}
+
+// PROPERTIES
+
+string to_json(const Property &node, const size_t &depth)
+{
+    VARIANT_PTR(IdentityLiteral);
+    VARIANT_PTR(StateProperty);
+    VARIANT_PTR(FunctionProperty);
+    VARIANT_PTR(InvalidProperty);
+
+    throw json_serialisation_error("Could not serialise Property variant.");
 }
 
 string to_json(const ptr<StateProperty> &node, const size_t &depth)
@@ -211,19 +258,6 @@ string to_json(const ptr<FunctionProperty> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<Procedure> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("Procedure"));
-    STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(scope);
-    STRUCT_PTR_FIELD(parameters);
-    STRUCT_PTR_FIELD(body);
-    json.close();
-    return (string)json;
-}
-
 string to_json(const ptr<InvalidProperty> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -233,97 +267,106 @@ string to_json(const ptr<InvalidProperty> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const Property &node, const size_t &depth)
-{
-
-    VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR(StateProperty);
-    VARIANT_PTR(FunctionProperty);
-    VARIANT_PTR(InvalidProperty);
-
-    throw json_serialisation_error("Could not serialise Property variant.");
-}
-
-string to_json(const ptr<IntrinsicType> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("IntrinsicType"));
-    STRUCT_PTR_FIELD(identity);
-    STRUCT_PTR_FIELD(cpp_identity);
-    json.close();
-    return (string)json;
-}
+// PATTERNS
 
 string to_json(const Pattern &node, const size_t &depth)
 {
-    VARIANT_PTR(UnresolvedIdentity);
+    VARIANT(UnresolvedLiteral);
+    VARIANT_PTR(PatternLiteral);
+
+    VARIANT_PTR(AnyPattern);
+
+    VARIANT_PTR(UnionPattern);
+
+    VARIANT_PTR(PrimitiveValue);
+    VARIANT_PTR_IDENTITY(EnumValue);
+
+    VARIANT_PTR_IDENTITY(PrimitiveType);
+    VARIANT_PTR(ListType);
+    VARIANT_PTR_IDENTITY(EnumType);
+    VARIANT_PTR_IDENTITY(EntityType);
+
     VARIANT_PTR(UninferredPattern);
     VARIANT_PTR(InvalidPattern);
-    VARIANT_PTR(AnyPattern);
-    VARIANT_PTR(UnionPattern);
-    VARIANT_PTR(ListPattern);
-    VARIANT_PTR_IDENTITY(IntrinsicType);
-    VARIANT_PTR_IDENTITY(EnumType);
-    VARIANT_PTR_IDENTITY(Entity);
-    VARIANT_PTR(IntrinsicValue);
-    VARIANT_PTR_IDENTITY(EnumValue);
 
     throw json_serialisation_error("Could not serialise Pattern variant.");
 }
 
-/*
-string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
+string to_json(const ptr<PatternLiteral> &node, const size_t &depth)
+{
+    return to_json(node->pattern);
+}
+
+string to_json(const ptr<AnyPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("IntrinsicValue"));
-    if (IS(node->value, double))
-        json.add("value", AS(node->value, double));
-    else if (IS(node->value, int))
-        json.add("value", AS(node->value, int));
-    else if (IS(node->value, bool))
-        json.add("value", AS(node->value, bool));
-    else if (IS(node->value, string))
-        json.add("value", AS(node->value, string));
-    STRUCT_PTR_FIELD(type);
-    json.close();
-    return (string)json;
-}
-*/
-
-string to_json(const ptr<IntrinsicValue> &node, const size_t &depth)
-{
-    if (IS(node->value, double))
-        return to_json(AS(node->value, double));
-    if (IS(node->value, int))
-        return to_json(AS(node->value, int));
-    if (IS(node->value, bool))
-        return to_json(AS(node->value, bool));
-    if (IS(node->value, string))
-        return to_json(AS(node->value, string));
-
-    throw json_serialisation_error("Could not serialise IntrinsicValue.");
-}
-
-string to_json(const ptr<ListValue> &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    json.add("node", string("ListValue"));
-    STRUCT_PTR_FIELD(values);
+    json.add("node", string("AnyPattern"));
     json.close();
     return (string)json;
 }
 
-string to_json(const ptr<InstanceList> &node, const size_t &depth)
+string to_json(const ptr<UnionPattern> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("InstanceList"));
-    STRUCT_PTR_FIELD(values);
+    json.add("node", string("UnionPattern"));
+    STRUCT_PTR_FIELD(identity);
+    STRUCT_PTR_FIELD(patterns);
     json.close();
     return (string)json;
+}
+
+string to_json(const ptr<UninferredPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("UninferredPattern"));
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<InvalidPattern> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InvalidPattern"));
+    json.close();
+    return (string)json;
+}
+
+// EXPRESSIONS
+
+string to_json(const Expression &node, const size_t &depth)
+{
+    VARIANT(UnresolvedLiteral);
+    VARIANT_PTR(ExpressionLiteral);
+
+    VARIANT_PTR(PrimitiveValue);
+    VARIANT_PTR(ListValue);
+    VARIANT_PTR_IDENTITY(EnumValue);
+    VARIANT_PTR_IDENTITY(Variable);
+
+    VARIANT_PTR(Unary);
+    VARIANT_PTR(Binary);
+
+    VARIANT_PTR(InstanceList);
+    VARIANT_PTR(ExpressionIndex);
+    VARIANT_PTR(PropertyIndex);
+
+    VARIANT_PTR(Call);
+
+    VARIANT_PTR(IfExpression);
+    VARIANT_PTR(MatchExpression);
+
+    VARIANT_PTR(InvalidExpression);
+
+    throw json_serialisation_error("Could not serialise Expression variant.");
+};
+
+string to_json(const ptr<ExpressionLiteral> &node, const size_t &depth)
+{
+    return to_json(node->expr);
 }
 
 string to_json(const ptr<Unary> &node, const size_t &depth)
@@ -345,6 +388,16 @@ string to_json(const ptr<Binary> &node, const size_t &depth)
     STRUCT_PTR_FIELD(op);
     STRUCT_PTR_FIELD(lhs);
     STRUCT_PTR_FIELD(rhs);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<InstanceList> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("InstanceList"));
+    STRUCT_PTR_FIELD(values);
     json.close();
     return (string)json;
 }
@@ -401,16 +454,6 @@ string to_json(const Call::Argument &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const IfExpression::Rule &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    STRUCT_FIELD(condition);
-    STRUCT_FIELD(result);
-    json.close();
-    return (string)json;
-}
-
 string to_json(const ptr<IfExpression> &node, const size_t &depth)
 {
     JsonContainer json(depth);
@@ -422,21 +465,21 @@ string to_json(const ptr<IfExpression> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const Match::Rule &node, const size_t &depth)
+string to_json(const IfExpression::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    STRUCT_FIELD(pattern);
+    STRUCT_FIELD(condition);
     STRUCT_FIELD(result);
     json.close();
     return (string)json;
 }
 
-string to_json(const ptr<Match> &node, const size_t &depth)
+string to_json(const ptr<MatchExpression> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("Match"));
+    json.add("node", string("MatchExpression"));
     STRUCT_PTR_FIELD(subject);
     STRUCT_PTR_FIELD(rules);
     STRUCT_PTR_FIELD(has_else);
@@ -444,11 +487,12 @@ string to_json(const ptr<Match> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<InvalidValue> &node, const size_t &depth)
+string to_json(const MatchExpression::Rule &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("InvalidValue"));
+    STRUCT_FIELD(pattern);
+    STRUCT_FIELD(result);
     json.close();
     return (string)json;
 }
@@ -462,36 +506,20 @@ string to_json(const ptr<InvalidExpression> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const Expression &node, const size_t &depth)
-{
-    VARIANT_PTR(UnresolvedIdentity);
-    VARIANT_PTR_IDENTITY(Variable);
-    VARIANT_PTR_IDENTITY(EnumValue);
-    VARIANT_PTR(IntrinsicValue);
-    VARIANT_PTR(ListValue);
-    VARIANT_PTR(InstanceList);
-    VARIANT_PTR(Unary);
-    VARIANT_PTR(Binary);
-    VARIANT_PTR(ExpressionIndex);
-    VARIANT_PTR(PropertyIndex);
-    VARIANT_PTR(Call);
-    VARIANT_PTR(IfExpression);
-    VARIANT_PTR(Match);
-    VARIANT_PTR(InvalidValue);
-    VARIANT_PTR(InvalidExpression);
+// STATEMENTS
 
-    throw json_serialisation_error("Could not serialise Expression variant.");
+string to_json(const Statement &node, const size_t &depth)
+{
+    VARIANT_PTR(IfStatement);
+    VARIANT_PTR(ForStatement);
+    VARIANT_PTR(AssignmentStatement);
+    VARIANT_PTR(VariableDeclaration);
+
+    VARIANT_PTR(CodeBlock);
+    VARIANT(Expression);
+
+    throw json_serialisation_error("Could not serialise Statement variant.");
 };
-
-string to_json(const IfStatement::Rule &node, const size_t &depth)
-{
-    JsonContainer json(depth);
-    json.object();
-    STRUCT_FIELD(condition);
-    STRUCT_FIELD(code_block);
-    json.close();
-    return (string)json;
-}
 
 string to_json(const ptr<IfStatement> &node, const size_t &depth)
 {
@@ -500,6 +528,16 @@ string to_json(const ptr<IfStatement> &node, const size_t &depth)
     json.add("node", string("IfStatement"));
     STRUCT_PTR_FIELD(rules);
     STRUCT_PTR_FIELD(else_block);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const IfStatement::Rule &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    STRUCT_FIELD(condition);
+    STRUCT_FIELD(code_block);
     json.close();
     return (string)json;
 }
@@ -538,15 +576,3 @@ string to_json(const ptr<VariableDeclaration> &node, const size_t &depth)
     json.close();
     return (string)json;
 }
-
-string to_json(const Statement &node, const size_t &depth)
-{
-    VARIANT(Expression);
-    VARIANT_PTR(CodeBlock);
-    VARIANT_PTR(IfStatement);
-    VARIANT_PTR(ForStatement);
-    VARIANT_PTR(AssignmentStatement);
-    VARIANT_PTR(VariableDeclaration);
-
-    throw json_serialisation_error("Could not serialise Statement variant.");
-};

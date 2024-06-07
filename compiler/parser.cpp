@@ -430,18 +430,13 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     {
         do
         {
-            if (peek_intrinsic_value())
+            if (peek_primitive_literal())
             {
-                auto expr = parse_intrinsic_value();
-                if (IS_PTR(expr, IntrinsicValue))
-                {
-                    auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
-                    union_pattern->patterns.push_back(intrinsic_value);
-                }
+                auto expr = parse_primitive_literal();
+                if (expr.has_value())
+                    union_pattern->patterns.push_back(expr.value());
                 else
-                {
-                    // FIXME: In this case expr is an invalid value - what should we do?
-                }
+                    throw CompilerError("Failed to parse primitive literal when parsing enum definition");
             }
             else if (confirm(Token::Identity))
             {
@@ -471,7 +466,7 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     {
         union_pattern->patterns.push_back(enum_type);
         union_pattern->identity = enum_type->identity;
-        union_pattern->span = enum_type->span;
+        // union_pattern->span = enum_type->span;
         declare(scope, union_pattern);
     }
 }
@@ -483,7 +478,7 @@ bool Parser::peek_entity_definition()
 
 void Parser::parse_entity_definition(ptr<Scope> scope)
 {
-    auto entity = CREATE(Entity);
+    auto entity = CREATE(EntityType);
 
     start_span();
     confirm_and_consume(Token::KeyEntity);
@@ -515,7 +510,7 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
     start_span();
     confirm_and_consume(Token::KeyState);
 
-    state->pattern = parse_pattern(false);
+    state->pattern = parse_pattern_literal(false);
 
     if (confirm_and_consume(Token::ParenL))
     {
@@ -523,7 +518,7 @@ void Parser::parse_state_property_definition(ptr<Scope> scope)
         {
             start_span();
             auto parameter = CREATE(Variable);
-            parameter->pattern = parse_pattern(false);
+            parameter->pattern = parse_pattern_literal(false);
 
             if (!confirm(Token::Identity))
             {
@@ -570,7 +565,7 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     start_span();
     confirm_and_consume(Token::KeyFn);
 
-    funct->pattern = parse_pattern(false);
+    funct->pattern = parse_pattern_literal(false);
 
     if (confirm_and_consume(Token::ParenL))
     {
@@ -578,7 +573,7 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
         {
             start_span();
             auto parameter = CREATE(Variable);
-            parameter->pattern = parse_pattern(false);
+            parameter->pattern = parse_pattern_literal(false);
 
             if (!confirm(Token::Identity))
             {
@@ -636,7 +631,7 @@ void Parser::parse_procedure_definition(ptr<Scope> scope)
             {
                 start_span();
                 auto parameter = CREATE(Variable);
-                parameter->pattern = parse_pattern(false);
+                parameter->pattern = parse_pattern_literal(false);
 
                 if (!confirm(Token::Identity))
                 {
@@ -742,7 +737,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
 
         confirm_and_consume(Token::KeyIn);
 
-        for_statement->range = parse_pattern(true);
+        for_statement->range = parse_pattern_literal(true);
 
         for_statement->body = parse_code_block(for_statement->scope);
 
@@ -760,7 +755,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         if (peek_and_consume(Token::KeyVar))
         {
             variable->is_mutable = true;
-            variable->pattern = parse_pattern(false);
+            variable->pattern = parse_pattern_literal(false);
         }
         else
         {
@@ -857,9 +852,9 @@ bool Parser::operator_should_bind(Precedence operator_precedence, Precedence cal
 }
 
 // FIXME: This function will throw compiler error when the tokens expected are not present
-ptr<UnresolvedIdentity> Parser::parse_unresolved_identity()
+ptr<IdentityLiteral> Parser::parse_identity_literal()
 {
-    auto identity = CREATE(UnresolvedIdentity);
+    auto identity = CREATE(IdentityLiteral);
     auto token = consume(Token::Identity);
     identity->identity = token.str;
     identity->span = to_span(token);
@@ -873,7 +868,7 @@ bool Parser::peek_expression()
            peek_match() ||
            peek_unary() ||
            peek(Token::Identity) ||
-           peek_intrinsic_value() ||
+           peek_primitive_literal() ||
            peek_list_value();
 }
 
@@ -898,13 +893,18 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         lhs = parse_match();
 
     else if (peek(Token::Identity))
-        lhs = parse_unresolved_identity();
+        lhs = parse_identity_literal();
     else if (peek_paren_expr())
         lhs = parse_paren_expr();
-    else if (peek_intrinsic_value())
-        lhs = parse_intrinsic_value();
+    else if (peek_primitive_literal())
+    {
+        auto maybe = parse_primitive_literal();
+        if (!maybe.has_value())
+            throw CompilerError("Failed to parse primitive literal when parsing expression");
+        lhs = maybe.value();
+    }
     else if (peek_list_value())
-        lhs = parse_list_value();
+        lhs = parse_list_literal();
 
     else
     {
@@ -915,7 +915,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
         gambit_error("Expected expression", token);
 
         auto expr = CREATE(InvalidExpression);
-        expr->span = to_span(token);
+        // expr->span = to_span(token);
         return expr;
     }
 
@@ -1005,7 +1005,7 @@ ptr<IfExpression> Parser::parse_if_expression()
             {
                 if_expression->has_else = true;
                 // FIXME: Should we really be creating a whole new intrinsic value like this?
-                auto true_value = CREATE(IntrinsicValue);
+                auto true_value = CREATE(PrimitiveValue);
                 true_value->value = true;
                 true_value->type = Intrinsic::type_bool;
                 rule.condition = true_value;
@@ -1035,9 +1035,9 @@ bool Parser::peek_match()
     return peek(Token::KeyMatch);
 }
 
-ptr<Match> Parser::parse_match()
+ptr<MatchExpression> Parser::parse_match()
 {
-    auto match = CREATE(Match);
+    auto match = CREATE(MatchExpression);
 
     start_span();
     confirm_and_consume(Token::KeyMatch);
@@ -1048,7 +1048,7 @@ ptr<Match> Parser::parse_match()
     {
         while ((peek_pattern(true) || peek(Token::KeyElse)) && !match->has_else)
         {
-            Match::Rule rule;
+            MatchExpression::Rule rule;
 
             start_span();
             if (peek_and_consume(Token::KeyElse))
@@ -1058,7 +1058,7 @@ ptr<Match> Parser::parse_match()
             }
             else
             {
-                rule.pattern = parse_pattern(true);
+                rule.pattern = parse_pattern_literal(true);
             }
 
             confirm_and_consume(Token::Colon);
@@ -1106,54 +1106,55 @@ ptr<Unary> Parser::parse_unary()
     return expr;
 }
 
-bool Parser::peek_intrinsic_value()
+bool Parser::peek_primitive_literal()
 {
     return peek(Token::Number) ||
            peek(Token::String) ||
            peek(Token::Boolean);
 }
 
-Expression Parser::parse_intrinsic_value()
+optional<ptr<PrimitiveLiteral>> Parser::parse_primitive_literal()
 {
-    auto intrinsic_value = CREATE(IntrinsicValue);
+    auto primitive_literal = CREATE(PrimitiveLiteral);
+    auto primitive_value = CREATE(PrimitiveValue);
+    primitive_literal->value = primitive_value;
+
     auto token = consume();
 
     if (token.kind == Token::Number)
     {
         if (token.str.find(".") != std::string::npos)
         {
-            intrinsic_value->value = stod(token.str);
-            intrinsic_value->type = Intrinsic::type_num;
+            primitive_value->value = stod(token.str);
+            primitive_value->type = Intrinsic::type_num;
         }
         else
         {
-            intrinsic_value->value = stoi(token.str);
-            intrinsic_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
+            primitive_value->value = stoi(token.str);
+            primitive_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
         }
     }
 
     else if (token.kind == Token::String)
     {
-        intrinsic_value->value = token.str;
-        intrinsic_value->type = Intrinsic::type_str;
+        primitive_value->value = token.str;
+        primitive_value->type = Intrinsic::type_str;
     }
 
     else if (token.kind == Token::Boolean)
     {
-        intrinsic_value->value = token.str == "true";
-        intrinsic_value->type = Intrinsic::type_bool;
+        primitive_value->value = token.str == "true";
+        primitive_value->type = Intrinsic::type_bool;
     }
 
     else
     {
         gambit_error("Expected literal", token);
-        auto invalid_value = CREATE(InvalidValue);
-        invalid_value->span = to_span(token);
-        return invalid_value;
+        return {};
     }
 
-    intrinsic_value->span = to_span(token);
-    return intrinsic_value;
+    primitive_literal->span = to_span(token);
+    return primitive_literal;
 }
 
 bool Parser::peek_list_value()
@@ -1161,9 +1162,9 @@ bool Parser::peek_list_value()
     return peek(Token::SquareL);
 }
 
-ptr<ListValue> Parser::parse_list_value()
+ptr<ListLiteral> Parser::parse_list_literal()
 {
-    auto list = CREATE(ListValue);
+    auto list = CREATE(ListLiteral);
 
     start_span();
 
@@ -1372,7 +1373,7 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 
     property_index->expr = lhs;
     confirm_and_consume(Token::Dot);
-    auto unresolved_identity = parse_unresolved_identity();
+    auto unresolved_identity = parse_identity_literal();
     property_index->property = unresolved_identity;
 
     property_index->span = merge(get_span(property_index->expr), unresolved_identity->span);
@@ -1399,18 +1400,18 @@ ptr<Call> Parser::parse_infix_call(Expression lhs)
             Call::Argument argument;
 
             start_span();
-            Expression expr = parse_expression();
 
-            if (IS_PTR(expr, UnresolvedIdentity) && peek_and_consume(Token::Colon))
+            if (peek(Token::Identity) && peek_next(Token::Colon))
             {
                 argument.named = true;
-                argument.name = AS_PTR(expr, UnresolvedIdentity)->identity;
+                argument.name = consume(Token::Identity).str;
+                consume(Token::Colon);
                 argument.value = parse_expression();
             }
             else
             {
                 argument.named = false;
-                argument.value = expr;
+                argument.value = parse_expression();
             }
 
             argument.span = finish_span();
@@ -1427,75 +1428,59 @@ ptr<Call> Parser::parse_infix_call(Expression lhs)
 
 // PATTERNS
 
-bool Parser::peek_pattern(bool allow_intrinsic_values)
+bool Parser::peek_pattern(bool allow_primitive_values)
 {
-    return peek(Token::Identity) ||
-           peek(Token::KeyAny) ||
-           (peek_intrinsic_value() && allow_intrinsic_values);
+    return peek(Token::KeyAny) ||
+           (peek_primitive_literal() && allow_primitive_values) ||
+           peek(Token::SquareL) ||
+           peek(Token::Identity);
 }
 
-Pattern Parser::parse_pattern(bool allow_intrinsic_values)
+ptr<PatternLiteral> Parser::parse_pattern_literal(bool allow_primitive_values)
 {
-    // "Any" pattern
-    if (peek(Token::KeyAny))
-    {
-        auto keyword = consume(Token::KeyAny);
-        auto any_pattern = CREATE(AnyPattern);
-        any_pattern->span = to_span(keyword);
-        return any_pattern;
-    }
-
-    // Intrinsic value pattern
     Pattern pattern;
-    if (peek_intrinsic_value() && allow_intrinsic_values)
+    start_span();
+
+    // "Any"
+    if (peek_and_consume(Token::KeyAny))
     {
-        auto expr = parse_intrinsic_value();
-        if (IS_PTR(expr, IntrinsicValue))
-        {
-            auto intrinsic_value = AS_PTR(expr, IntrinsicValue);
-            pattern = intrinsic_value;
-        }
-        else if (IS_PTR(expr, InvalidValue))
-        {
-            auto invalid_value = AS_PTR(expr, InvalidValue);
-            auto invalid_pattern = CREATE(InvalidPattern);
-            invalid_pattern->span = invalid_value->span;
-            pattern = invalid_pattern;
-        }
-        else
-        {
-            throw CompilerError("Unable to resolve expression variant when creating pattern from intrinsic value", get_span(expr));
-        }
+        // FIXME: Why create a new any pattern when we just use an intrinsic?
+        pattern = CREATE(AnyPattern);
     }
 
-    // FIXME: When intrinsic values are allows as patterns, there are ambiguities that need to be handled by the resolver
-    //        E.g. `[x]` will become either a list pattern or a list value depending on whether `x` represents a pattern or a value.
+    // Primitive value
+    else if (peek_primitive_literal() && allow_primitive_values)
+    {
+        auto maybe_literal = parse_primitive_literal();
+        if (maybe_literal.has_value())
+            pattern = maybe_literal.value();
+        else
+            throw CompilerError("Failed to parse primitive literal when parsing pattern literal");
+    }
 
     // Lists
     else if (peek_and_consume(Token::SquareL))
     {
-        auto list_pattern = CREATE(ListPattern);
-        list_pattern->list_of = parse_pattern(false);
+        auto list_type = CREATE(ListType);
+        list_type->list_of = parse_pattern_literal(false);
         if (peek_and_consume(Token::Comma))
-            list_pattern->fixed_size = parse_expression();
+            list_type->fixed_size = parse_expression();
         confirm_and_consume(Token::SquareR);
-        pattern = list_pattern;
+        pattern = list_type;
     }
 
     // Unresolved identity
     else
     {
-        pattern = parse_unresolved_identity();
+        pattern = parse_identity_literal();
     }
 
     // Optional pattern
-    if (peek(Token::Question))
-    {
-        auto question = consume(Token::Question);
-        auto optional_pattern = create_union_pattern(pattern, Intrinsic::none_val);
-        optional_pattern->span = merge(get_span(pattern), to_span(question));
-        return optional_pattern;
-    }
+    if (peek_and_consume(Token::Question))
+        pattern = create_union_pattern(pattern, Intrinsic::none_val);
 
-    return pattern;
+    auto pattern_literal = CREATE(PatternLiteral);
+    pattern_literal->pattern = pattern;
+    pattern_literal->span = finish_span();
+    return pattern_literal;
 }

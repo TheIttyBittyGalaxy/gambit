@@ -189,46 +189,8 @@ void Resolver::resolve_variable_declaration(ptr<VariableDeclaration> stmt, ptr<S
 
 Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    if (IS_PTR(expression, UnresolvedIdentity))
-    {
-        auto unresolved_identity = AS_PTR(expression, UnresolvedIdentity);
-        auto identity = unresolved_identity->identity;
-
-        // Resolve identity by searching for it in the scope
-        if (declared_in_scope(scope, identity))
-        {
-            auto resolved = fetch(scope, identity);
-
-            if (IS_PTR(resolved, Variable))
-                return AS_PTR(resolved, Variable);
-
-            // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
-            source->log_error("Expected value, got '" + identity + "'", unresolved_identity->span);
-
-            auto invalid_value = CREATE(InvalidValue);
-            invalid_value->span = unresolved_identity->span;
-            return invalid_value;
-        }
-
-        // Resolve identity using the pattern hint
-        if (pattern_hint.has_value())
-        {
-            auto resolved = resolve_identity_from_pattern_hint(unresolved_identity, pattern_hint.value());
-            if (IS_PTR(resolved, InvalidValue))
-                ; // pass (proceed to throwing an error)
-            else if (IS_PTR(resolved, EnumValue))
-                return AS_PTR(resolved, EnumValue);
-            else
-                CompilerError("Cannot resolve variant of identity resolved from pattern hint (while resolving expression).", get_span(expression));
-        }
-
-        // Identity could not be resolved
-        source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
-
-        auto invalid_value = CREATE(InvalidValue);
-        invalid_value->span = unresolved_identity->span;
-        return invalid_value;
-    }
+    if (IS(expression, UnresolvedLiteral))
+        return resolve_literal_as_expression(AS(expression, UnresolvedLiteral), scope, pattern_hint);
 
     else if (IS_PTR(expression, ListValue))
         resolve_list_value(AS_PTR(expression, ListValue), scope, pattern_hint);
@@ -254,10 +216,89 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, IfExpression))
         resolve_if_expression(AS_PTR(expression, IfExpression), scope, pattern_hint);
 
-    else if (IS_PTR(expression, Match))
-        resolve_match(AS_PTR(expression, Match), scope, pattern_hint);
+    else if (IS_PTR(expression, MatchExpression))
+        resolve_match(AS_PTR(expression, MatchExpression), scope, pattern_hint);
 
     return expression;
+}
+
+ptr<ExpressionLiteral> Resolver::resolve_literal_as_expression(UnresolvedLiteral unresolved_literal, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    auto expression_literal = CREATE(ExpressionLiteral);
+    expression_literal->span = get_span(unresolved_literal);
+
+    // Primitive literal
+    if (IS_PTR(unresolved_literal, PrimitiveLiteral))
+    {
+        auto primitive_literal = AS_PTR(unresolved_literal, PrimitiveLiteral);
+
+        // NOTE: We do not attempt to resolve `primitive_literal->value`, as this value
+        //       will always be a PrimitiveValue, which has no need to be resolved.
+        expression_literal->expr = primitive_literal->value;
+    }
+
+    // List literal
+    else if (IS_PTR(unresolved_literal, ListLiteral))
+    {
+        auto list_literal = AS_PTR(unresolved_literal, ListLiteral);
+        auto list_value = CREATE(ListValue);
+
+        list_value->values.reserve(list_literal->values.size());
+        for (size_t i = 0; i < list_literal->values.size(); i++)
+            list_value->values.emplace_back(resolve_expression(list_literal->values[i], scope, pattern_hint));
+
+        expression_literal->expr = list_value;
+    }
+
+    // Identity literals
+    else if (IS_PTR(unresolved_literal, IdentityLiteral))
+    {
+        auto identity_literal = AS_PTR(unresolved_literal, IdentityLiteral);
+        auto identity = identity_literal->identity;
+
+        optional<Expression> expr;
+
+        // Resolve identity by searching for it in the scope
+        if (declared_in_scope(scope, identity))
+        {
+            auto resolved = fetch(scope, identity);
+
+            if (IS_PTR(resolved, Variable))
+            {
+                expr = AS_PTR(resolved, Variable);
+            }
+            else
+            {
+                // FIXME: Make error more informative by saying _what_ the resolved object is (e.g. an entity, a type, etc)
+                source->log_error("Expected value, got '" + identity + "'", identity_literal->span);
+                expr = CREATE(InvalidExpression);
+            }
+        }
+
+        // Resolve identity using the pattern hint
+        else if (pattern_hint.has_value())
+        {
+            auto maybe_resolved = resolve_identity_from_pattern_hint(identity_literal, pattern_hint.value());
+            if (maybe_resolved.has_value())
+                expr = maybe_resolved.value();
+        }
+
+        // Identity could not be resolved
+        if (!expr.has_value())
+        {
+            source->log_error("'" + identity + "' is not defined.", identity_literal->span);
+            expr = CREATE(InvalidExpression);
+        }
+
+        expression_literal->expr = expr.value();
+    }
+
+    else
+    {
+        throw CompilerError("Could not resolve variant of UnresolvedLiteral as expression", get_span(unresolved_literal));
+    }
+
+    return expression_literal;
 }
 
 void Resolver::resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint)
@@ -298,7 +339,7 @@ void Resolver::resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope>
     }
 }
 
-void Resolver::resolve_match(ptr<Match> match, ptr<Scope> scope, optional<Pattern> pattern_hint)
+void Resolver::resolve_match(ptr<MatchExpression> match, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     match->subject = resolve_expression(match->subject, scope);
     auto subject_pattern = determine_expression_pattern(match->subject);
@@ -322,10 +363,10 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 {
     property_index->expr = resolve_expression(property_index->expr, scope);
 
-    if (IS_PTR(property_index->property, UnresolvedIdentity))
+    if (IS_PTR(property_index->property, IdentityLiteral))
     {
-        auto unresolved_identity = AS_PTR(property_index->property, UnresolvedIdentity);
-        auto identity = unresolved_identity->identity;
+        auto identity_literal = AS_PTR(property_index->property, IdentityLiteral);
+        auto identity = identity_literal->identity;
         auto instance_list = AS_PTR(property_index->expr, InstanceList);
         auto all_overloads = fetch_all_overloads(scope, identity);
 
@@ -336,7 +377,7 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 
             // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
             auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = unresolved_identity->span;
+            invalid_property->span = identity_literal->span;
             property_index->property = invalid_property;
             return;
         }
@@ -365,7 +406,7 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 
             // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
             auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = unresolved_identity->span;
+            invalid_property->span = identity_literal->span;
             property_index->property = invalid_property;
             return;
         }
@@ -375,7 +416,7 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
 
             // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
             auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = unresolved_identity->span;
+            invalid_property->span = identity_literal->span;
             property_index->property = invalid_property;
             return;
         }
@@ -417,53 +458,9 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
 
 Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    if (IS_PTR(pattern, UnresolvedIdentity))
+    if (IS(pattern, UnresolvedLiteral))
     {
-        auto unresolved_identity = AS_PTR(pattern, UnresolvedIdentity);
-        auto identity = unresolved_identity->identity;
-
-        // Resolve identity by searching for it in the scope
-        if (declared_in_scope(scope, identity))
-        {
-            auto resolved = fetch(scope, identity);
-
-            // NOTE: We presume that if a UnionPattern has been declared, then it must
-            //       represent an enum comprised of both enum and intrinsic values.
-            if (IS_PTR(resolved, UnionPattern))
-                return AS_PTR(resolved, UnionPattern);
-            if (IS_PTR(resolved, IntrinsicType))
-                return AS_PTR(resolved, IntrinsicType);
-            if (IS_PTR(resolved, EnumType))
-                return AS_PTR(resolved, EnumType);
-            if (IS_PTR(resolved, Entity))
-                return AS_PTR(resolved, Entity);
-
-            // FIXME: Provide information about what the node actually is.
-            source->log_error("'" + identity_of(resolved) + "' is not a type", unresolved_identity->span);
-
-            auto invalid_pattern = CREATE(InvalidPattern);
-            invalid_pattern->span = unresolved_identity->span;
-            return invalid_pattern;
-        }
-
-        // Resolve identity using the pattern hint
-        if (pattern_hint.has_value())
-        {
-            auto resolved = resolve_identity_from_pattern_hint(unresolved_identity, pattern_hint.value());
-            if (IS_PTR(resolved, InvalidValue))
-                ; // pass (proceed to throwing an error)
-            else if (IS_PTR(resolved, EnumValue))
-                return AS_PTR(resolved, EnumValue);
-            else
-                CompilerError("Cannot resolve variant of identity resolved from pattern hint (while resolving pattern).", get_span(pattern));
-        }
-
-        // Identity could not be resolved
-        source->log_error("'" + identity + "' is not defined.", unresolved_identity->span);
-
-        auto invalid_pattern = CREATE(InvalidPattern);
-        invalid_pattern->span = unresolved_identity->span;
-        return invalid_pattern;
+        return resolve_literal_as_pattern(AS(pattern, UnresolvedLiteral), scope, pattern_hint);
     }
 
     else if (IS_PTR(pattern, UnionPattern))
@@ -512,18 +509,96 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pa
             return union_pattern->patterns[0];
     }
 
-    else if (IS_PTR(pattern, ListPattern))
+    else if (IS_PTR(pattern, ListType))
     {
-        auto list_pattern = AS_PTR(pattern, ListPattern);
-        list_pattern->list_of = resolve_pattern(list_pattern->list_of, scope);
+        auto list_type = AS_PTR(pattern, ListType);
+        list_type->list_of = resolve_pattern(list_type->list_of, scope);
     }
 
     return pattern;
 }
 
-variant<ptr<EnumValue>, ptr<InvalidValue>> Resolver::resolve_identity_from_pattern_hint(ptr<UnresolvedIdentity> unresolved_identity, Pattern hint)
+ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unresolved_literal, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    auto identity = unresolved_identity->identity;
+    auto pattern_literal = CREATE(PatternLiteral);
+    pattern_literal->span = get_span(unresolved_literal);
+
+    // Primitive literal
+    if (IS_PTR(unresolved_literal, PrimitiveLiteral))
+    {
+        auto primitive_literal = AS_PTR(unresolved_literal, PrimitiveLiteral);
+        // NOTE: We do not attempt to resolve `primitive_literal->value`, as this value
+        //       will always be a PrimitiveValue, which has no need to be resolved.
+        pattern_literal->pattern = primitive_literal->value;
+    }
+
+    // List literal
+    else if (IS_PTR(unresolved_literal, ListLiteral))
+    {
+        auto list_literal = AS_PTR(unresolved_literal, ListLiteral);
+        throw CompilerError("Parsing a list literal as a pattern literal not yet implemented.");
+    }
+
+    // Identity literals
+    else if (IS_PTR(unresolved_literal, IdentityLiteral))
+    {
+        auto identity_literal = AS_PTR(unresolved_literal, IdentityLiteral);
+        auto identity = identity_literal->identity;
+
+        optional<Pattern> pattern;
+
+        // Resolve identity by searching for it in the scope
+        if (declared_in_scope(scope, identity))
+        {
+            auto resolved = fetch(scope, identity);
+
+            // NOTE: We presume that if a UnionPattern has been declared, then it must
+            //       represent an enum comprised of both enum and intrinsic values.
+            if (IS_PTR(resolved, UnionPattern))
+                pattern = AS_PTR(resolved, UnionPattern);
+            if (IS_PTR(resolved, PrimitiveType))
+                pattern = AS_PTR(resolved, PrimitiveType);
+            if (IS_PTR(resolved, EnumType))
+                pattern = AS_PTR(resolved, EnumType);
+            if (IS_PTR(resolved, EntityType))
+                pattern = AS_PTR(resolved, EntityType);
+            else
+            {
+                // FIXME: Provide information about what the node actually is.
+                source->log_error("'" + identity_of(resolved) + "' is not a type", identity_literal->span);
+                pattern = CREATE(InvalidPattern);
+            }
+        }
+
+        // Resolve identity using the pattern hint
+        else if (pattern_hint.has_value())
+        {
+            auto maybe_resolved = resolve_identity_from_pattern_hint(identity_literal, pattern_hint.value());
+            if (maybe_resolved.has_value())
+                pattern = maybe_resolved.value();
+        }
+
+        // Identity could not be resolved
+        if (!pattern.has_value())
+        {
+            source->log_error("'" + identity + "' is not defined.", identity_literal->span);
+            pattern = CREATE(InvalidPattern);
+        }
+
+        pattern_literal->pattern = pattern.value();
+    }
+
+    else
+    {
+        throw CompilerError("Could not resolve variant of UnresolvedLiteral as pattern", get_span(unresolved_literal));
+    }
+
+    return pattern_literal;
+}
+
+optional<ptr<EnumValue>> Resolver::resolve_identity_from_pattern_hint(ptr<IdentityLiteral> identity_literal, Pattern hint)
+{
+    auto identity = identity_literal->identity;
 
     if (IS_PTR(hint, EnumType))
     {
@@ -535,6 +610,8 @@ variant<ptr<EnumValue>, ptr<InvalidValue>> Resolver::resolve_identity_from_patte
 
     if (IS_PTR(hint, EnumValue))
     {
+        // FIXME: Technically two different enums can have the same identity,
+        //        meaning this is not correct.
         auto value = AS_PTR(hint, EnumValue);
         if (value->identity == identity)
             return value;
@@ -577,11 +654,9 @@ variant<ptr<EnumValue>, ptr<InvalidValue>> Resolver::resolve_identity_from_patte
                 msg += value->type->identity + ":" + value->identity;
             }
             msg += ".";
-            source->log_error(msg, unresolved_identity->span);
+            source->log_error(msg, identity_literal->span);
         }
     }
 
-    auto invalid_value = CREATE(InvalidValue);
-    invalid_value->span = unresolved_identity->span;
-    return invalid_value;
+    return {};
 }
