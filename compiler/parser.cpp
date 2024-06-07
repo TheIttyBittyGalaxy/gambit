@@ -430,18 +430,22 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     {
         do
         {
-            // FIXME: Re-implement the ability for enums to contain primitive values
+            auto literal = parse_literal(true);
 
-            if (confirm(Token::Identity))
+            if (IS_PTR(literal, IdentityLiteral))
             {
-                auto identity_token = consume(Token::Identity);
+                auto identity_literal = AS_PTR(literal, IdentityLiteral);
 
                 auto enum_value = CREATE(EnumValue);
-                enum_value->identity = identity_token.str;
+                enum_value->identity = identity_literal->identity;
+                enum_value->span = identity_literal->span;
                 enum_value->type = enum_type;
-                enum_value->span = to_span(identity_token);
 
                 enum_type->values.emplace_back(enum_value);
+            }
+            else
+            {
+                union_pattern->patterns.push_back(literal);
             }
         } while (peek_and_consume(Token::Comma));
 
