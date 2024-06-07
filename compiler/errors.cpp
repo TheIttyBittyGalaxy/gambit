@@ -17,7 +17,7 @@ string CompilerError::what()
         if (span.source == nullptr)
             err += "[invalid span]";
         else
-            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->file_path + (span.multiline ? "\n" : "  ") + span.get_source_substr();
+            err += span.source->file_path + ":" + to_string(span.line) + ":" + to_string(span.column) + (span.multiline ? "\n" : "  ") + span.get_source_substr();
     }
 
     if (span_two.has_value())
@@ -27,7 +27,7 @@ string CompilerError::what()
         if (span.source == nullptr)
             err += "[invalid span]";
         else
-            err += to_string(span.line) + ":" + to_string(span.column) + "  " + span.source->file_path + (span.multiline ? "\n" : "  ") + span.get_source_substr();
+            err += span.source->file_path + ":" + to_string(span.line) + ":" + to_string(span.column) + (span.multiline ? "\n" : "  ") + span.get_source_substr();
     }
 
     return err;
