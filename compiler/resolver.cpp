@@ -57,7 +57,8 @@ void Resolver::resolve_scope_lookup_value_final_pass(Scope::LookupValue value, p
     if (IS_PTR(value, Variable))
     {
         auto variable = AS_PTR(value, Variable);
-        variable->pattern = resolve_pattern(variable->pattern, scope);
+        if (!IS_PTR(variable->pattern, UninferredPattern))
+            variable->pattern = resolve_pattern(variable->pattern, scope);
     }
 
     else if (IS_PTR(value, StateProperty))
