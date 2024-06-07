@@ -139,7 +139,7 @@ void Parser::skip_whitespace()
         ;
 }
 
-void Parser::skip_to_end_of_line()
+void Parser::skip_line()
 {
     while (!end_of_file() && !peek_and_consume(Token::Line))
         consume();
@@ -324,7 +324,7 @@ void Parser::parse_program()
 
         if (panic_mode)
         {
-            skip_to_end_of_line();
+            skip_line();
             skip_to_block_nesting(0);
             panic_mode = false;
         }
@@ -345,12 +345,12 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
 
     start_span();
 
-    // Singleton code blocks
+    // SINGLETON CODE BLOCKS
     if (peek_and_consume(Token::Colon))
     {
         code_block->singleton_block = true;
 
-        auto maybe_statement = parse_statement(code_block->scope);
+        auto maybe_statement = parse_statement(code_block->scope, false);
         if (maybe_statement.has_value())
         {
             auto statement = maybe_statement.value();
@@ -368,7 +368,7 @@ ptr<CodeBlock> Parser::parse_code_block(ptr<Scope> scope)
         }
     }
 
-    // Regular code blocks
+    // REGULAR CODE BLOCKS
     else if (confirm_and_consume(Token::CurlyL))
     {
         while (peek_statement())
@@ -585,7 +585,7 @@ void Parser::parse_function_property_definition(ptr<Scope> scope)
     funct->span = finish_span();
     declare(scope, funct);
 
-    if (peek_code_block())
+    if (peek_code_block(true))
         funct->body = parse_code_block(funct->scope);
 }
 
@@ -650,13 +650,15 @@ bool Parser::peek_statement()
            peek(Token::KeyVar);
 }
 
-optional<Statement> Parser::parse_statement(ptr<Scope> scope)
+optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newline)
 {
     Statement stmt;
+    start_span();
 
     // CODE BLOCK
     if (peek_code_block(false))
     {
+        discard_span();
         stmt = parse_code_block(scope);
     }
 
@@ -666,8 +668,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
         auto if_statement = CREATE(IfStatement);
 
         start_span();
-        start_span();
-        confirm_and_consume(Token::KeyIf);
+        consume(Token::KeyIf);
 
         IfStatement::Segment segment;
         segment.condition = parse_expression();
@@ -691,7 +692,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
             else
             {
                 if_statement->fallback = parse_code_block(scope);
-                discard_span();
+                if_statement->span = finish_span();
                 break;
             }
         }
@@ -701,14 +702,11 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
     }
 
     // FOR LOOP
-    else if (peek(Token::KeyFor))
+    else if (peek_and_consume(Token::KeyFor))
     {
         auto for_statement = CREATE(ForStatement);
         for_statement->scope = CREATE(Scope);
         for_statement->scope->parent = scope;
-
-        start_span();
-        confirm_and_consume(Token::KeyFor);
 
         start_span();
         auto variable = CREATE(Variable);
@@ -737,7 +735,6 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
         auto variable = CREATE(Variable);
         assignment_stmt->variable = variable;
 
-        start_span();
         if (peek_and_consume(Token::KeyVar))
         {
             variable->is_mutable = true;
@@ -754,75 +751,73 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
         //       an ill-defined variable (i.e. one where this if statement never runs.)
         if (confirm(Token::Identity))
         {
+            start_span();
             variable->identity = consume(Token::Identity).str;
-
-            if (!variable->is_mutable || peek(Token::Assign))
-            {
-                confirm_and_consume(Token::Assign);
-                assignment_stmt->value = parse_expression();
-            }
-
+            variable->span = finish_span();
             declare(scope, variable);
         }
 
-        Span span = finish_span();
-        assignment_stmt->span = span;
-        variable->span = span;
+        if (!variable->is_mutable || peek(Token::Assign))
+        {
+            confirm_and_consume(Token::Assign);
+            assignment_stmt->value = parse_expression();
+        }
+
+        assignment_stmt->span = finish_span();
         stmt = assignment_stmt;
     }
 
     // EXPRESSION / ASSIGNMENT / INSERT
     else if (peek_expression())
     {
-        auto subject = parse_expression();
+        auto lhs = parse_expression();
 
         // ASSIGNMENT
-        if (peek(Token::Assign))
+        if (peek_and_consume(Token::Assign))
         {
             auto assignment_stmt = CREATE(AssignmentStatement);
-            assignment_stmt->subject = subject;
-
-            confirm_and_consume(Token::Assign);
+            assignment_stmt->subject = lhs;
             assignment_stmt->value = parse_expression();
 
-            assignment_stmt->span = merge(get_span(assignment_stmt->subject), get_span(assignment_stmt->value));
+            assignment_stmt->span = finish_span();
             stmt = assignment_stmt;
         }
 
         // INSERT
-        else if (peek(Token::KeyInsert))
+        else if (peek_and_consume(Token::KeyInsert))
         {
             auto insert_oper = CREATE(Binary);
             insert_oper->op = "insert";
-            insert_oper->lhs = subject;
-
-            confirm_and_consume(Token::KeyInsert);
+            insert_oper->lhs = lhs;
             insert_oper->rhs = parse_expression();
 
-            insert_oper->span = merge(get_span(insert_oper->lhs), get_span(insert_oper->rhs));
+            insert_oper->span = finish_span();
             stmt = insert_oper;
         }
 
         // EXPRESSION
         else
         {
-            stmt = subject;
+            discard_span();
+            stmt = lhs;
         }
     }
+
+    // INVALID SYNTAX
     else
     {
-        // FIXME: Instead of marking just the current token as an invalid statement,
-        //        we should mark everything up to the end of the line as invalid.
-        start_span();
-        skip_to_end_of_line();
-        auto span = finish_span();
-        gambit_error("Expected statement", span);
+        skip_line();
+        gambit_error("Expected statement", finish_span());
+
         return {};
     }
 
-    if (!end_of_file() && !confirm_and_consume(Token::Line))
+    if (require_newline)
     {
-        skip_to_end_of_line();
+        // NOTE: Order of these functions is important, otherwise the user will get a
+        //       "expected new line" error, even if the end of file follows the statement
+        if (!end_of_file() && !confirm_and_consume(Token::Line))
+            skip_line();
     }
 
     return stmt;

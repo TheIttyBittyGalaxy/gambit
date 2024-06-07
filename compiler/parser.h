@@ -41,7 +41,7 @@ private:
     // TOKEN PARSING UTILITY //
     bool end_of_file();
     void skip_whitespace();
-    void skip_to_end_of_line();
+    void skip_line();
     void skip_to_block_nesting(size_t target_nesting);
     void skip_to_end_of_current_block();
 
@@ -64,7 +64,7 @@ private:
     // PROGRAM STRUCTURE //
     void parse_program();
 
-    bool peek_code_block(bool singleton_allowed = true);
+    bool peek_code_block(bool singleton_allowed);
     [[nodiscard]] ptr<CodeBlock> parse_code_block(ptr<Scope> scope);
 
     bool peek_enum_definition();
@@ -84,7 +84,7 @@ private:
 
     // STATEMENTS //
     bool peek_statement();
-    [[nodiscard]] optional<Statement> parse_statement(ptr<Scope> scope);
+    [[nodiscard]] optional<Statement> parse_statement(ptr<Scope> scope, bool require_newline = true);
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
