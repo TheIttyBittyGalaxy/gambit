@@ -458,12 +458,19 @@ void Resolver::resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pat
 
 Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
+    // Literals
     if (IS(pattern, UnresolvedLiteral))
-    {
         return resolve_literal_as_pattern(AS(pattern, UnresolvedLiteral), scope, pattern_hint);
-    }
 
-    else if (IS_PTR(pattern, UnionPattern))
+    if (IS_PTR(pattern, PatternLiteral))
+        return pattern; // If a node is a PatternLiteral, that should mean it has already been resolved.
+
+    // Any pattern
+    if (IS_PTR(pattern, AnyPattern))
+        return pattern;
+
+    // Union patterns
+    if (IS_PTR(pattern, UnionPattern))
     {
         auto union_pattern = AS_PTR(pattern, UnionPattern);
 
@@ -509,13 +516,40 @@ Pattern Resolver::resolve_pattern(Pattern pattern, ptr<Scope> scope, optional<Pa
             return union_pattern->patterns[0];
     }
 
-    else if (IS_PTR(pattern, ListType))
+    // Values
+    if (IS_PTR(pattern, PrimitiveValue))
+        return pattern;
+
+    if (IS_PTR(pattern, EnumValue))
+        return pattern;
+
+    // Types
+    if (IS_PTR(pattern, PrimitiveType))
+        return pattern;
+
+    if (IS_PTR(pattern, ListType))
     {
         auto list_type = AS_PTR(pattern, ListType);
         list_type->list_of = resolve_pattern(list_type->list_of, scope);
+        // TODO: Resolve the `fixed_size`, if present
+        return list_type;
     }
 
-    return pattern;
+    if (IS_PTR(pattern, EnumType))
+        return pattern;
+
+    if (IS_PTR(pattern, EntityType))
+        return pattern;
+
+    // Uninferred pattern
+    if (IS_PTR(pattern, UninferredPattern))
+        throw CompilerError("Attempt to resolve an UninferredPattern");
+
+    // Invalid pattern
+    if (IS_PTR(pattern, InvalidPattern))
+        return pattern;
+
+    throw CompilerError("Could not resolve Pattern variant ");
 }
 
 ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unresolved_literal, ptr<Scope> scope, optional<Pattern> pattern_hint)
