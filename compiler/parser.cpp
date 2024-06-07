@@ -430,15 +430,9 @@ void Parser::parse_enum_definition(ptr<Scope> scope)
     {
         do
         {
-            if (peek_primitive_literal())
-            {
-                auto expr = parse_primitive_literal();
-                if (expr.has_value())
-                    union_pattern->patterns.push_back(expr.value());
-                else
-                    throw CompilerError("Failed to parse primitive literal when parsing enum definition");
-            }
-            else if (confirm(Token::Identity))
+            // FIXME: Re-implement the ability for enums to contain primitive values
+
+            if (confirm(Token::Identity))
             {
                 auto identity_token = consume(Token::Identity);
 
@@ -851,25 +845,13 @@ bool Parser::operator_should_bind(Precedence operator_precedence, Precedence cal
         return operator_precedence >= caller_precedence;
 }
 
-// FIXME: This function will throw compiler error when the tokens expected are not present
-ptr<IdentityLiteral> Parser::parse_identity_literal()
-{
-    auto identity = CREATE(IdentityLiteral);
-    auto token = consume(Token::Identity);
-    identity->identity = token.str;
-    identity->span = to_span(token);
-    return identity;
-}
-
 bool Parser::peek_expression()
 {
     return peek_paren_expr() ||
-           peek_if_expression() ||
-           peek_match() ||
+           peek_literal(true) ||
            peek_unary() ||
-           peek(Token::Identity) ||
-           peek_primitive_literal() ||
-           peek_list_value();
+           peek_if_expression() ||
+           peek_match();
 }
 
 Expression Parser::parse_expression(Precedence caller_precedence)
@@ -885,26 +867,20 @@ Expression Parser::parse_expression(Precedence caller_precedence)
     //        I think most of the remaining nuds can be left without a check, as they all
     //        represent values, and so defacto have the highest precedence. Only ones I
     //        have no idea about are `match` and `if_expression`.
-    if (peek_unary() && operator_should_bind(Precedence::Unary, caller_precedence))
+    if (peek_paren_expr())
+        lhs = parse_paren_expr();
+
+    else if (peek_literal(true))
+        lhs = parse_literal(true);
+
+    else if (peek_unary() && operator_should_bind(Precedence::Unary, caller_precedence))
         lhs = parse_unary();
+
     else if (peek_if_expression())
         lhs = parse_if_expression();
+
     else if (peek_match())
         lhs = parse_match();
-
-    else if (peek(Token::Identity))
-        lhs = parse_identity_literal();
-    else if (peek_paren_expr())
-        lhs = parse_paren_expr();
-    else if (peek_primitive_literal())
-    {
-        auto maybe = parse_primitive_literal();
-        if (!maybe.has_value())
-            throw CompilerError("Failed to parse primitive literal when parsing expression");
-        lhs = maybe.value();
-    }
-    else if (peek_list_value())
-        lhs = parse_list_literal();
 
     else
     {
@@ -1106,85 +1082,6 @@ ptr<Unary> Parser::parse_unary()
     return expr;
 }
 
-bool Parser::peek_primitive_literal()
-{
-    return peek(Token::Number) ||
-           peek(Token::String) ||
-           peek(Token::Boolean);
-}
-
-optional<ptr<PrimitiveLiteral>> Parser::parse_primitive_literal()
-{
-    auto primitive_literal = CREATE(PrimitiveLiteral);
-    auto primitive_value = CREATE(PrimitiveValue);
-    primitive_literal->value = primitive_value;
-
-    auto token = consume();
-
-    if (token.kind == Token::Number)
-    {
-        if (token.str.find(".") != std::string::npos)
-        {
-            primitive_value->value = stod(token.str);
-            primitive_value->type = Intrinsic::type_num;
-        }
-        else
-        {
-            primitive_value->value = stoi(token.str);
-            primitive_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
-        }
-    }
-
-    else if (token.kind == Token::String)
-    {
-        primitive_value->value = token.str;
-        primitive_value->type = Intrinsic::type_str;
-    }
-
-    else if (token.kind == Token::Boolean)
-    {
-        primitive_value->value = token.str == "true";
-        primitive_value->type = Intrinsic::type_bool;
-    }
-
-    else
-    {
-        gambit_error("Expected literal", token);
-        return {};
-    }
-
-    primitive_literal->span = to_span(token);
-    return primitive_literal;
-}
-
-bool Parser::peek_list_value()
-{
-    return peek(Token::SquareL);
-}
-
-ptr<ListLiteral> Parser::parse_list_literal()
-{
-    auto list = CREATE(ListLiteral);
-
-    start_span();
-
-    if (confirm_and_consume(Token::SquareL))
-    {
-        if (peek_expression())
-        {
-            do
-            {
-                list->values.push_back(parse_expression());
-            } while (peek_and_consume(Token::Comma));
-        }
-
-        confirm_and_consume(Token::SquareR);
-    }
-
-    list->span = finish_span();
-    return list;
-}
-
 bool Parser::peek_infix_logical_or()
 {
     return peek(Token::KeyOr);
@@ -1373,7 +1270,12 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
 
     property_index->expr = lhs;
     confirm_and_consume(Token::Dot);
-    auto unresolved_identity = parse_identity_literal();
+
+    // FIXME: Confirm the identity is present and, if not, then gracefully and provide a user error
+    Token token = consume(Token::Identity);
+    auto unresolved_identity = CREATE(IdentityLiteral);
+    unresolved_identity->identity = token.str;
+    unresolved_identity->span = to_span(token);
     property_index->property = unresolved_identity;
 
     property_index->span = merge(get_span(property_index->expr), unresolved_identity->span);
@@ -1430,10 +1332,12 @@ ptr<Call> Parser::parse_infix_call(Expression lhs)
 
 bool Parser::peek_literal(bool allow_primitive_values)
 {
-    return peek(Token::KeyAny) ||
-           (peek_primitive_literal() && allow_primitive_values) ||
-           peek(Token::SquareL) ||
-           peek(Token::Identity);
+    return peek(Token::Identity) ||
+           peek(Token::KeyAny) ||
+           (allow_primitive_values && peek(Token::Number)) ||
+           (allow_primitive_values && peek(Token::String)) ||
+           (allow_primitive_values && peek(Token::Boolean)) ||
+           peek(Token::SquareL);
 }
 
 UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
@@ -1441,8 +1345,18 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
     UnresolvedLiteral unresolved_literal;
     start_span();
 
+    // Identity Literals
+    if (peek(Token::Identity))
+    {
+        auto identity = CREATE(IdentityLiteral);
+        identity->identity = consume(Token::Identity).str;
+
+        identity->span = finish_span();
+        unresolved_literal = identity;
+    }
+
     // "Any"
-    if (peek_and_consume(Token::KeyAny))
+    else if (peek_and_consume(Token::KeyAny))
     {
         auto identity_literal = CREATE(IdentityLiteral);
         identity_literal->identity = "any";
@@ -1452,14 +1366,47 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
     }
 
     // Primitive value
-    else if (peek_primitive_literal() && allow_primitive_values)
+    else if (allow_primitive_values && (peek(Token::Number) || peek(Token::String) || peek(Token::Boolean)))
     {
-        discard_span();
-        auto maybe_literal = parse_primitive_literal();
-        if (maybe_literal.has_value())
-            unresolved_literal = maybe_literal.value();
+        auto primitive_literal = CREATE(PrimitiveLiteral);
+        auto primitive_value = CREATE(PrimitiveValue);
+        primitive_literal->value = primitive_value;
+
+        auto token = consume();
+
+        if (token.kind == Token::Number)
+        {
+            if (token.str.find(".") != std::string::npos)
+            {
+                primitive_value->value = stod(token.str);
+                primitive_value->type = Intrinsic::type_num;
+            }
+            else
+            {
+                primitive_value->value = stoi(token.str);
+                primitive_value->type = Intrinsic::type_amt; // We use `amt` instead of `int` as number literals cannot be negative
+            }
+        }
+
+        else if (token.kind == Token::String)
+        {
+            primitive_value->value = token.str;
+            primitive_value->type = Intrinsic::type_str;
+        }
+
+        else if (token.kind == Token::Boolean)
+        {
+            primitive_value->value = token.str == "true";
+            primitive_value->type = Intrinsic::type_bool;
+        }
+
         else
-            throw CompilerError("Failed to parse primitive literal when parsing pattern literal");
+        {
+            CompilerError("Could not match token type while parsing PrimitiveLiteral");
+        }
+
+        primitive_literal->span = finish_span();
+        unresolved_literal = primitive_literal;
     }
 
     // Lists
@@ -1479,13 +1426,6 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
 
         list_literal->span = finish_span();
         unresolved_literal = list_literal;
-    }
-
-    // Unresolved identity
-    else
-    {
-        discard_span();
-        unresolved_literal = parse_identity_literal();
     }
 
     // Optional pattern literal

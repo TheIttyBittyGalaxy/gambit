@@ -90,7 +90,6 @@ private:
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
-    [[nodiscard]] ptr<IdentityLiteral> parse_identity_literal();
 
     bool peek_expression();
     Expression parse_expression(Precedence precedence = Precedence::None);
@@ -103,10 +102,6 @@ private:
     [[nodiscard]] ptr<MatchExpression> parse_match();
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
-    bool peek_primitive_literal();
-    [[nodiscard]] optional<ptr<PrimitiveLiteral>> parse_primitive_literal();
-    bool peek_list_value();
-    [[nodiscard]] ptr<ListLiteral> parse_list_literal();
 
     bool peek_infix_logical_or();
     [[nodiscard]] ptr<Binary> parse_infix_logical_or(Expression lhs);
