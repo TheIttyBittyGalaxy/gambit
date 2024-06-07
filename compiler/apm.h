@@ -33,9 +33,15 @@ struct Procedure;
 struct Variable;
 
 // Literals
-// NOTE: These should cease to exist after the "resolver" stage.
-//       Nodes such as `PatternLiteral` and `ExpressionLiteral`
-//       keep track of the original spans.
+// NOTE: The Parser produces UnresolvedLiterals in place of expressions and patterns.
+//
+//       The Resolver turns these into either a PatternLiteral or a ExpressionLiteral.
+//       The new node takes the span from the UnresolvedLiteral so we can track where
+//       the pattern or expression was originally written in the source. The child node
+//       of the new node is then a Pattern/Expression.
+//
+//       Because of this, these literals should cease to exist after the Resolver stage.
+
 struct PrimitiveLiteral;
 struct ListLiteral;
 struct IdentityLiteral;
