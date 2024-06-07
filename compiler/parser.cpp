@@ -643,32 +643,171 @@ void Parser::parse_procedure_definition(ptr<Scope> scope)
 bool Parser::peek_statement()
 {
     return peek_expression() ||
-           peek_code_block() ||
-           peek_if_statement() ||
-           peek_for_statement() ||
-           peek_variable_declaration();
+           peek(Token::CurlyL) ||
+           peek(Token::KeyIf) ||
+           peek(Token::KeyFor) ||
+           peek(Token::KeyLet) ||
+           peek(Token::KeyVar);
 }
 
 optional<Statement> Parser::parse_statement(ptr<Scope> scope)
 {
     Statement stmt;
+
+    // CODE BLOCK
     if (peek_code_block(false))
+    {
         stmt = parse_code_block(scope);
-    else if (peek_if_statement())
-        stmt = parse_if_statement(scope);
-    else if (peek_for_statement())
-        stmt = parse_for_statement(scope);
-    else if (peek_variable_declaration())
-        stmt = parse_variable_declaration(scope);
+    }
+
+    // IF STATEMENT
+    else if (peek(Token::KeyIf))
+    {
+        auto if_statement = CREATE(IfStatement);
+
+        start_span();
+        start_span();
+        confirm_and_consume(Token::KeyIf);
+
+        IfStatement::Segment segment;
+        segment.condition = parse_expression();
+        segment.code_block = parse_code_block(scope);
+        segment.span = finish_span();
+        if_statement->segments.push_back(segment);
+
+        while (peek(Token::KeyElse))
+        {
+            start_span();
+            consume(Token::KeyElse);
+
+            if (peek_and_consume(Token::KeyIf))
+            {
+                IfStatement::Segment segment;
+                segment.condition = parse_expression();
+                segment.code_block = parse_code_block(scope);
+                segment.span = finish_span();
+                if_statement->segments.push_back(segment);
+            }
+            else
+            {
+                if_statement->fallback = parse_code_block(scope);
+                discard_span();
+                break;
+            }
+        }
+
+        if_statement->span = finish_span();
+        stmt = if_statement;
+    }
+
+    // FOR LOOP
+    else if (peek(Token::KeyFor))
+    {
+        auto for_statement = CREATE(ForStatement);
+        for_statement->scope = CREATE(Scope);
+        for_statement->scope->parent = scope;
+
+        start_span();
+        confirm_and_consume(Token::KeyFor);
+
+        start_span();
+        auto variable = CREATE(Variable);
+        variable->identity = consume(Token::Identity).str;
+        variable->is_mutable = false;
+        variable->pattern = CREATE(UninferredPattern);
+        variable->span = finish_span();
+
+        for_statement->variable = variable;
+        declare(for_statement->scope, variable);
+
+        confirm_and_consume(Token::KeyIn);
+
+        for_statement->range = parse_pattern(true);
+
+        for_statement->body = parse_code_block(for_statement->scope);
+
+        for_statement->span = finish_span();
+        stmt = for_statement;
+    }
+
+    // VARIABLE DECLARATION
+    else if (peek(Token::KeyLet) || peek(Token::KeyVar))
+    {
+        auto assignment_stmt = CREATE(VariableDeclaration);
+        auto variable = CREATE(Variable);
+        assignment_stmt->variable = variable;
+
+        start_span();
+        if (peek_and_consume(Token::KeyVar))
+        {
+            variable->is_mutable = true;
+            variable->pattern = parse_pattern(false);
+        }
+        else
+        {
+            confirm_and_consume(Token::KeyLet);
+            variable->is_mutable = false;
+            variable->pattern = CREATE(UninferredPattern);
+        }
+
+        // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
+        //       an ill-defined variable (i.e. one where this if statement never runs.)
+        if (confirm(Token::Identity))
+        {
+            variable->identity = consume(Token::Identity).str;
+
+            if (!variable->is_mutable || peek(Token::Assign))
+            {
+                confirm_and_consume(Token::Assign);
+                assignment_stmt->value = parse_expression();
+            }
+
+            declare(scope, variable);
+        }
+
+        Span span = finish_span();
+        assignment_stmt->span = span;
+        variable->span = span;
+        stmt = assignment_stmt;
+    }
+
+    // EXPRESSION / ASSIGNMENT / INSERT
     else if (peek_expression())
     {
-        auto expr = parse_expression();
-        if (peek_infix_assignment_statement())
-            stmt = parse_infix_assignment_statement(expr, scope);
-        else if (peek_infix_insert_statement())
-            stmt = parse_infix_insert_statement(expr, scope);
+        auto subject = parse_expression();
+
+        // ASSIGNMENT
+        if (peek(Token::Assign))
+        {
+            auto assignment_stmt = CREATE(AssignmentStatement);
+            assignment_stmt->subject = subject;
+
+            confirm_and_consume(Token::Assign);
+            assignment_stmt->value = parse_expression();
+
+            assignment_stmt->span = merge(get_span(assignment_stmt->subject), get_span(assignment_stmt->value));
+            stmt = assignment_stmt;
+        }
+
+        // INSERT
+        else if (peek(Token::KeyInsert))
+        {
+            auto insert_oper = CREATE(Binary);
+            insert_oper->op = "insert";
+            insert_oper->lhs = subject;
+
+            confirm_and_consume(Token::KeyInsert);
+            insert_oper->rhs = parse_expression();
+
+            insert_oper->span = merge(get_span(insert_oper->lhs), get_span(insert_oper->rhs));
+            stmt = insert_oper;
+        }
+
+        // EXPRESSION
         else
-            stmt = expr;
+        {
+            stmt = subject;
+        }
     }
     else
     {
@@ -687,164 +826,6 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope)
     }
 
     return stmt;
-}
-
-bool Parser::peek_if_statement()
-{
-    return peek(Token::KeyIf);
-}
-
-ptr<IfStatement> Parser::parse_if_statement(ptr<Scope> scope)
-{
-    auto if_statement = CREATE(IfStatement);
-
-    start_span();
-    start_span();
-    confirm_and_consume(Token::KeyIf);
-
-    IfStatement::Segment segment;
-    segment.condition = parse_expression();
-    segment.code_block = parse_code_block(scope);
-    segment.span = finish_span();
-    if_statement->segments.push_back(segment);
-
-    while (peek(Token::KeyElse))
-    {
-        start_span();
-        consume(Token::KeyElse);
-
-        if (peek_and_consume(Token::KeyIf))
-        {
-            IfStatement::Segment segment;
-            segment.condition = parse_expression();
-            segment.code_block = parse_code_block(scope);
-            segment.span = finish_span();
-            if_statement->segments.push_back(segment);
-        }
-        else
-        {
-            if_statement->fallback = parse_code_block(scope);
-            discard_span();
-            break;
-        }
-    }
-
-    if_statement->span = finish_span();
-    return if_statement;
-}
-
-bool Parser::peek_for_statement()
-{
-    return peek(Token::KeyFor);
-}
-
-ptr<ForStatement> Parser::parse_for_statement(ptr<Scope> scope)
-{
-    auto for_statement = CREATE(ForStatement);
-    for_statement->scope = CREATE(Scope);
-    for_statement->scope->parent = scope;
-
-    start_span();
-    confirm_and_consume(Token::KeyFor);
-
-    start_span();
-    auto variable = CREATE(Variable);
-    variable->identity = consume(Token::Identity).str;
-    variable->is_mutable = false;
-    variable->pattern = CREATE(UninferredPattern);
-    variable->span = finish_span();
-
-    for_statement->variable = variable;
-    declare(for_statement->scope, variable);
-
-    confirm_and_consume(Token::KeyIn);
-
-    for_statement->range = parse_pattern(true);
-
-    for_statement->body = parse_code_block(for_statement->scope);
-
-    for_statement->span = finish_span();
-    return for_statement;
-}
-
-bool Parser::peek_infix_assignment_statement()
-{
-    return peek(Token::Assign);
-}
-
-ptr<AssignmentStatement> Parser::parse_infix_assignment_statement(Expression subject, ptr<Scope> scope)
-{
-    auto assignment_stmt = CREATE(AssignmentStatement);
-    assignment_stmt->subject = subject;
-
-    confirm_and_consume(Token::Assign);
-    assignment_stmt->value = parse_expression();
-
-    assignment_stmt->span = merge(get_span(assignment_stmt->subject), get_span(assignment_stmt->value));
-    return assignment_stmt;
-}
-
-bool Parser::peek_variable_declaration()
-{
-    return peek(Token::KeyLet) || peek(Token::KeyVar);
-}
-
-ptr<VariableDeclaration> Parser::parse_variable_declaration(ptr<Scope> scope)
-{
-    auto assignment_stmt = CREATE(VariableDeclaration);
-    auto variable = CREATE(Variable);
-    assignment_stmt->variable = variable;
-
-    start_span();
-    if (peek_and_consume(Token::KeyVar))
-    {
-        variable->is_mutable = true;
-        variable->pattern = parse_pattern(false);
-    }
-    else
-    {
-        confirm_and_consume(Token::KeyLet);
-        variable->is_mutable = false;
-        variable->pattern = CREATE(UninferredPattern);
-    }
-
-    // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
-    //       an ill-defined variable (i.e. one where this if statement never runs.)
-    if (confirm(Token::Identity))
-    {
-        variable->identity = consume(Token::Identity).str;
-
-        if (!variable->is_mutable || peek(Token::Assign))
-        {
-            confirm_and_consume(Token::Assign);
-            assignment_stmt->value = parse_expression();
-        }
-
-        declare(scope, variable);
-    }
-
-    Span span = finish_span();
-    assignment_stmt->span = span;
-    variable->span = span;
-    return assignment_stmt;
-}
-
-bool Parser::peek_infix_insert_statement()
-{
-    return peek(Token::KeyInsert);
-}
-
-Expression Parser::parse_infix_insert_statement(Expression subject, ptr<Scope> scope)
-{
-    auto insert_oper = CREATE(Binary);
-    insert_oper->op = "insert";
-    insert_oper->lhs = subject;
-
-    confirm_and_consume(Token::KeyInsert);
-    insert_oper->rhs = parse_expression();
-
-    insert_oper->span = merge(get_span(insert_oper->lhs), get_span(insert_oper->rhs));
-    return insert_oper;
 }
 
 // EXPRESSIONS //
