@@ -219,7 +219,7 @@ struct Variable
     Span span;
     string identity;
     Pattern pattern;
-    bool is_mutable;
+    bool is_constant;
 };
 
 // LITERALS

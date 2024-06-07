@@ -726,7 +726,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         start_span();
         auto variable = CREATE(Variable);
         variable->identity = consume(Token::Identity).str;
-        variable->is_mutable = false;
+        variable->is_constant = true;
         variable->pattern = CREATE(UninferredPattern);
         variable->span = finish_span();
 
@@ -743,78 +743,19 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         stmt = for_statement;
     }
 
-    // VARIABLE DECLARATION
-    else if (peek(Token::KeyLet) || peek(Token::KeyVar))
-    {
-        auto assignment_stmt = CREATE(VariableDeclaration);
-        auto variable = CREATE(Variable);
-        assignment_stmt->variable = variable;
+    // EXPRESSION STATEMENT / DECLARATION / ASSIGNMENT / INSERT
 
-        if (peek_and_consume(Token::KeyVar))
-        {
-            variable->is_mutable = true;
-            variable->pattern = parse_literal(false);
-        }
-        else
-        {
-            confirm_and_consume(Token::KeyLet);
-            variable->is_mutable = false;
-            variable->pattern = CREATE(UninferredPattern);
-        }
-
-        // TODO: Check what happens downstream in the compiler when attempting to compile a VariableDeclaration with
-        //       an ill-defined variable (i.e. one where this if statement never runs.)
-        if (confirm(Token::Identity))
-        {
-            start_span();
-            variable->identity = consume(Token::Identity).str;
-            variable->span = finish_span();
-            declare(scope, variable);
-        }
-
-        if (!variable->is_mutable || peek(Token::Assign))
-        {
-            confirm_and_consume(Token::Assign);
-            assignment_stmt->value = parse_expression();
-        }
-
-        assignment_stmt->span = finish_span();
-        stmt = assignment_stmt;
-    }
-
-    // EXPRESSION / ASSIGNMENT / INSERT
     else if (peek_expression())
     {
-        auto lhs = parse_expression();
-
-        // ASSIGNMENT
-        if (peek_and_consume(Token::Assign))
-        {
-            auto assignment_stmt = CREATE(AssignmentStatement);
-            assignment_stmt->subject = lhs;
-            assignment_stmt->value = parse_expression();
-
-            assignment_stmt->span = finish_span();
-            stmt = assignment_stmt;
-        }
-
-        // INSERT
-        else if (peek_and_consume(Token::KeyInsert))
-        {
-            auto insert_oper = CREATE(Binary);
-            insert_oper->op = "insert";
-            insert_oper->lhs = lhs;
-            insert_oper->rhs = parse_expression();
-
-            insert_oper->span = finish_span();
-            stmt = insert_oper;
-        }
-
-        // EXPRESSION
-        else
+        auto expr = parse_expression();
+        if (peek(Token::Line))
         {
             discard_span();
-            stmt = lhs;
+            stmt = expr;
+        }
+        else
+        {
+            stmt = parse_infix_expression_statement(expr, scope);
         }
     }
 
@@ -836,6 +777,104 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
     }
 
     return stmt;
+}
+
+Statement Parser::parse_infix_expression_statement(Expression lhs, ptr<Scope> scope)
+{
+    // NOTE: Assumes the caller started a span before starting to parse the lhs
+
+    // DECLARATION (starting with pattern)
+    if (peek(Token::Identity)) // FIXME: Should we try parsing an entire expression, and then check to see if it is an identity?
+    {
+        // FIXME: This code is a bit sloppy! Fix the partial implementation.
+        if (!IS(lhs, UnresolvedLiteral))
+            CompilerError("Error due to partial implementation. Attempt to turn expresion into pattern of a variable declaration failed.", get_span(lhs));
+
+        // Variable
+        Token identity_token = consume(Token::Identity);
+
+        auto variable = CREATE(Variable);
+        variable->identity = identity_token.str;
+        variable->pattern = AS(lhs, UnresolvedLiteral);
+        variable->is_constant = false;
+        variable->span = to_span(identity_token);
+        declare(scope, variable);
+
+        // Declaration statement
+        auto variable_declaration = CREATE(VariableDeclaration);
+        variable_declaration->variable = variable;
+
+        if (peek_and_consume(Token::Assign))
+        {
+            variable_declaration->value = parse_expression();
+        }
+        else if (peek_and_consume(Token::AssignConstant))
+        {
+            variable_declaration->value = parse_expression();
+            variable->is_constant = true;
+        }
+
+        variable_declaration->span = finish_span();
+        return variable_declaration;
+    }
+
+    // ASSIGNMENT
+    if (peek_and_consume(Token::Assign))
+    {
+        auto assignment_stmt = CREATE(AssignmentStatement);
+        assignment_stmt->subject = lhs;
+        assignment_stmt->value = parse_expression();
+
+        assignment_stmt->span = finish_span();
+        return assignment_stmt;
+    }
+
+    // CONSTANT DECLARATION (not beginning with pattern)
+    if (peek_and_consume(Token::AssignConstant))
+    {
+        // FIXME: This code is a bit sloppy! Fix the partial implementation.
+        if (!IS(lhs, UnresolvedLiteral))
+            CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #1", get_span(lhs));
+
+        auto lhs_literal = AS(lhs, UnresolvedLiteral);
+
+        // FIXME: This code is a bit sloppy! Fix the partial implementation.
+        if (!IS_PTR(lhs_literal, IdentityLiteral))
+            CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #2", get_span(lhs));
+
+        // Variable
+        auto identity_literal = AS_PTR(lhs_literal, IdentityLiteral);
+
+        auto variable = CREATE(Variable);
+        variable->identity = identity_literal->identity;
+        variable->pattern = CREATE(UninferredPattern);
+        variable->is_constant = true;
+        variable->span = identity_literal->span;
+        declare(scope, variable);
+
+        // Declaration
+        auto variable_declaration = CREATE(VariableDeclaration);
+        variable_declaration->variable = variable;
+        variable_declaration->value = parse_expression();
+
+        variable_declaration->span = finish_span();
+        return variable_declaration;
+    }
+
+    // INSERT
+    if (peek_and_consume(Token::KeyInsert))
+    {
+        auto insert_oper = CREATE(Binary);
+        insert_oper->op = "insert";
+        insert_oper->lhs = lhs;
+        insert_oper->rhs = parse_expression();
+
+        insert_oper->span = finish_span();
+        return insert_oper;
+    }
+
+    discard_span();
+    return lhs;
 }
 
 // EXPRESSIONS //
@@ -907,7 +946,7 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_factor(lhs);
         else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
             lhs = parse_infix_term(lhs);
-        else if (peek_infix_expression_index() && operator_should_bind(Precedence::Index, caller_precedence))
+        else if (!peek(Token::Line) && peek_infix_expression_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_expression_index(lhs);
         else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
             lhs = parse_infix_property_index(lhs);

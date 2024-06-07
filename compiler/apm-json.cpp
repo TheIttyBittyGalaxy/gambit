@@ -102,7 +102,7 @@ string to_json(const ptr<Variable> &node, const size_t &depth)
     json.add("node", string("Variable"));
     STRUCT_PTR_FIELD(identity);
     STRUCT_PTR_FIELD(pattern);
-    STRUCT_PTR_FIELD(is_mutable);
+    STRUCT_PTR_FIELD(is_constant);
     json.close();
     return (string)json;
 }

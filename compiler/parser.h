@@ -87,6 +87,7 @@ private:
     // STATEMENTS //
     bool peek_statement();
     [[nodiscard]] optional<Statement> parse_statement(ptr<Scope> scope, bool require_newline = true);
+    [[nodiscard]] Statement parse_infix_expression_statement(Expression lhs, ptr<Scope> scope);
 
     // EXPRESSIONS //
     bool operator_should_bind(Precedence operator_precedence, Precedence caller_precedence, bool left_associative = true);
