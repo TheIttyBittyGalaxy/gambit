@@ -660,9 +660,7 @@ bool Parser::peek_statement()
     return peek_expression() ||
            peek(Token::CurlyL) ||
            peek(Token::KeyIf) ||
-           peek(Token::KeyFor) ||
-           peek(Token::KeyLet) ||
-           peek(Token::KeyVar);
+           peek(Token::KeyFor);
 }
 
 optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newline)

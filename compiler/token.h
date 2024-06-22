@@ -64,8 +64,6 @@ struct Token
         KeyAnd,
         KeyOr,
         KeyNot,
-        KeyLet,
-        KeyVar,
 
         Boolean,
         Number,

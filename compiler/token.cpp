@@ -66,8 +66,6 @@ const map<Token::Kind, string> token_name = {
     {Token::KeyAnd, "KeyAnd"},
     {Token::KeyOr, "KeyOr"},
     {Token::KeyNot, "KeyNot"},
-    {Token::KeyLet, "KeyLet"},
-    {Token::KeyVar, "KeyVar"},
 
     {Token::Boolean, "Boolean"},
     {Token::Number, "Number"},
@@ -136,9 +134,6 @@ const map<string, Token::Kind> keyword_match_rules = {
     {"and", Token::Kind ::KeyAnd},
     {"or", Token::KeyOr},
     {"not", Token::KeyNot},
-
-    {"let", Token::KeyLet},
-    {"var", Token::KeyVar},
 
     {"true", Token::Boolean},
     {"false", Token::Boolean},
