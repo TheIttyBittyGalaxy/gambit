@@ -1,46 +1,46 @@
 /* Gambit intrinsics
     entity Player
     static amt (Player player).number
-    List<Player> players
+    [Player] players
 */
 
 // Naughts and crosses
 
 enum Mark { NAUGHT, CROSS }
 
-state Mark (Player player).mark: match player.number {
-    1: NAUGHT
-    2: CROSS
+fn Mark (Player player).mark: match player.number {
+    1 : NAUGHT
+    2 : CROSS
 }
 
 // Game board and squares
 
 entity Square
-state int (Square square).index // Really this should be static / read-only / something to that effect
+state int   (Square square).index // Really this should be static / read-only / something to that effect
 state Mark? (Square square).mark
-fn str (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][index]
+fn str (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][square.index]
 
 entity Board
-state List<Mark, 9> (Board board).squares
+state [Mark, 9] (Board board).squares
 
 fn bool (Board board).is_full:
-    #(squares filter (square: sqaure.mark != none)) == 0
+    #(board.squares filter (square: sqaure.mark != none)) == 0
 
-fn List<Square> (Board board).available_squares:
+fn [Square] (Board board).available_squares:
     board.squares filter (square: square.mark == none)
 
 fn bool (Mark? a, Mark? b, Mark? c).winning_track:
-    a != none and a == b and b == c
+    a != none and a == b and a == c
 
 fn Mark? (Board board).winner {
-    lines = [ // infer type as `List<int, 8*3>`
+    lines :: [ // infer type as `List<int, 8*3>`
         [1, 2, 3], [4, 5, 6], [7, 8, 9],
         [1, 4, 7], [2, 5, 8], [3, 6, 9],
         [1, 5, 9], [3, 5, 7],
     ]
-
-    for line in lines { // Infer type of `line` as `List<int, 3>`
-        marks = line map (board_index: board[board_index].mark) // Infer type of `marks` as `List<Mark? 3>`
+    
+    for line in lines { // Infer type of `line` as `[int, 3]`
+        marks :: line map (board_index: board[board_index].mark) // Infer type of `marks` as `[Mark?, 3]`
         if (marks[1], marks[2], marks[3]).winning_track: return mark
     }
 }
@@ -50,19 +50,19 @@ Board board
 
 main() {
     current_player = game.players[1] // Infer type `Player`
-    other_player = game.players[2] // Infer type `Player`
+    other_player   = game.players[2] // Infer type `Player`
 
     loop {
-        chosen_square = current_player choose game.board.available_squares ("Which sqaure do you want to play?") // Infer type of 'chosen_square' as 'Square'
+        chosen_square :: current_player choose board.available_squares ("Which sqaure do you want to play?") // Infer type of 'chosen_square' as 'Square'
         chosen_square.mark = current_player.mark
 
-        if game.board.winner { // game.board.winner is promoted from `Mark?` to `Mark` (note, `winner` is a function in this case!)
+        if board.winner { // board.winner is promoted from `Mark?` to `Mark` (note, `winner` is a function in this case!)
             // This isn't really nessecary, we could just as easily do `current_player wins`, but
             // I wrote it this way to test selectors, type promotion, etc
-            Player[mark: game.board.winner] wins
+            Player[mark: board.winner] wins
         }
         
-        if game.board.is_full:
+        if board.is_full:
             draw
 
         swap current_player, other_player
