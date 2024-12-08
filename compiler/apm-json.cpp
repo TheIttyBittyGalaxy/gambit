@@ -415,6 +415,8 @@ string to_json(const Expression &node, const size_t &depth)
 
     VARIANT_PTR(Call);
 
+    VARIANT_PTR(ChooseExpression);
+
     VARIANT_PTR(IfExpression);
     VARIANT_PTR(MatchExpression);
 
@@ -525,6 +527,18 @@ string to_json(const Call::Argument &node, const size_t &depth)
     json.object();
     STRUCT_FIELD(name);
     STRUCT_FIELD(value);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<ChooseExpression> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("ChooseExpression"));
+    STRUCT_PTR_FIELD(player);
+    STRUCT_PTR_FIELD(choices);
+    STRUCT_PTR_FIELD(prompt);
     json.close();
     return (string)json;
 }

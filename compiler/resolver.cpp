@@ -239,6 +239,9 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, Call))
         resolve_call(AS_PTR(expression, Call), scope, pattern_hint);
 
+    else if (IS_PTR(expression, ChooseExpression))
+        resolve_choose_expression(AS_PTR(expression, ChooseExpression), scope, pattern_hint);
+
     else if (IS_PTR(expression, IfExpression))
         resolve_if_expression(AS_PTR(expression, IfExpression), scope, pattern_hint);
 
@@ -354,6 +357,13 @@ void Resolver::resolve_call(ptr<Call> call, ptr<Scope> scope, optional<Pattern> 
         auto argument = call->arguments[i];
         call->arguments[i].value = resolve_expression(argument.value, scope, pattern_hint);
     }
+}
+
+void Resolver::resolve_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    choose_expression->choices = resolve_expression(choose_expression->choices, scope, {}); // FIXME: Should there be a pattern hint here?
+    choose_expression->player = resolve_expression(choose_expression->player, scope, Intrinsic::entity_player);
+    choose_expression->prompt = resolve_expression(choose_expression->prompt, scope, Intrinsic::type_str);
 }
 
 void Resolver::resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope, optional<Pattern> pattern_hint)

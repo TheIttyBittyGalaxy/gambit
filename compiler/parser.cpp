@@ -977,6 +977,8 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_logical_and(lhs);
         else if (peek_infix_logical_or() && operator_should_bind(Precedence::LogicalOr, caller_precedence))
             lhs = parse_infix_logical_or(lhs);
+        else if (peek_infix_choose() && operator_should_bind(Precedence::Choose, caller_precedence))
+            lhs = parse_infix_choose(lhs);
         else
             break;
     }
@@ -1144,6 +1146,28 @@ ptr<Unary> Parser::parse_unary()
     expr->value = parse_expression(Precedence::Unary);
     expr->span = finish_span();
 
+    return expr;
+}
+
+bool Parser::peek_infix_choose()
+{
+    return peek(Token::KeyChoose);
+}
+
+ptr<ChooseExpression> Parser::parse_infix_choose(Expression lhs)
+{
+    auto expr = CREATE(ChooseExpression);
+    confirm_and_consume(Token::KeyChoose);
+
+    expr->player = lhs;
+    expr->choices = parse_expression(Precedence::Choose);
+    if (confirm_and_consume(Token::ParenL))
+    {
+        expr->prompt = parse_expression();
+        confirm_and_consume(Token::ParenR);
+    }
+
+    expr->span = merge(get_span(expr->player), get_span(expr->prompt));
     return expr;
 }
 

@@ -210,6 +210,9 @@ void Checker::check_expression(Expression expr, ptr<Scope> scope)
     else if (IS_PTR(expr, Call))
         check_call(AS_PTR(expr, Call), scope);
 
+    else if (IS_PTR(expr, ChooseExpression))
+        check_choose_expression(AS_PTR(expr, ChooseExpression), scope);
+
     else if (IS_PTR(expr, IfExpression))
         check_if_expression(AS_PTR(expr, IfExpression), scope);
     else if (IS_PTR(expr, MatchExpression))
@@ -240,6 +243,15 @@ void Checker::check_call(ptr<Call> call, ptr<Scope> scope)
 
     for (auto &argument : call->arguments)
         check_expression(argument.value, scope);
+}
+
+void Checker::check_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope)
+{
+    // TODO: Check player is a player entity
+    // TODO: Check prompt is string
+    check_expression(choose_expression->choices, scope);
+    check_expression(choose_expression->player, scope);
+    check_expression(choose_expression->prompt, scope);
 }
 
 void Checker::check_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope)

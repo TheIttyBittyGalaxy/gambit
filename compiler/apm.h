@@ -121,6 +121,8 @@ struct PropertyIndex;
 
 struct Call;
 
+struct ChooseExpression;
+
 struct IfExpression;
 struct MatchExpression;
 
@@ -148,6 +150,9 @@ using Expression = variant<
 
     // Calls
     ptr<Call>,
+
+    // Keyword expressions
+    ptr<ChooseExpression>,
 
     // "Statement style" expressions
     ptr<IfExpression>,
@@ -427,6 +432,14 @@ struct Call
     vector<Argument> arguments;
 };
 
+struct ChooseExpression
+{
+    Span span;
+    Expression player;
+    Expression choices;
+    Expression prompt;
+};
+
 struct IfExpression
 {
     Span span;
@@ -597,6 +610,8 @@ string to_json(const ptr<PropertyIndex> &node, const size_t &depth = 0);
 
 string to_json(const ptr<Call> &node, const size_t &depth = 0);
 string to_json(const Call::Argument &node, const size_t &depth = 0);
+
+string to_json(const ptr<ChooseExpression> &node, const size_t &depth = 0);
 
 string to_json(const ptr<IfExpression> &node, const size_t &depth = 0);
 string to_json(const IfExpression::Rule &node, const size_t &depth = 0);

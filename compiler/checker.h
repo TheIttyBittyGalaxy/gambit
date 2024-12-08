@@ -46,6 +46,8 @@ private:
 
     void check_call(ptr<Call> call, ptr<Scope> scope);
 
+    void check_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope);
+
     void check_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope);
     void check_match(ptr<MatchExpression> match, ptr<Scope> scope);
 };

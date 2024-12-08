@@ -104,6 +104,8 @@ private:
     bool peek_unary();
     [[nodiscard]] ptr<Unary> parse_unary();
 
+    bool peek_infix_choose();
+    [[nodiscard]] ptr<ChooseExpression> parse_infix_choose(Expression lhs);
     bool peek_infix_logical_or();
     [[nodiscard]] ptr<Binary> parse_infix_logical_or(Expression lhs);
     bool peek_infix_logical_and();

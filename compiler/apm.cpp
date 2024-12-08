@@ -218,6 +218,14 @@ Pattern determine_expression_pattern(Expression expression)
         return CREATE(AnyPattern);
     }
 
+    // Choose expression
+    if (IS_PTR(expression, ChooseExpression))
+    {
+        // TODO: Return the correct pattern
+        // NOTE: Presumably this will be very similar to when we determine the pattern of an expression index?
+        return CREATE(AnyPattern);
+    }
+
     // "Statements style" expressions
     if (IS_PTR(expression, IfExpression))
     {
@@ -537,6 +545,8 @@ bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector
 
 // SPANS
 
+#include <iostream>
+
 Span get_span(UnresolvedLiteral stmt)
 {
     if (IS_PTR(stmt, PrimitiveLiteral))
@@ -617,6 +627,9 @@ Span get_span(Expression expr)
 
     if (IS_PTR(expr, Call))
         return AS_PTR(expr, Call)->span;
+
+    if (IS_PTR(expr, ChooseExpression))
+        return AS_PTR(expr, ChooseExpression)->span;
 
     if (IS_PTR(expr, IfExpression))
         return AS_PTR(expr, IfExpression)->span;

@@ -39,6 +39,7 @@ private:
     void resolve_list_value(ptr<ListValue> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_instance_list(ptr<InstanceList> list, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_call(ptr<Call> call, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_match(ptr<MatchExpression> match, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
