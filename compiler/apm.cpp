@@ -215,9 +215,9 @@ Pattern determine_expression_pattern(Expression expression)
     // Choose expression
     if (IS_PTR(expression, ChooseExpression))
     {
-        // TODO: Return the correct pattern
-        // NOTE: Presumably this will be very similar to when we determine the pattern of an expression index?
-        return CREATE(AnyPattern);
+        auto choose_expression = AS_PTR(expression, ChooseExpression);
+        auto choices_pattern = determine_expression_pattern(choose_expression->choices);
+        return determine_pattern_of_contents_of(choices_pattern);
     }
 
     // "Statements style" expressions
