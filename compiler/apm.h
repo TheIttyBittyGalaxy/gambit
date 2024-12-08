@@ -167,6 +167,7 @@ struct IfStatement;
 struct ForStatement;
 struct LoopStatement;
 struct ReturnStatement;
+struct WinsStatement;
 struct AssignmentStatement;
 struct VariableDeclaration;
 
@@ -175,6 +176,7 @@ using Statement = variant<
     ptr<ForStatement>,
     ptr<LoopStatement>,
     ptr<ReturnStatement>,
+    ptr<WinsStatement>,
     ptr<AssignmentStatement>,
     ptr<VariableDeclaration>,
 
@@ -508,6 +510,12 @@ struct ReturnStatement
     Expression value;
 };
 
+struct WinsStatement
+{
+    Span span;
+    Expression player;
+};
+
 struct AssignmentStatement
 {
     Span span;
@@ -525,7 +533,8 @@ struct VariableDeclaration
 // APM METHODS
 
 // Declaration and fetching
-[[nodiscard]] string identity_of(Scope::LookupValue value);
+[[nodiscard]] string
+identity_of(Scope::LookupValue value);
 [[nodiscard]] bool directly_declared_in_scope(ptr<Scope> scope, string identity);
 [[nodiscard]] bool declared_in_scope(ptr<Scope> scope, string identity);
 [[nodiscard]] bool is_overloadable(Scope::LookupValue value);
@@ -628,6 +637,7 @@ string to_json(const IfStatement::Rule &node, const size_t &depth = 0);
 string to_json(const ptr<ForStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<LoopStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<ReturnStatement> &node, const size_t &depth = 0);
+string to_json(const ptr<WinsStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<AssignmentStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<VariableDeclaration> &node, const size_t &depth = 0);
 

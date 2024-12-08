@@ -603,6 +603,7 @@ string to_json(const Statement &node, const size_t &depth)
     VARIANT_PTR(ForStatement);
     VARIANT_PTR(LoopStatement);
     VARIANT_PTR(ReturnStatement);
+    VARIANT_PTR(WinsStatement);
     VARIANT_PTR(AssignmentStatement);
     VARIANT_PTR(VariableDeclaration);
 
@@ -663,6 +664,16 @@ string to_json(const ptr<ReturnStatement> &node, const size_t &depth)
     json.object();
     json.add("node", string("ReturnStatement"));
     STRUCT_PTR_FIELD(value);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<WinsStatement> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("WinsStatement"));
+    STRUCT_PTR_FIELD(player);
     json.close();
     return (string)json;
 }

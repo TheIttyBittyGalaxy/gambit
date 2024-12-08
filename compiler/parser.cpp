@@ -763,7 +763,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         stmt = return_statement;
     }
 
-    // EXPRESSION STATEMENT / DECLARATION / ASSIGNMENT / INSERT
+    // EXPRESSION STATEMENT / DECLARATION / ASSIGNMENT / INSERT / WINS
     else if (peek_expression())
     {
         auto expr = parse_expression();
@@ -890,6 +890,15 @@ Statement Parser::parse_infix_expression_statement(Expression lhs, ptr<Scope> sc
 
         insert_oper->span = finish_span();
         return insert_oper;
+    }
+
+    // WIN
+    if (peek_and_consume(Token::KeyWins))
+    {
+        auto wins_stmt = CREATE(WinsStatement);
+        wins_stmt->player = lhs;
+        wins_stmt->span = finish_span();
+        return wins_stmt;
     }
 
     discard_span();

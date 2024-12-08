@@ -149,6 +149,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, ReturnStatement))
         resolve_return_statement(AS_PTR(stmt, ReturnStatement), scope, {}); // TODO: The pattern hint here should be the return type of the function
 
+    else if (IS_PTR(stmt, WinsStatement))
+        resolve_wins_statement(AS_PTR(stmt, WinsStatement), scope);
+
     else if (IS_PTR(stmt, AssignmentStatement))
         resolve_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
 
@@ -188,6 +191,11 @@ void Resolver::resolve_loop_statement(ptr<LoopStatement> stmt, ptr<Scope> scope,
 void Resolver::resolve_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     stmt->value = resolve_expression(stmt->value, scope);
+}
+
+void Resolver::resolve_wins_statement(ptr<WinsStatement> stmt, ptr<Scope> scope)
+{
+    stmt->player = resolve_expression(stmt->player, scope, Intrinsic::entity_player);
 }
 
 void Resolver::resolve_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope)

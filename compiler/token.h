@@ -48,6 +48,7 @@ struct Token
         KeyState,
         KeyBreak,
         KeyContinue,
+        KeyWins,
         KeyElse,
         KeyFor,
         KeyIf,

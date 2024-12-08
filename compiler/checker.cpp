@@ -107,6 +107,8 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_loop_statement(AS_PTR(stmt, LoopStatement), scope);
     else if (IS_PTR(stmt, ReturnStatement))
         check_return_statement(AS_PTR(stmt, ReturnStatement), scope);
+    else if (IS_PTR(stmt, WinsStatement))
+        check_wins_statement(AS_PTR(stmt, WinsStatement), scope);
     else if (IS_PTR(stmt, AssignmentStatement))
         check_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
     else if (IS_PTR(stmt, VariableDeclaration))
@@ -156,6 +158,12 @@ void Checker::check_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope
 {
     // TODO: Check that pattern of expression matches return pattern of the function
     check_expression(stmt->value, scope);
+}
+
+void Checker::check_wins_statement(ptr<WinsStatement> stmt, ptr<Scope> scope)
+{
+    // TODO: Check that pattern of expression is a player entity
+    check_expression(stmt->player, scope);
 }
 
 void Checker::check_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope)

@@ -29,6 +29,7 @@ private:
     void check_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope);
     void check_loop_statement(ptr<LoopStatement> stmt, ptr<Scope> scope);
     void check_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope);
+    void check_wins_statement(ptr<WinsStatement> stmt, ptr<Scope> scope);
     void check_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope);
     void check_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope);
 

@@ -50,6 +50,7 @@ const map<Token::Kind, string> token_name = {
     {Token::KeyState, "KeyState"},
     {Token::KeyBreak, "KeyBreak"},
     {Token::KeyContinue, "KeyContinue"},
+    {Token::KeyWins, "KeyWins"},
     {Token::KeyElse, "KeyElse"},
     {Token::KeyFor, "KeyFor"},
     {Token::KeyIf, "KeyIf"},
@@ -117,6 +118,7 @@ const map<string, Token::Kind> keyword_match_rules = {
 
     {"break", Token::KeyBreak},
     {"continue", Token::KeyContinue},
+    {"wins", Token::KeyWins},
     {"else", Token::KeyElse},
     {"for", Token::KeyFor},
     {"if", Token::KeyIf},
