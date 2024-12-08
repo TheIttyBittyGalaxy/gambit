@@ -395,22 +395,13 @@ bool is_pattern_subset_of_superset(Pattern subset, Pattern superset)
 
     if (subset_is_union && !superset_is_union)
     {
-        // NOTE: Technically, if the subset is a union with only one pattern in the union,
-        //       and that one pattern is a subset of the superset, in that case we should
-        //       return true. However, we are returning false by default under the
-        //       assumption that the resolver will always simplify UnionPattern nodes with
-        //       only one pattern to just the pattern itself.
-
-        // FIXME: Check that this assumption about the resolver is correct.
-
-        // FIXME: Is it possible that parts of the program may try to use this function on
-        //        patterns that never get resolved? e.g. a caller could call
-        //        `determine_expression_pattern` on an expression to do some pattern checking,
-        //        meaning the result was never resolved as it was never part of the APM.
-        //        Presumably that caller would then call `is_pattern_subset_of_superset` to
-        //        do the check?
-
-        return false;
+        auto sub_union = AS_PTR(subset, UnionPattern);
+        for (auto pattern : sub_union->patterns)
+        {
+            if (!is_pattern_subset_of_superset(pattern, superset))
+                return false;
+        }
+        return true;
     }
 
     if (subset_is_union && superset_is_union)
