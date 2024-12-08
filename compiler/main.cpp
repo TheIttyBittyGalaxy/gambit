@@ -81,10 +81,13 @@ int main(int argc, char *argv[])
         cout << error.what() << endl;
     }
 
-    cout << "\nERRORS" << endl;
-    for (auto error : source.errors)
-        cout << present_error(&source, error) << endl;
-    cout << endl;
+    if (source.errors.size() > 0)
+    {
+        cout << "\nERRORS" << endl;
+        for (auto error : source.errors)
+            cout << present_error(&source, error) << endl;
+        cout << endl;
+    }
 
     cout << "Compilation complete" << endl;
 
