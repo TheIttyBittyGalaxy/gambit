@@ -547,16 +547,16 @@ bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector
 
 #include <iostream>
 
-Span get_span(UnresolvedLiteral stmt)
+Span get_span(UnresolvedLiteral literal)
 {
-    if (IS_PTR(stmt, PrimitiveLiteral))
-        return AS_PTR(stmt, PrimitiveLiteral)->span;
-    if (IS_PTR(stmt, ListLiteral))
-        return AS_PTR(stmt, ListLiteral)->span;
-    if (IS_PTR(stmt, IdentityLiteral))
-        return AS_PTR(stmt, IdentityLiteral)->span;
-    if (IS_PTR(stmt, OptionLiteral))
-        return AS_PTR(stmt, OptionLiteral)->span;
+    if (IS_PTR(literal, PrimitiveLiteral))
+        return AS_PTR(literal, PrimitiveLiteral)->span;
+    if (IS_PTR(literal, ListLiteral))
+        return AS_PTR(literal, ListLiteral)->span;
+    if (IS_PTR(literal, IdentityLiteral))
+        return AS_PTR(literal, IdentityLiteral)->span;
+    if (IS_PTR(literal, OptionLiteral))
+        return AS_PTR(literal, OptionLiteral)->span;
 
     throw CompilerError("Could not get span of UnresolvedLiteral variant.");
 }
