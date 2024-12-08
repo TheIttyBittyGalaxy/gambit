@@ -666,6 +666,18 @@ ptr<PatternLiteral> Resolver::resolve_literal_as_pattern(UnresolvedLiteral unres
         pattern_literal->pattern = pattern.value();
     }
 
+    // Option literals
+    else if (IS_PTR(unresolved_literal, OptionLiteral))
+    {
+        auto option_literal = AS_PTR(unresolved_literal, OptionLiteral);
+        auto union_pattern = CREATE(UnionPattern);
+
+        union_pattern->patterns.push_back(resolve_literal_as_pattern(option_literal->literal, scope, pattern_hint));
+        union_pattern->patterns.push_back(Intrinsic::none_val);
+
+        pattern_literal->pattern = union_pattern;
+    }
+
     else
     {
         throw CompilerError("Could not resolve variant of UnresolvedLiteral as pattern", get_span(unresolved_literal));
