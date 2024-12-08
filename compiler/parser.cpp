@@ -786,7 +786,7 @@ Statement Parser::parse_infix_expression_statement(Expression lhs, ptr<Scope> sc
     {
         // FIXME: This code is a bit sloppy! Fix the partial implementation.
         if (!IS(lhs, UnresolvedLiteral))
-            CompilerError("Error due to partial implementation. Attempt to turn expresion into pattern of a variable declaration failed.", get_span(lhs));
+            throw CompilerError("Error due to partial implementation. Attempt to turn expresion into pattern of a variable declaration failed.", get_span(lhs));
 
         // Variable
         Token identity_token = consume(Token::Identity);
@@ -832,13 +832,13 @@ Statement Parser::parse_infix_expression_statement(Expression lhs, ptr<Scope> sc
     {
         // FIXME: This code is a bit sloppy! Fix the partial implementation.
         if (!IS(lhs, UnresolvedLiteral))
-            CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #1", get_span(lhs));
+            throw CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #1", get_span(lhs));
 
         auto lhs_literal = AS(lhs, UnresolvedLiteral);
 
         // FIXME: This code is a bit sloppy! Fix the partial implementation.
         if (!IS_PTR(lhs_literal, IdentityLiteral))
-            CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #2", get_span(lhs));
+            throw CompilerError("Error due to partial implementation. Attempt to turn expresion into identity of constant declaration failed. #2", get_span(lhs));
 
         // Variable
         auto identity_literal = AS_PTR(lhs_literal, IdentityLiteral);
@@ -1443,7 +1443,7 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
 
         else
         {
-            CompilerError("Could not match token type while parsing PrimitiveLiteral");
+            throw CompilerError("Could not match token type while parsing PrimitiveLiteral");
         }
 
         primitive_literal->span = finish_span();
