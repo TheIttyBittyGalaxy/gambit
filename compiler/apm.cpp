@@ -117,7 +117,7 @@ Pattern determine_expression_pattern(Expression expression)
 
     if (IS_PTR(expression, ListValue))
     {
-        auto list_value AS_PTR(expression, ListValue);
+        auto list_value = AS_PTR(expression, ListValue);
         auto union_pattern = CREATE(UnionPattern);
 
         for (auto value : list_value->values)
@@ -126,7 +126,16 @@ Pattern determine_expression_pattern(Expression expression)
         // FIXME: This union pattern is never resolved, which in turn means it is
         //        never simplified (as of writing, UnionPatterns are simplified
         //        when they are resolved)
-        return union_pattern;
+
+        auto list_type = CREATE(ListType);
+        list_type->list_of = union_pattern;
+
+        auto fixed_size = CREATE(PrimitiveValue);
+        fixed_size->type = Intrinsic::type_int;
+        fixed_size->value = (int)list_value->values.size();
+        list_type->fixed_size = fixed_size;
+
+        return list_type;
     }
 
     if (IS_PTR(expression, EnumValue))
