@@ -1399,6 +1399,7 @@ bool Parser::peek_literal(bool allow_primitive_values)
 {
     return peek(Token::Identity) ||
            peek(Token::KeyAny) ||
+           peek(Token::KeyNone) ||
            (allow_primitive_values && peek(Token::Number)) ||
            (allow_primitive_values && peek(Token::String)) ||
            (allow_primitive_values && peek(Token::Boolean)) ||
@@ -1428,6 +1429,15 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
 
         identity_literal->span = finish_span();
         unresolved_literal = identity_literal;
+    }
+
+    // "none"
+    else if (peek_and_consume(Token::KeyNone))
+    {
+        auto primitive_literal = CREATE(PrimitiveLiteral);
+        primitive_literal->value = Intrinsic::none_val;
+        primitive_literal->span = finish_span();
+        unresolved_literal = primitive_literal;
     }
 
     // Primitive value

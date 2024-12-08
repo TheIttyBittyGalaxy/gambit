@@ -57,6 +57,7 @@ const map<Token::Kind, string> token_name = {
     {Token::KeyLoop, "KeyLoop"},
     {Token::KeyMatch, "KeyMatch"},
     {Token::KeyAny, "KeyAny"},
+    {Token::KeyNone, "KeyNone"},
     {Token::KeyReturn, "KeyReturn"},
     {Token::KeyUntil, "KeyUntil"},
     {Token::KeyChoose, "KeyChoose"},
@@ -123,6 +124,7 @@ const map<string, Token::Kind> keyword_match_rules = {
     {"loop", Token::KeyLoop},
     {"match", Token::KeyMatch},
     {"any", Token::KeyAny},
+    {"none", Token::KeyNone},
     {"return", Token::KeyReturn},
     {"until", Token::KeyUntil},
 

@@ -55,6 +55,7 @@ struct Token
         KeyLoop,
         KeyMatch,
         KeyAny,
+        KeyNone,
         KeyReturn,
         KeyUntil,
         KeyChoose,
@@ -81,7 +82,7 @@ struct Token
               str(""),
               line(0),
               column(0),
-              position(0){};
+              position(0) {};
 
     Token(Kind kind, string str, size_t line, size_t column, size_t position) : kind(kind),
                                                                                 str(str),
