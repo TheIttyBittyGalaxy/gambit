@@ -552,7 +552,7 @@ identity_of(Scope::LookupValue value);
 // Pattern analysis
 [[nodiscard]] Pattern determine_expression_pattern(Expression expr);
 [[nodiscard]] Pattern determine_pattern_of_contents_of(Pattern pattern);
-[[nodiscard]] ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b);
+[[nodiscard]] Pattern create_union_pattern(vector<Pattern> patterns);
 [[nodiscard]] bool is_pattern_subset_of_superset(Pattern subset, Pattern superset);
 [[nodiscard]] bool do_patterns_overlap(Pattern a, Pattern b);
 [[nodiscard]] bool is_pattern_optional(Pattern pattern);

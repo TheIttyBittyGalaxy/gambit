@@ -118,17 +118,17 @@ Pattern determine_expression_pattern(Expression expression)
     if (IS_PTR(expression, ListValue))
     {
         auto list_value = AS_PTR(expression, ListValue);
-        auto union_pattern = CREATE(UnionPattern);
 
+        vector<Pattern> list_value_patterns;
         for (auto value : list_value->values)
-            union_pattern->patterns.push_back(determine_expression_pattern(value));
+            list_value_patterns.push_back(determine_expression_pattern(value));
 
         // FIXME: This union pattern is never resolved, which in turn means it is
         //        never simplified (as of writing, UnionPatterns are simplified
         //        when they are resolved)
 
         auto list_type = CREATE(ListType);
-        list_type->list_of = union_pattern;
+        list_type->list_of = create_union_pattern(list_value_patterns);
 
         auto fixed_size = CREATE(PrimitiveValue);
         fixed_size->type = Intrinsic::type_int;
@@ -225,42 +225,22 @@ Pattern determine_expression_pattern(Expression expression)
     {
         auto if_expression = AS_PTR(expression, IfExpression);
 
-        // FIXME: This is a silly thing to check (given that a one rule if is
-        //        useless). However, as of writing, `is_pattern_subset_of_superset`
-        //        assumes that union patterns never have just one child.
-        if (if_expression->rules.size() == 1)
-            return determine_expression_pattern(if_expression->rules[0].result);
-
-        auto union_pattern = CREATE(UnionPattern);
-
+        vector<Pattern> rule_result_patterns;
         for (auto rule : if_expression->rules)
-            union_pattern->patterns.push_back(determine_expression_pattern(rule.result));
+            rule_result_patterns.push_back(determine_expression_pattern(rule.result));
 
-        // FIXME: This union pattern is never resolved, which in turn means it is
-        //        never simplified (as of writing, UnionPatterns are simplified
-        //        when they are resolved)
-        return union_pattern;
+        return create_union_pattern(rule_result_patterns);
     }
 
     if (IS_PTR(expression, MatchExpression))
     {
         auto match = AS_PTR(expression, MatchExpression);
 
-        // FIXME: This is a silly thing to check (given that a one rule match is
-        //        useless). However, as of writing, `is_pattern_subset_of_superset`
-        //        assumes that union patterns never have just one child.
-        if (match->rules.size() == 1)
-            return determine_expression_pattern(match->rules[0].result);
-
-        auto union_pattern = CREATE(UnionPattern);
-
+        vector<Pattern> rule_result_patterns;
         for (auto rule : match->rules)
-            union_pattern->patterns.push_back(determine_expression_pattern(rule.result));
+            rule_result_patterns.push_back(determine_expression_pattern(rule.result));
 
-        // FIXME: This union pattern is never resolved, which in turn means it is
-        //        never simplified (as of writing, UnionPatterns are simplified
-        //        when they are resolved)
-        return union_pattern;
+        return create_union_pattern(rule_result_patterns);
     }
 
     // Invalid expression
@@ -301,36 +281,33 @@ Pattern determine_pattern_of_contents_of(Pattern pattern)
     throw CompilerError("Cannot determine pattern of pattern's contents as said pattern is not a list type.");
 }
 
-ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b)
+Pattern create_union_pattern(vector<Pattern> patterns)
 {
-    // NOTE: This function does not simplify the resulting union
-    //       e.g. remove patterns in the union that are subsets of other patterns.
-    //       As of writing, this is completed when the pattern is resolved.
+    vector<Pattern> reduced_patterns;
+    for (size_t i = 0; i < patterns.size(); i++)
+    {
+        auto pattern = patterns[i];
+        bool pattern_is_superset = true;
+
+        for (size_t j = i + 1; j < patterns.size(); j++)
+        {
+            auto other = patterns[j];
+            if (is_pattern_subset_of_superset(pattern, other))
+            {
+                pattern_is_superset = false;
+                break;
+            }
+        }
+
+        if (pattern_is_superset)
+            reduced_patterns.push_back(pattern);
+    }
+
+    if (reduced_patterns.size() == 1)
+        return reduced_patterns[0];
 
     auto union_pattern = CREATE(UnionPattern);
-
-    if (IS_PTR(a, UnionPattern))
-    {
-        auto union_a = AS_PTR(a, UnionPattern);
-        for (auto pattern : union_a->patterns)
-            union_pattern->patterns.push_back(pattern);
-    }
-    else
-    {
-        union_pattern->patterns.push_back(a);
-    }
-
-    if (IS_PTR(b, UnionPattern))
-    {
-        auto union_b = AS_PTR(b, UnionPattern);
-        for (auto pattern : union_b->patterns)
-            union_pattern->patterns.push_back(pattern);
-    }
-    else
-    {
-        union_pattern->patterns.push_back(b);
-    }
-
+    union_pattern->patterns = reduced_patterns;
     return union_pattern;
 }
 
