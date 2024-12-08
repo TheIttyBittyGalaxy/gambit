@@ -186,7 +186,10 @@ Pattern determine_expression_pattern(Expression expression)
             return CREATE(InvalidPattern);
         }
 
-        throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
+        // TODO: Correctly determine the pattern of other subject expressions
+
+        return CREATE(AnyPattern);
+        // throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
     }
 
     if (IS_PTR(expression, PropertyIndex))
