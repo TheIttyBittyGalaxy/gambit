@@ -143,6 +143,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, ForStatement))
         resolve_for_statement(AS_PTR(stmt, ForStatement), scope, pattern_hint);
 
+    else if (IS_PTR(stmt, ReturnStatement))
+        resolve_return_statement(AS_PTR(stmt, ReturnStatement), scope, {}); // TODO: The pattern hint here should be the return type of the function
+
     else if (IS_PTR(stmt, AssignmentStatement))
         resolve_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
 
@@ -172,6 +175,11 @@ void Resolver::resolve_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope, o
     stmt->range = resolve_expression(stmt->range, scope);
     stmt->variable->pattern = determine_expression_pattern(stmt->range);
     resolve_code_block(stmt->body);
+}
+
+void Resolver::resolve_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
+{
+    stmt->value = resolve_expression(stmt->value, scope);
 }
 
 void Resolver::resolve_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope)

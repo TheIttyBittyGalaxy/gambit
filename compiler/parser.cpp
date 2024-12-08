@@ -660,7 +660,8 @@ bool Parser::peek_statement()
     return peek_expression() ||
            peek(Token::CurlyL) ||
            peek(Token::KeyIf) ||
-           peek(Token::KeyFor);
+           peek(Token::KeyFor) ||
+           peek(Token::KeyReturn);
 }
 
 optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newline)
@@ -741,8 +742,16 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         stmt = for_statement;
     }
 
-    // EXPRESSION STATEMENT / DECLARATION / ASSIGNMENT / INSERT
+    // RETURN STATEMENT
+    else if (peek_and_consume(Token::KeyReturn))
+    {
+        auto return_statement = CREATE(ReturnStatement);
+        return_statement->value = parse_expression();
+        return_statement->span = finish_span();
+        stmt = return_statement;
+    }
 
+    // EXPRESSION STATEMENT / DECLARATION / ASSIGNMENT / INSERT
     else if (peek_expression())
     {
         auto expr = parse_expression();

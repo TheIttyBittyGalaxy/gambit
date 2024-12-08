@@ -103,6 +103,8 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_if_statement(AS_PTR(stmt, IfStatement), scope);
     else if (IS_PTR(stmt, ForStatement))
         check_for_statement(AS_PTR(stmt, ForStatement), scope);
+    else if (IS_PTR(stmt, ReturnStatement))
+        check_return_statement(AS_PTR(stmt, ReturnStatement), scope);
     else if (IS_PTR(stmt, AssignmentStatement))
         check_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
     else if (IS_PTR(stmt, VariableDeclaration))
@@ -140,6 +142,11 @@ void Checker::check_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope)
     // TODO: Check that range is actually iterable
     check_expression(stmt->range, scope);
     check_code_block(stmt->body);
+}
+
+void Checker::check_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope)
+{
+    check_expression(stmt->value, scope);
 }
 
 void Checker::check_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope)
