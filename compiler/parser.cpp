@@ -1163,11 +1163,12 @@ ptr<ChooseExpression> Parser::parse_infix_choose(Expression lhs)
     // NOTE: Ensure the expression span is still constructed correctly even if the player or prompt expressions cannot be parsed
 
     expr->player = lhs;
-    expr->choices = parse_expression(Precedence::Choose);
 
     consume(Token::ParenL);
     expr->prompt = parse_expression();
     consume(Token::ParenR);
+
+    expr->choices = parse_expression(Precedence::Choose);
 
     expr->span = merge(get_span(expr->player), get_span(expr->prompt));
     return expr;

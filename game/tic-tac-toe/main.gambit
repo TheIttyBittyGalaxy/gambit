@@ -53,7 +53,7 @@ main() {
     other_player   = game.players[2] // Infer type `Player`
 
     loop {
-        chosen_square :: current_player choose board.available_squares ("Which sqaure do you want to play?") // Infer type of 'chosen_square' as 'Square'
+        chosen_square :: current_player choose ("Which square do you want to play?") board.available_squares // Infer type of 'chosen_square' as 'Square'
         chosen_square.mark = current_player.mark
 
         if board.winner { // board.winner is promoted from `Mark?` to `Mark` (note, `winner` is a function in this case!)
