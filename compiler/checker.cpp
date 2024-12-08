@@ -146,6 +146,7 @@ void Checker::check_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope)
 
 void Checker::check_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope)
 {
+    // TODO: Check that pattern of expression matches return pattern of the function
     check_expression(stmt->value, scope);
 }
 
