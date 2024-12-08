@@ -43,7 +43,7 @@ Token Parser::previous_token()
 // | confirm             | NO       | NO       | GAMBIT   |
 // | comsume             | NO       | YES      | COMPILER |
 // | peek_and_consume    | YES      | YES      | NEVER    |
-// | comfirm_and_consume | NO       | YES      | GAMBIT   |
+// | confirm_and_consume | NO       | YES      | GAMBIT   |
 
 bool Parser::peek(Token::Kind kind)
 {
@@ -1063,7 +1063,7 @@ ptr<MatchExpression> Parser::parse_match()
 
     if (confirm_and_consume(Token::CurlyL))
     {
-        while ((peek_literal(true) || peek(Token::KeyElse)) && !match->has_else)
+        while (peek_literal(true) || peek(Token::KeyElse))
         {
             MatchExpression::Rule rule;
 
@@ -1084,6 +1084,9 @@ ptr<MatchExpression> Parser::parse_match()
             confirm_and_consume(Token::Line);
 
             match->rules.emplace_back(rule);
+
+            if (match->has_else)
+                break;
         }
 
         confirm_and_consume(Token::CurlyR);
