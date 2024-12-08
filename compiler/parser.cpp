@@ -1159,13 +1159,15 @@ ptr<ChooseExpression> Parser::parse_infix_choose(Expression lhs)
     auto expr = CREATE(ChooseExpression);
     confirm_and_consume(Token::KeyChoose);
 
+    // TODO: Gracefully handle syntax errors
+    // NOTE: Ensure the expression span is still constructed correctly even if the player or prompt expressions cannot be parsed
+
     expr->player = lhs;
     expr->choices = parse_expression(Precedence::Choose);
-    if (confirm_and_consume(Token::ParenL))
-    {
-        expr->prompt = parse_expression();
-        confirm_and_consume(Token::ParenR);
-    }
+
+    consume(Token::ParenL);
+    expr->prompt = parse_expression();
+    consume(Token::ParenR);
 
     expr->span = merge(get_span(expr->player), get_span(expr->prompt));
     return expr;
