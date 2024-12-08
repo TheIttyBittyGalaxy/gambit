@@ -152,6 +152,9 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
     else if (IS_PTR(stmt, WinsStatement))
         resolve_wins_statement(AS_PTR(stmt, WinsStatement), scope);
 
+    else if (IS_PTR(stmt, DrawStatement))
+        ; // skip
+
     else if (IS_PTR(stmt, AssignmentStatement))
         resolve_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
 

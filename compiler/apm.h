@@ -168,6 +168,7 @@ struct ForStatement;
 struct LoopStatement;
 struct ReturnStatement;
 struct WinsStatement;
+struct DrawStatement;
 struct AssignmentStatement;
 struct VariableDeclaration;
 
@@ -177,6 +178,7 @@ using Statement = variant<
     ptr<LoopStatement>,
     ptr<ReturnStatement>,
     ptr<WinsStatement>,
+    ptr<DrawStatement>,
     ptr<AssignmentStatement>,
     ptr<VariableDeclaration>,
 
@@ -516,6 +518,11 @@ struct WinsStatement
     Expression player;
 };
 
+struct DrawStatement
+{
+    Span span;
+};
+
 struct AssignmentStatement
 {
     Span span;
@@ -639,6 +646,7 @@ string to_json(const ptr<ForStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<LoopStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<ReturnStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<WinsStatement> &node, const size_t &depth = 0);
+string to_json(const ptr<DrawStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<AssignmentStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<VariableDeclaration> &node, const size_t &depth = 0);
 

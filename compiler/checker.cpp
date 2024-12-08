@@ -109,6 +109,8 @@ void Checker::check_statement(Statement stmt, ptr<Scope> scope)
         check_return_statement(AS_PTR(stmt, ReturnStatement), scope);
     else if (IS_PTR(stmt, WinsStatement))
         check_wins_statement(AS_PTR(stmt, WinsStatement), scope);
+    else if (IS_PTR(stmt, DrawStatement))
+        ; // skip
     else if (IS_PTR(stmt, AssignmentStatement))
         check_assignment_statement(AS_PTR(stmt, AssignmentStatement), scope);
     else if (IS_PTR(stmt, VariableDeclaration))

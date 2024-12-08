@@ -662,7 +662,8 @@ bool Parser::peek_statement()
            peek(Token::KeyIf) ||
            peek(Token::KeyFor) ||
            peek(Token::KeyLoop) ||
-           peek(Token::KeyReturn);
+           peek(Token::KeyReturn) ||
+           peek(Token::KeyDraw);
 }
 
 optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newline)
@@ -776,6 +777,14 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
         {
             stmt = parse_infix_expression_statement(expr, scope);
         }
+    }
+
+    // DRAW STATEMENT
+    else if (peek_and_consume(Token::KeyDraw))
+    {
+        auto draw_statement = CREATE(DrawStatement);
+        draw_statement->span = finish_span();
+        stmt = draw_statement;
     }
 
     // INVALID SYNTAX
