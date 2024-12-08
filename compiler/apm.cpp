@@ -500,6 +500,11 @@ bool do_patterns_overlap(Pattern a, Pattern b)
 
 bool is_pattern_optional(Pattern pattern)
 {
+    if (IS_PTR(pattern, PatternLiteral))
+    {
+        return is_pattern_optional(AS_PTR(pattern, PatternLiteral)->pattern);
+    }
+
     if (IS_PTR(pattern, PrimitiveValue))
     {
         return AS_PTR(pattern, PrimitiveValue) == Intrinsic::none_val;
