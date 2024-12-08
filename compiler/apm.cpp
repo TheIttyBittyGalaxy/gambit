@@ -174,22 +174,7 @@ Pattern determine_expression_pattern(Expression expression)
     {
         auto expression_index = AS_PTR(expression, ExpressionIndex);
         auto subject_pattern = determine_expression_pattern(expression_index->subject);
-
-        if (IS_PTR(subject_pattern, ListType))
-        {
-            auto subject_list_type = AS_PTR(subject_pattern, ListType);
-            return subject_list_type->list_of;
-        }
-
-        if (IS_PTR(subject_pattern, InvalidPattern))
-        {
-            return CREATE(InvalidPattern);
-        }
-
-        // TODO: Correctly determine the pattern of other subject expressions
-
-        return CREATE(AnyPattern);
-        // throw CompilerError("Cannot determine pattern of Expression Index as the subject's pattern is not a list pattern.");
+        return determine_pattern_of_contents_of(subject_pattern);
     }
 
     if (IS_PTR(expression, PropertyIndex))
@@ -276,6 +261,35 @@ Pattern determine_expression_pattern(Expression expression)
     }
 
     throw CompilerError("Cannot determine pattern of Expression variant.", get_span(expression));
+}
+
+Pattern determine_pattern_of_contents_of(Pattern pattern)
+{
+    // Literals
+    if (IS(pattern, UnresolvedLiteral))
+    {
+        auto unresolved_literal = AS(pattern, UnresolvedLiteral);
+        throw CompilerError("Cannot determine pattern of pattern's contents before said pattern has been resolved.", get_span(unresolved_literal));
+    }
+
+    if (IS_PTR(pattern, PatternLiteral))
+    {
+        return determine_pattern_of_contents_of(AS_PTR(pattern, PatternLiteral)->pattern);
+    }
+
+    // List types
+    if (IS_PTR(pattern, ListType))
+    {
+        return AS_PTR(pattern, ListType)->list_of;
+    }
+
+    // Invalid pattern
+    if (IS_PTR(pattern, InvalidPattern))
+    {
+        return CREATE(InvalidPattern);
+    }
+
+    throw CompilerError("Cannot determine pattern of pattern's contents as said pattern is not a list type.");
 }
 
 ptr<UnionPattern> create_union_pattern(Pattern a, Pattern b)
@@ -544,8 +558,6 @@ bool does_instance_list_match_parameters(ptr<InstanceList> instance_list, vector
 }
 
 // SPANS
-
-#include <iostream>
 
 Span get_span(UnresolvedLiteral literal)
 {
