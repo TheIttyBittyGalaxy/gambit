@@ -473,7 +473,7 @@ struct ForStatement
 {
     Span span;
     ptr<Variable> variable;
-    Pattern range;
+    Expression range;
     ptr<Scope> scope;
     ptr<CodeBlock> body;
 };

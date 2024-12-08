@@ -138,6 +138,7 @@ void Checker::check_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope)
 void Checker::check_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope)
 {
     // TODO: Check that range is actually iterable
+    check_expression(stmt->range, scope);
     check_code_block(stmt->body);
 }
 

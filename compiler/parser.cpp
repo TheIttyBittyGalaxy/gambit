@@ -733,7 +733,7 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
 
         confirm_and_consume(Token::KeyIn);
 
-        for_statement->range = parse_literal(true);
+        for_statement->range = parse_expression();
 
         for_statement->body = parse_code_block(for_statement->scope);
 
