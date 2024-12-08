@@ -179,7 +179,9 @@ void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, opt
 void Resolver::resolve_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
     stmt->range = resolve_expression(stmt->range, scope);
-    stmt->variable->pattern = determine_expression_pattern(stmt->range);
+    auto range_pattern = determine_expression_pattern(stmt->range);
+    stmt->variable->pattern = determine_pattern_of_contents_of(range_pattern);
+
     resolve_code_block(stmt->body);
 }
 
