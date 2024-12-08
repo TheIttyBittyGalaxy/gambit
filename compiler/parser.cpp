@@ -661,6 +661,7 @@ bool Parser::peek_statement()
            peek(Token::CurlyL) ||
            peek(Token::KeyIf) ||
            peek(Token::KeyFor) ||
+           peek(Token::KeyLoop) ||
            peek(Token::KeyReturn);
 }
 
@@ -740,6 +741,17 @@ optional<Statement> Parser::parse_statement(ptr<Scope> scope, bool require_newli
 
         for_statement->span = finish_span();
         stmt = for_statement;
+    }
+
+    // LOOP STATEMENT
+    else if (peek_and_consume(Token::KeyLoop))
+    {
+        auto loop_statement = CREATE(LoopStatement);
+        loop_statement->scope = CREATE(Scope);
+        loop_statement->scope->parent = scope;
+        loop_statement->body = parse_code_block(loop_statement->scope);
+        loop_statement->span = finish_span();
+        stmt = loop_statement;
     }
 
     // RETURN STATEMENT

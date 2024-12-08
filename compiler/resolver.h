@@ -28,6 +28,7 @@ private:
     [[nodiscard]] Statement resolve_statement(Statement statement, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_for_statement(ptr<ForStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_loop_statement(ptr<LoopStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_return_statement(ptr<ReturnStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_assignment_statement(ptr<AssignmentStatement> stmt, ptr<Scope> scope);
     void resolve_variable_declaration(ptr<VariableDeclaration> stmt, ptr<Scope> scope);

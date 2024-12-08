@@ -160,6 +160,7 @@ using Expression = variant<
 // Statements
 struct IfStatement;
 struct ForStatement;
+struct LoopStatement;
 struct ReturnStatement;
 struct AssignmentStatement;
 struct VariableDeclaration;
@@ -167,6 +168,7 @@ struct VariableDeclaration;
 using Statement = variant<
     ptr<IfStatement>,
     ptr<ForStatement>,
+    ptr<LoopStatement>,
     ptr<ReturnStatement>,
     ptr<AssignmentStatement>,
     ptr<VariableDeclaration>,
@@ -480,6 +482,13 @@ struct ForStatement
     ptr<CodeBlock> body;
 };
 
+struct LoopStatement
+{
+    Span span;
+    ptr<Scope> scope;
+    ptr<CodeBlock> body;
+};
+
 struct ReturnStatement
 {
     Span span;
@@ -602,6 +611,7 @@ string to_json(const Statement &node, const size_t &depth = 0);
 string to_json(const ptr<IfStatement> &node, const size_t &depth = 0);
 string to_json(const IfStatement::Rule &node, const size_t &depth = 0);
 string to_json(const ptr<ForStatement> &node, const size_t &depth = 0);
+string to_json(const ptr<LoopStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<ReturnStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<AssignmentStatement> &node, const size_t &depth = 0);
 string to_json(const ptr<VariableDeclaration> &node, const size_t &depth = 0);

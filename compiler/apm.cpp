@@ -635,6 +635,8 @@ Span get_span(Statement stmt)
         return AS_PTR(stmt, IfStatement)->span;
     if (IS_PTR(stmt, ForStatement))
         return AS_PTR(stmt, ForStatement)->span;
+    if (IS_PTR(stmt, LoopStatement))
+        return AS_PTR(stmt, LoopStatement)->span;
     if (IS_PTR(stmt, ReturnStatement))
         return AS_PTR(stmt, ReturnStatement)->span;
     if (IS_PTR(stmt, AssignmentStatement))
