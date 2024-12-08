@@ -1413,6 +1413,7 @@ UnresolvedLiteral Parser::parse_literal(bool allow_primitive_values)
         auto primitive_value = CREATE(PrimitiveValue);
         primitive_literal->value = primitive_value;
 
+        skip_whitespace();
         auto token = consume();
 
         if (token.kind == Token::Number)
