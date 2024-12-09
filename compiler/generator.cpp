@@ -14,8 +14,13 @@ void Generator::write(string token)
 
 void Generator::generate_program(ptr<Program> program)
 {
+    // Includes
+    write("#include <cstddef>\n");
     write("#include <stdbool.h>\n");
     write("#include <string>\n");
+
+    // Gambit types
+    write("#define GambitEntity int\n");
 
     // Procedure & function forward declarations
     for (auto index : program->global_scope->lookup)
@@ -434,10 +439,7 @@ void Generator::write_pattern_as_c_type(Pattern pattern)
 
     // Entity type
     else if (IS_PTR(pattern, EntityType))
-    {
-        auto type = AS_PTR(pattern, EntityType);
-        write(type->identity);
-    }
+        write("GambitEntity");
 
     // Uninferred pattern
     // else if (IS_PTR(pattern, UninferredPattern)) // TODO: This should be a compiler error
