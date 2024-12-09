@@ -1,3 +1,4 @@
+/*
 #include <string>
 #include "generator.h"
 
@@ -450,3 +451,4 @@ void Generator::write_pattern_as_c_type(Pattern pattern)
     else
         write("void"); // TODO: This should be a compiler error
 }
+*/

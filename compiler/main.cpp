@@ -1,7 +1,7 @@
 #include "apm.h"
 #include "checker.h"
 #include "errors.h"
-#include "generator.h"
+// #include "generator.h"
 #include "json.h"
 #include "lexer.h"
 #include "parser.h"
@@ -94,6 +94,23 @@ int main(int argc, char *argv[])
         Checker checker;
         checker.check(source, program);
         output_program(program, "checker_output");
+
+        if (source.errors.size() > 0)
+        {
+            cout << "\nERRORS" << endl;
+            for (auto error : source.errors)
+                cout << present_error(&source, error) << endl;
+            cout << endl;
+        }
+        // else
+        // {
+        //     cout << "\nGENERATOR" << endl;
+        //     Generator generator;
+        //     auto source = generator.generate(program);
+        //     output_c_source(source, "generated");
+        // }
+
+        cout << "Compilation complete" << endl;
     }
     catch (CompilerError error)
     {
@@ -101,23 +118,6 @@ int main(int argc, char *argv[])
         cout << "(This is an issue with the Gambit compiler, not with your program!)" << endl;
         cout << error.what() << endl;
     }
-
-    if (source.errors.size() > 0)
-    {
-        cout << "\nERRORS" << endl;
-        for (auto error : source.errors)
-            cout << present_error(&source, error) << endl;
-        cout << endl;
-    }
-    else
-    {
-        cout << "\nGENERATOR" << endl;
-        Generator generator;
-        auto source = generator.generate(program);
-        output_c_source(source, "generated");
-    }
-
-    cout << "Compilation complete" << endl;
 
     return 0;
 }

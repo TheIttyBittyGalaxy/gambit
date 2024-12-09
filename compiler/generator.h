@@ -1,3 +1,4 @@
+/*
 #pragma once
 #ifndef GENERATOR_H
 #define GENERATOR_H
@@ -29,3 +30,4 @@ private:
 };
 
 #endif
+*/
