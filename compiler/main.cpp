@@ -1,7 +1,8 @@
 #include "apm.h"
 #include "checker.h"
+#include "converter.h"
 #include "errors.h"
-// #include "generator.h"
+#include "generator.h"
 #include "json.h"
 #include "lexer.h"
 #include "parser.h"
@@ -102,13 +103,18 @@ int main(int argc, char *argv[])
                 cout << present_error(&source, error) << endl;
             cout << endl;
         }
-        // else
-        // {
-        //     cout << "\nGENERATOR" << endl;
-        //     Generator generator;
-        //     auto source = generator.generate(program);
-        //     output_c_source(source, "generated");
-        // }
+        else
+        {
+            cout << "\nCONVERTER" << endl;
+            Converter converter;
+            auto representation = converter.convert(program);
+            // TODO: Output as JSON
+
+            cout << "\nGENERATOR" << endl;
+            Generator generator;
+            auto source = generator.generate(representation);
+            output_c_source(source, "generated");
+        }
 
         cout << "Compilation complete" << endl;
     }

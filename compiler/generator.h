@@ -1,33 +1,23 @@
-/*
 #pragma once
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
-#include "apm.h"
+#include "ir.h"
+#include <string>
 using namespace std;
 
 class Generator
 {
 public:
-    string generate(ptr<Program> program);
+    string generate(C_Program representation);
 
 private:
-    ptr<Program> program = nullptr;
     string source;
-
     void write(string token);
 
-    void generate_program(ptr<Program> program);
-
-    void generate_procedure_signature(ptr<Procedure> procedure);
-    void generate_function_property_signature(ptr<FunctionProperty> function_property);
-
-    void generate_code_block(ptr<CodeBlock> code_block);
-    void generate_statement(Statement stmt);
-    void generate_expression(Expression expr);
-
-    void write_pattern_as_c_type(Pattern pattern);
+    void generate_program(C_Program program);
+    void generate_function_signature(C_Function funct);
+    void generate_function_declaration(C_Function funct);
 };
 
 #endif
-*/
