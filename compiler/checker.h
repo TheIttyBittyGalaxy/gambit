@@ -42,10 +42,11 @@ private:
     void check_binary(ptr<Binary> binary, ptr<Scope> scope);
 
     void check_instance_list(ptr<InstanceList> list, ptr<Scope> scope);
-    void check_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope);
-    void check_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope);
+    void check_index_with_expression(ptr<IndexWithExpression> index_with_expression, ptr<Scope> scope);
+    void check_index_with_identity(ptr<IndexWithIdentity> index_with_identity, ptr<Scope> scope);
 
     void check_call(ptr<Call> call, ptr<Scope> scope);
+    void check_property_access(ptr<PropertyAccess> property_access, ptr<Scope> scope);
 
     void check_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope);
 

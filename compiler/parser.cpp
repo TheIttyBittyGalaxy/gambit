@@ -983,10 +983,10 @@ Expression Parser::parse_expression(Precedence caller_precedence)
             lhs = parse_infix_factor(lhs);
         else if (peek_infix_term() && operator_should_bind(Precedence::Term, caller_precedence))
             lhs = parse_infix_term(lhs);
-        else if (!peek(Token::Line) && peek_infix_expression_index() && operator_should_bind(Precedence::Index, caller_precedence))
-            lhs = parse_infix_expression_index(lhs);
-        else if (peek_infix_property_index() && operator_should_bind(Precedence::Index, caller_precedence))
-            lhs = parse_infix_property_index(lhs);
+        else if (!peek(Token::Line) && peek_infix_index_with_expression() && operator_should_bind(Precedence::Index, caller_precedence))
+            lhs = parse_infix_index_with_expression(lhs);
+        else if (peek_infix_index_with_identity() && operator_should_bind(Precedence::Index, caller_precedence))
+            lhs = parse_infix_index_with_identity(lhs);
         else if (peek_infix_compare_relative() && operator_should_bind(Precedence::CompareRelative, caller_precedence))
             lhs = parse_infix_compare_relative(lhs);
         else if (peek_infix_compare_equal() && operator_should_bind(Precedence::CompareEqual, caller_precedence))
@@ -1036,8 +1036,8 @@ Expression Parser::parse_paren_expr()
     confirm_and_consume(Token::ParenR);
     instance_list->span = finish_span();
 
-    auto property_index = parse_infix_property_index(instance_list);
-    return property_index;
+    auto index_with_identity = parse_infix_index_with_identity(instance_list);
+    return index_with_identity;
 }
 
 bool Parser::peek_if_expression()
@@ -1326,43 +1326,43 @@ ptr<Binary> Parser::parse_infix_factor(Expression lhs)
     return expr;
 }
 
-bool Parser::peek_infix_expression_index()
+bool Parser::peek_infix_index_with_expression()
 {
     return peek(Token::SquareL);
 }
 
-ptr<ExpressionIndex> Parser::parse_infix_expression_index(Expression lhs)
+ptr<IndexWithExpression> Parser::parse_infix_index_with_expression(Expression lhs)
 {
-    auto expression_index = CREATE(ExpressionIndex);
-    expression_index->subject = lhs;
+    auto index_with_expression = CREATE(IndexWithExpression);
+    index_with_expression->subject = lhs;
 
     if (confirm_and_consume(Token::SquareL))
     {
-        expression_index->index = parse_expression();
+        index_with_expression->index = parse_expression();
         confirm_and_consume(Token::SquareR);
     }
     else
     {
-        // FIXME: This error exists solely to avoid having a `expression_index` with ain in valid `index`
+        // FIXME: This error exists solely to avoid having a `index_with_expression` with ain in valid `index`
         //        What should the proper solution to this be?
-        throw CompilerError("Attempt to `parse_infix_expression_index`, however a `[` token could not be consumed.");
+        throw CompilerError("Attempt to `parse_infix_index_with_expression`, however a `[` token could not be consumed.");
     }
 
-    expression_index->span = merge(get_span(expression_index->subject), get_span(expression_index->index));
-    return expression_index;
+    index_with_expression->span = merge(get_span(index_with_expression->subject), get_span(index_with_expression->index));
+    return index_with_expression;
 }
 
-bool Parser::peek_infix_property_index()
+bool Parser::peek_infix_index_with_identity()
 {
     return peek(Token::Dot);
 }
 
-ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
+ptr<IndexWithIdentity> Parser::parse_infix_index_with_identity(Expression lhs)
 {
     // TODO: As of writing, InstanceLists are only used to collect values that will become the
-    //       lhs of a PropertyIndex. If that remains the case, maybe it would be worth (at this
+    //       lhs of an IndexWithIdentity. If that remains the case, maybe it would be worth (at this
     //       point in the code) transferring all of the elements of instance_list->values into a
-    //       'lhs' ('subjects'?) vector<Expression> on the PropertyList? This way there isn't a
+    //       'lhs' ('subjects'?) vector<Expression> on the IndexWithIdentity? This way there isn't a
     //       redundant InstanceList node just hanging around in the program model on each index?
 
     // Convert lhs to an instance list if it isn't one already
@@ -1375,10 +1375,6 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
         lhs = instance_list;
     }
 
-    // Property index
-    auto property_index = CREATE(PropertyIndex);
-
-    property_index->expr = lhs;
     confirm_and_consume(Token::Dot);
 
     // FIXME: Confirm the identity is present and, if not, then gracefully and provide a user error
@@ -1386,10 +1382,13 @@ ptr<PropertyIndex> Parser::parse_infix_property_index(Expression lhs)
     auto unresolved_identity = CREATE(IdentityLiteral);
     unresolved_identity->identity = token.str;
     unresolved_identity->span = to_span(token);
-    property_index->property = unresolved_identity;
 
-    property_index->span = merge(get_span(property_index->expr), unresolved_identity->span);
-    return property_index;
+    auto index_with_identity = CREATE(IndexWithIdentity);
+    index_with_identity->subject = lhs;
+    index_with_identity->index = unresolved_identity;
+
+    index_with_identity->span = merge(get_span(index_with_identity->subject), unresolved_identity->span);
+    return index_with_identity;
 }
 
 bool Parser::peek_infix_call()

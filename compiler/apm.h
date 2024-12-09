@@ -116,10 +116,11 @@ struct Unary;
 struct Binary;
 
 struct InstanceList;
-struct ExpressionIndex;
-struct PropertyIndex;
+struct IndexWithExpression;
+struct IndexWithIdentity;
 
 struct Call;
+struct PropertyAccess;
 
 struct ChooseExpression;
 
@@ -145,11 +146,12 @@ using Expression = variant<
 
     // Indexing
     ptr<InstanceList>,
-    ptr<ExpressionIndex>,
-    ptr<PropertyIndex>,
+    ptr<IndexWithExpression>,
+    ptr<IndexWithIdentity>,
 
     // Calls
     ptr<Call>,
+    ptr<PropertyAccess>,
 
     // Keyword expressions
     ptr<ChooseExpression>,
@@ -408,18 +410,18 @@ struct InstanceList
     vector<Expression> values;
 };
 
-struct ExpressionIndex
+struct IndexWithExpression
 {
     Span span;
     Expression subject;
     Expression index;
 };
 
-struct PropertyIndex
+struct IndexWithIdentity
 {
     Span span;
-    Expression expr;
-    Property property;
+    Expression subject;
+    ptr<IdentityLiteral> index;
 };
 
 struct Call
@@ -434,6 +436,13 @@ struct Call
     };
     Expression callee;
     vector<Argument> arguments;
+};
+
+struct PropertyAccess
+{
+    Span span;
+    Expression subject;
+    Property property;
 };
 
 struct ChooseExpression
@@ -622,11 +631,12 @@ string to_json(const ptr<Unary> &node, const size_t &depth = 0);
 string to_json(const ptr<Binary> &node, const size_t &depth = 0);
 
 string to_json(const ptr<InstanceList> &node, const size_t &depth = 0);
-string to_json(const ptr<ExpressionIndex> &node, const size_t &depth = 0);
-string to_json(const ptr<PropertyIndex> &node, const size_t &depth = 0);
+string to_json(const ptr<IndexWithExpression> &node, const size_t &depth = 0);
+string to_json(const ptr<IndexWithIdentity> &node, const size_t &depth = 0);
 
 string to_json(const ptr<Call> &node, const size_t &depth = 0);
 string to_json(const Call::Argument &node, const size_t &depth = 0);
+string to_json(const ptr<PropertyAccess> &node, const size_t &depth = 0);
 
 string to_json(const ptr<ChooseExpression> &node, const size_t &depth = 0);
 

@@ -30,7 +30,7 @@ void Resolver::resolve_scope(ptr<Scope> scope)
     }
 
     // Property signatures need to be resolved before property and procedure bodies so that
-    // PropertyIndex nodes can correctly resolve which overload of the property they should use.
+    // IndexWithIdentity nodes can correctly resolve which overload of the property they should use.
     for (auto index : scope->lookup)
         resolve_scope_lookup_value_property_signatures_pass(index.second, scope);
 
@@ -243,11 +243,11 @@ Expression Resolver::resolve_expression(Expression expression, ptr<Scope> scope,
     else if (IS_PTR(expression, Binary))
         resolve_binary(AS_PTR(expression, Binary), scope, pattern_hint);
 
-    else if (IS_PTR(expression, ExpressionIndex))
-        resolve_expression_index(AS_PTR(expression, ExpressionIndex), scope, pattern_hint);
+    else if (IS_PTR(expression, IndexWithExpression))
+        resolve_index_with_expression(AS_PTR(expression, IndexWithExpression), scope, pattern_hint);
 
-    else if (IS_PTR(expression, PropertyIndex))
-        resolve_property_index(AS_PTR(expression, PropertyIndex), scope, pattern_hint);
+    else if (IS_PTR(expression, IndexWithIdentity))
+        return resolve_index_with_identity(AS_PTR(expression, IndexWithIdentity), scope, pattern_hint);
 
     else if (IS_PTR(expression, Call))
         resolve_call(AS_PTR(expression, Call), scope, pattern_hint);
@@ -400,37 +400,31 @@ void Resolver::resolve_match(ptr<MatchExpression> match, ptr<Scope> scope, optio
     }
 }
 
-void Resolver::resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint)
+void Resolver::resolve_index_with_expression(ptr<IndexWithExpression> index_with_expression, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    expression_index->subject = resolve_expression(expression_index->subject, scope);
-    expression_index->index = resolve_expression(expression_index->index, scope);
+    index_with_expression->subject = resolve_expression(index_with_expression->subject, scope);
+    index_with_expression->index = resolve_expression(index_with_expression->index, scope);
 }
 
 // NOTE: Currently, when resolving which property is being used in a property index, we look at
 //       all overloads that could match, and throw an error unless there is exactly one match.
-void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint)
+Expression Resolver::resolve_index_with_identity(ptr<IndexWithIdentity> index_with_identity, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    property_index->expr = resolve_expression(property_index->expr, scope);
+    auto subject = resolve_expression(index_with_identity->subject, scope);
 
-    if (IS_PTR(property_index->property, IdentityLiteral))
+    // Enum values
+    // TODO: If the subject is an enum type, then resolve for the corresponding enum value
+
+    // PropertyAccess
+    auto property_access = CREATE(PropertyAccess);
+    property_access->subject = subject;
+
+    auto identity_literal = index_with_identity->index;
+    auto instance_list = AS_PTR(subject, InstanceList);
+    auto all_overloads = fetch_all_overloads(scope, identity_literal->identity);
+
+    if (all_overloads.size() > 0)
     {
-        auto identity_literal = AS_PTR(property_index->property, IdentityLiteral);
-        auto identity = identity_literal->identity;
-        auto instance_list = AS_PTR(property_index->expr, InstanceList);
-        auto all_overloads = fetch_all_overloads(scope, identity);
-
-        if (all_overloads.size() == 0)
-        {
-            // FIXME: If the identity is declared (just not as a property), give additional information about what it is.
-            source->log_error("Property '" + identity + "' does not exist.", property_index->span);
-
-            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
-            auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = identity_literal->span;
-            property_index->property = invalid_property;
-            return;
-        }
-
         vector<Property> valid_overloads;
         for (auto overload : all_overloads)
         {
@@ -449,29 +443,28 @@ void Resolver::resolve_property_index(ptr<PropertyIndex> property_index, ptr<Sco
             }
         }
 
+        if (valid_overloads.size() == 1)
+        {
+            property_access->property = valid_overloads[0];
+            return property_access;
+        }
+
+        // FIXME: If the identity is declared (just not as a property), give additional information about what it is.
         if (valid_overloads.size() == 0)
-        {
-            source->log_error("No version of the property '" + identity + "' applies to these arguments.", property_index->span);
-
-            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
-            auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = identity_literal->span;
-            property_index->property = invalid_property;
-            return;
-        }
-        else if (valid_overloads.size() > 1)
-        {
-            source->log_error("Which version of the property '" + identity + "' applies to these arguments is ambiguous.", property_index->span);
-
-            // FIXME: This code for generating the invalid span is duplicated three times in the function. Simplify?
-            auto invalid_property = CREATE(InvalidProperty);
-            invalid_property->span = identity_literal->span;
-            property_index->property = invalid_property;
-            return;
-        }
-
-        property_index->property = valid_overloads[0];
+            source->log_error("No version of the property '" + identity_literal->identity + "' applies to these arguments.", index_with_identity->span);
+        else
+            source->log_error("Which version of the property '" + identity_literal->identity + "' applies to these arguments is ambiguous.", index_with_identity->span);
     }
+    else
+    {
+        // FIXME: If the identity is declared (just not as a property), give additional information about what it is.
+        source->log_error("Property '" + identity_literal->identity + "' does not exist.", index_with_identity->span);
+    }
+
+    auto invalid_property = CREATE(InvalidProperty);
+    invalid_property->span = identity_literal->span;
+    property_access->property = invalid_property;
+    return property_access;
 }
 
 void Resolver::resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint)

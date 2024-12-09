@@ -324,17 +324,17 @@ void Generator::generate_expression(Expression expr)
         }
         write(")");
     }
-    else if (IS_PTR(expr, ExpressionIndex))
+    else if (IS_PTR(expr, IndexWithExpression))
     {
-        auto expression_index = AS_PTR(expr, ExpressionIndex);
+        auto expression_index = AS_PTR(expr, IndexWithExpression);
         generate_expression(expression_index->subject);
         write("[(");
         generate_expression(expression_index->index);
         write(")-1]");
     }
-    else if (IS_PTR(expr, PropertyIndex))
+    else if (IS_PTR(expr, IndexWithIdentity))
     {
-        auto property_index = AS_PTR(expr, PropertyIndex);
+        auto property_index = AS_PTR(expr, IndexWithIdentity);
         auto property = property_index->property;
         if (IS_PTR(property, FunctionProperty))
         {

@@ -179,17 +179,34 @@ Pattern determine_expression_pattern(Expression expression)
     }
 
     // Indexing
-    if (IS_PTR(expression, ExpressionIndex))
+    if (IS_PTR(expression, IndexWithExpression))
     {
-        auto expression_index = AS_PTR(expression, ExpressionIndex);
-        auto subject_pattern = determine_expression_pattern(expression_index->subject);
+        auto index_with_expression = AS_PTR(expression, IndexWithExpression);
+        auto subject_pattern = determine_expression_pattern(index_with_expression->subject);
         return determine_pattern_of_contents_of(subject_pattern);
     }
 
-    if (IS_PTR(expression, PropertyIndex))
+    if (IS_PTR(expression, IndexWithIdentity))
     {
-        auto property_index = AS_PTR(expression, PropertyIndex);
-        auto property = property_index->property;
+        // NOTE: As of writing, the resolver converts all IndexWithIdentity nodes into either a PropertyAccess or an enum value.
+        //       This means an IndexWithIdentity should never be passed into this function. However, assuming that at some point
+        //       it becomes possible to have indexes by identity which need to be resolved at run-time but are not property accesses,
+        //       we will need to support this.
+        auto index_with_expression = AS_PTR(expression, IndexWithIdentity);
+        throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", index_with_expression->span);
+    }
+
+    // Calls
+    if (IS_PTR(expression, Call))
+    {
+        // TODO: Return the correct pattern
+        return CREATE(AnyPattern);
+    }
+
+    if (IS_PTR(expression, PropertyAccess))
+    {
+        auto property_access = AS_PTR(expression, PropertyAccess);
+        auto property = property_access->property;
         if (IS_PTR(property, StateProperty))
             return AS_PTR(property, StateProperty)->pattern;
         if (IS_PTR(property, FunctionProperty))
@@ -199,17 +216,10 @@ Pattern determine_expression_pattern(Expression expression)
         if (IS_PTR(property, IdentityLiteral))
         {
             auto identity_literal = AS_PTR(property, IdentityLiteral);
-            throw CompilerError("Cannot determine pattern of expression before identities have been resolved.", identity_literal->span);
+            throw CompilerError("Cannot determine pattern of PropertyAccess expression before identities have been resolved.", identity_literal->span);
         }
 
-        throw CompilerError("Cannot determine pattern of Property variant in PropertyIndex expression.", property_index->span);
-    }
-
-    // Calls
-    if (IS_PTR(expression, Call))
-    {
-        // TODO: Return the correct pattern
-        return CREATE(AnyPattern);
+        throw CompilerError("Cannot determine pattern of Property variant in PropertyAccess expression.", property_access->span);
     }
 
     // Choose expression
@@ -614,13 +624,15 @@ Span get_span(Expression expr)
 
     if (IS_PTR(expr, InstanceList))
         return AS_PTR(expr, InstanceList)->span;
-    if (IS_PTR(expr, ExpressionIndex))
-        return AS_PTR(expr, ExpressionIndex)->span;
-    if (IS_PTR(expr, PropertyIndex))
-        return AS_PTR(expr, PropertyIndex)->span;
+    if (IS_PTR(expr, IndexWithExpression))
+        return AS_PTR(expr, IndexWithExpression)->span;
+    if (IS_PTR(expr, IndexWithIdentity))
+        return AS_PTR(expr, IndexWithIdentity)->span;
 
     if (IS_PTR(expr, Call))
         return AS_PTR(expr, Call)->span;
+    if (IS_PTR(expr, PropertyAccess))
+        return AS_PTR(expr, PropertyAccess)->span;
 
     if (IS_PTR(expr, ChooseExpression))
         return AS_PTR(expr, ChooseExpression)->span;

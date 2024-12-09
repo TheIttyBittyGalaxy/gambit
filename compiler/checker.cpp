@@ -212,13 +212,15 @@ void Checker::check_expression(Expression expr, ptr<Scope> scope)
 
     else if (IS_PTR(expr, InstanceList))
         check_instance_list(AS_PTR(expr, InstanceList), scope);
-    else if (IS_PTR(expr, ExpressionIndex))
-        check_expression_index(AS_PTR(expr, ExpressionIndex), scope);
-    else if (IS_PTR(expr, PropertyIndex))
-        check_property_index(AS_PTR(expr, PropertyIndex), scope);
+    else if (IS_PTR(expr, IndexWithExpression))
+        check_index_with_expression(AS_PTR(expr, IndexWithExpression), scope);
+    else if (IS_PTR(expr, IndexWithIdentity))
+        check_index_with_identity(AS_PTR(expr, IndexWithIdentity), scope);
 
     else if (IS_PTR(expr, Call))
         check_call(AS_PTR(expr, Call), scope);
+    else if (IS_PTR(expr, PropertyAccess))
+        check_property_access(AS_PTR(expr, PropertyAccess), scope);
 
     else if (IS_PTR(expr, ChooseExpression))
         check_choose_expression(AS_PTR(expr, ChooseExpression), scope);
@@ -294,18 +296,23 @@ void Checker::check_match(ptr<MatchExpression> match, ptr<Scope> scope)
     }
 }
 
-void Checker::check_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope)
+void Checker::check_index_with_expression(ptr<IndexWithExpression> index_with_expression, ptr<Scope> scope)
 {
-    check_expression(expression_index->subject, scope);
-    check_expression(expression_index->index, scope);
+    check_expression(index_with_expression->subject, scope);
+    check_expression(index_with_expression->index, scope);
 
     // TODO: Check that the subject is an array/list
     // TODO: Check that the index is an integer
 }
 
-void Checker::check_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope)
+void Checker::check_index_with_identity(ptr<IndexWithIdentity> index_with_identity, ptr<Scope> scope)
 {
-    check_expression(property_index->expr, scope);
+    throw CompilerError("Attempt to check IndexWithIdentity expression. This should have already been resolved to a PropertyAccess or EnumValue");
+}
+
+void Checker::check_property_access(ptr<PropertyAccess> property_access, ptr<Scope> scope)
+{
+    check_expression(property_access->subject, scope);
 }
 
 void Checker::check_unary(ptr<Unary> unary, ptr<Scope> scope)

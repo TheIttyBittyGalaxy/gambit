@@ -118,10 +118,10 @@ private:
     [[nodiscard]] ptr<Binary> parse_infix_term(Expression lhs);
     bool peek_infix_factor();
     [[nodiscard]] ptr<Binary> parse_infix_factor(Expression lhs);
-    bool peek_infix_expression_index();
-    [[nodiscard]] ptr<ExpressionIndex> parse_infix_expression_index(Expression lhs);
-    bool peek_infix_property_index();
-    [[nodiscard]] ptr<PropertyIndex> parse_infix_property_index(Expression lhs);
+    bool peek_infix_index_with_expression();
+    [[nodiscard]] ptr<IndexWithExpression> parse_infix_index_with_expression(Expression lhs);
+    bool peek_infix_index_with_identity();
+    [[nodiscard]] ptr<IndexWithIdentity> parse_infix_index_with_identity(Expression lhs);
     bool peek_infix_call();
     [[nodiscard]] ptr<Call> parse_infix_call(Expression lhs);
 

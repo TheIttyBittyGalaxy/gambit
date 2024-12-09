@@ -410,10 +410,11 @@ string to_json(const Expression &node, const size_t &depth)
     VARIANT_PTR(Binary);
 
     VARIANT_PTR(InstanceList);
-    VARIANT_PTR(ExpressionIndex);
-    VARIANT_PTR(PropertyIndex);
+    VARIANT_PTR(IndexWithExpression);
+    VARIANT_PTR(IndexWithIdentity);
 
     VARIANT_PTR(Call);
+    VARIANT_PTR(PropertyAccess);
 
     VARIANT_PTR(ChooseExpression);
 
@@ -479,33 +480,24 @@ string to_json(const ptr<InstanceList> &node, const size_t &depth)
     return (string)json;
 }
 
-string to_json(const ptr<ExpressionIndex> &node, const size_t &depth)
+string to_json(const ptr<IndexWithExpression> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("ExpressionIndex"));
+    json.add("node", string("IndexWithExpression"));
     STRUCT_PTR_FIELD(subject);
     STRUCT_PTR_FIELD(index);
     json.close();
     return (string)json;
 }
 
-string to_json(const ptr<PropertyIndex> &node, const size_t &depth)
+string to_json(const ptr<IndexWithIdentity> &node, const size_t &depth)
 {
     JsonContainer json(depth);
     json.object();
-    json.add("node", string("PropertyIndex"));
-    STRUCT_PTR_FIELD(expr);
-
-    // TODO: Instead of just printing out the identity, print out a signature that
-    //       allows different overloads to be distinguished.
-    if (IS_PTR(node->property, FunctionProperty))
-        json.add("property", AS_PTR(node->property, FunctionProperty)->identity);
-    else if (IS_PTR(node->property, StateProperty))
-        json.add("property", AS_PTR(node->property, StateProperty)->identity);
-    else
-        STRUCT_PTR_FIELD(property)
-
+    json.add("node", string("IndexWithIdentity"));
+    STRUCT_PTR_FIELD(subject);
+    STRUCT_PTR_FIELD(index);
     json.close();
     return (string)json;
 }
@@ -527,6 +519,26 @@ string to_json(const Call::Argument &node, const size_t &depth)
     json.object();
     STRUCT_FIELD(name);
     STRUCT_FIELD(value);
+    json.close();
+    return (string)json;
+}
+
+string to_json(const ptr<PropertyAccess> &node, const size_t &depth)
+{
+    JsonContainer json(depth);
+    json.object();
+    json.add("node", string("PropertyAccess"));
+    STRUCT_PTR_FIELD(subject);
+
+    // TODO: Instead of just printing out the identity, print out a signature that
+    //       allows different overloads to be distinguished.
+    if (IS_PTR(node->property, FunctionProperty))
+        json.add("property", AS_PTR(node->property, FunctionProperty)->identity);
+    else if (IS_PTR(node->property, StateProperty))
+        json.add("property", AS_PTR(node->property, StateProperty)->identity);
+    else
+        STRUCT_PTR_FIELD(property)
+
     json.close();
     return (string)json;
 }

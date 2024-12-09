@@ -43,8 +43,8 @@ private:
     void resolve_choose_expression(ptr<ChooseExpression> choose_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_if_expression(ptr<IfExpression> if_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_match(ptr<MatchExpression> match, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
-    void resolve_expression_index(ptr<ExpressionIndex> expression_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
-    void resolve_property_index(ptr<PropertyIndex> property_index, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    void resolve_index_with_expression(ptr<IndexWithExpression> index_with_expression, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
+    Expression resolve_index_with_identity(ptr<IndexWithIdentity> index_with_identity, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_unary(ptr<Unary> unary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
     void resolve_binary(ptr<Binary> binary, ptr<Scope> scope, optional<Pattern> pattern_hint = {});
 
