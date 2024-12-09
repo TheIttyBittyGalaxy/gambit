@@ -1,6 +1,7 @@
 #include "apm.h"
 #include "checker.h"
 #include "errors.h"
+#include "generator.h"
 #include "json.h"
 #include "lexer.h"
 #include "parser.h"
@@ -32,6 +33,24 @@ void output_program(ptr<Program> program, string file_name)
     }
 }
 
+// Output to C
+
+void output_c_source(string source, string file_name)
+{
+    std::ofstream output;
+    output.open("local/" + file_name + ".c");
+    if (output.is_open())
+    {
+        output << source;
+        cout << "Saved C source code to local/" + file_name + ".c" << endl;
+        output.close();
+    }
+    else
+    {
+        cout << "Error attempting to save C source code to local/" + file_name + ".c" << endl;
+    }
+}
+
 // Main
 
 int main(int argc, char *argv[])
@@ -44,6 +63,8 @@ int main(int argc, char *argv[])
                              : "local/main.gambit";
 
     Source source(source_path);
+
+    ptr<Program> program = nullptr;
 
     try
     {
@@ -61,7 +82,7 @@ int main(int argc, char *argv[])
 
         cout << "\nPARSING" << endl;
         Parser parser;
-        auto program = parser.parse(source);
+        program = parser.parse(source);
         output_program(program, "parser_output");
 
         cout << "\nRESOLVER" << endl;
@@ -87,6 +108,13 @@ int main(int argc, char *argv[])
         for (auto error : source.errors)
             cout << present_error(&source, error) << endl;
         cout << endl;
+    }
+    else
+    {
+        cout << "\nGENERATOR" << endl;
+        Generator generator;
+        auto source = generator.generate(program);
+        output_c_source(source, "generated");
     }
 
     cout << "Compilation complete" << endl;
