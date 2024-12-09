@@ -327,9 +327,9 @@ void Generator::generate_expression(Expression expr)
     {
         auto expression_index = AS_PTR(expr, ExpressionIndex);
         generate_expression(expression_index->subject);
-        write("[");
+        write("[(");
         generate_expression(expression_index->index);
-        write("]");
+        write(")-1]");
     }
     else if (IS_PTR(expr, PropertyIndex))
     {
