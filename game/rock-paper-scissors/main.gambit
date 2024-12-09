@@ -1,18 +1,17 @@
 enum Throw { ROCK, PAPER, SCISSORS }
 
 main() {
-    player_one_throw :: players[1] choose ("Rock, Paper, Scissors?") Throw
-    player_two_throw :: players[2] choose ("Rock, Paper, Scissors?") Throw
+    player_one_throw :: game.players[1] choose ("Rock, Paper, Scissors?") [ Throw.ROCK, Throw.PAPER, Throw.SCISSORS]
+    player_two_throw :: game.players[2] choose ("Rock, Paper, Scissors?") [ Throw.ROCK, Throw.PAPER, Throw.SCISSORS]
 
-    if (player_one_throw == player_two_throw) {
+    if (player_one_throw == player_two_throw):
         draw
-    } else if player_one_throw == ROCK and player_two_throw == SCISSORS {
-        players[1] wins
-    } else if player_one_throw == PAPER and player_two_throw == ROCK {
-        players[1] wins
-    } else if player_one_throw == SCISSORS and player_two_throw == PAPER {
-        players[1] wins
-    } else {
-        players[2] wins
-    }
+    else if player_one_throw == ROCK and player_two_throw == SCISSORS:
+        game.players[1] wins
+    else if player_one_throw == PAPER and player_two_throw == ROCK:
+        game.players[1] wins
+    else if player_one_throw == SCISSORS and player_two_throw == PAPER:
+        game.players[1] wins
+    else:
+        game.players[2] wins
 }
