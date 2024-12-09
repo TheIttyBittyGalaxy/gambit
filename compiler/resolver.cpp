@@ -410,13 +410,53 @@ void Resolver::resolve_index_with_expression(ptr<IndexWithExpression> index_with
 //       all overloads that could match, and throw an error unless there is exactly one match.
 Expression Resolver::resolve_index_with_identity(ptr<IndexWithIdentity> index_with_identity, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    auto subject = resolve_expression(index_with_identity->subject, scope);
+    // EnumValue
+    // FIXME: At the moment we are doing a slight hack to work around the fact that an Expression
+    //        node cannot be an EnumType, and thus resolve_expression will not resolve identities
+    //        to an EnumType. We lookup the enum type 'manually' here instead.
+    do
+    {
+        auto instance_list = AS_PTR(index_with_identity->subject, InstanceList);
 
-    // Enum values
-    // TODO: If the subject is an enum type, then resolve for the corresponding enum value
+        if (instance_list->values.size() != 1)
+            continue;
+
+        auto subject = instance_list->values[0];
+        if (!IS(subject, UnresolvedLiteral))
+            continue;
+
+        auto subject_literal = AS(subject, UnresolvedLiteral);
+        if (!IS_PTR(subject_literal, IdentityLiteral))
+            continue;
+
+        auto subject_identity = AS_PTR(subject_literal, IdentityLiteral)->identity;
+        if (!declared_in_scope(scope, subject_identity))
+            continue;
+
+        auto resolved = fetch(scope, subject_identity);
+        if (!IS(resolved, Pattern))
+            continue;
+
+        auto resolved_pattern = AS(resolved, Pattern);
+        if (!IS_PTR(resolved_pattern, EnumType))
+            continue;
+
+        auto enum_type = AS_PTR(resolved_pattern, EnumType);
+        auto index_identity = index_with_identity->index->identity;
+
+        for (const auto &value : enum_type->values)
+        {
+            if (value->identity == index_identity)
+                return value;
+        }
+
+        source->log_error("'" + index_identity + "' is not a '" + subject_identity + "' enum.", index_with_identity->span);
+        return CREATE(InvalidExpression);
+    } while (false); // We will never loop here, I just wanted to be able to use continue as a cheap goto...
 
     // PropertyAccess
     auto property_access = CREATE(PropertyAccess);
+    auto subject = resolve_expression(index_with_identity->subject, scope);
     property_access->subject = subject;
 
     auto identity_literal = index_with_identity->index;
