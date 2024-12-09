@@ -1,0 +1,94 @@
+// This is the same as `main.gambit`, except it uses only more basic language features.
+// This is the version I'm currently using to test the compiler.
+
+/* Gambit intrinsics
+    entity Player
+    static amt (Player player).number
+    [Player] players
+*/
+
+// Naughts and crosses
+
+enum Mark { NAUGHT, CROSS }
+
+fn Mark (Player player).mark: match player.number {
+    1 : NAUGHT
+    2 : CROSS
+}
+
+// Game board and squares
+
+entity Square
+state int   (Square square).index
+state Mark? (Square square).mark
+fn str (Square square).name: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"][square.index]
+
+entity Board
+state [Square, 9] (Board board).squares
+
+fn bool (Board board).is_full {
+    for square in board.squares:
+        if not square.mark: return false
+
+    return true
+}
+
+fn [Square] (Board board).available_squares {
+    [Square] squares
+    for square in board.squares:
+        if not square.mark: squares insert square
+
+    return squares
+}
+
+fn bool (Mark? a, Mark? b, Mark? c).winning_track:
+    a == b and a == c and a != none
+
+fn Mark? (Board board).winner {
+    lines :: [ // infer type as `[[int, 3], 8]`
+        [1, 2, 3], [1, 4, 7], [1, 5, 9],  
+        [4, 5, 6], [2, 5, 8], [3, 5, 7],
+        [7, 8, 9], [3, 6, 9]
+    ]
+    
+    for line in lines { // Infer type of `line` as `[int, 3]`
+        [Mark?, 3] marks :: [
+            board.squares[line[1]].mark, 
+            board.squares[line[2]].mark, 
+            board.squares[line[3]].mark
+        ]
+
+        if (marks[1], marks[2], marks[3]).winning_track: return marks[1]
+    }
+}
+
+// Game implementation
+
+main() {
+    Board board
+    
+    current_player :: game.players[1] // Infer type `Player`
+    other_player   :: game.players[2] // Infer type `Player`
+
+    for i in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+        board.squares[i].index = i
+
+    loop {
+        Square chosen_square :: current_player choose ("Which square do you want to play?") board.available_squares // Infer type of 'chosen_square' as 'Square'
+        chosen_square.mark = current_player.mark
+
+        if board.winner { // board.winner is promoted from `Mark?` to `Mark` (note, `winner` is a function in this case!)
+            // This isn't really nessecary, we could just as easily do `current_player wins`, but
+            // I wrote it this way to test selectors, type promotion, etc
+            if current_player.mark == board.winner: current_player wins
+            else: other_player wins
+        }
+        
+        if board.is_full:
+            draw
+
+        temp :: other_player
+        other_player = current_player
+        current_player = temp
+    } // This loop is valid as it contains terminating statements in the body of the loop (i.e. win, draw, loose, break)
+}
