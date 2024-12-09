@@ -169,7 +169,7 @@ Statement Resolver::resolve_statement(Statement stmt, ptr<Scope> scope, optional
 
 void Resolver::resolve_if_statement(ptr<IfStatement> stmt, ptr<Scope> scope, optional<Pattern> pattern_hint)
 {
-    for (auto rule : stmt->rules)
+    for (auto &rule : stmt->rules)
     {
         rule.condition = resolve_expression(rule.condition, scope);
         resolve_code_block(rule.code_block, pattern_hint);
