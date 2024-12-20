@@ -2,6 +2,7 @@
 #ifndef CONVERTER_H
 #define CONVERTER_H
 
+#include <unordered_set>
 #include "apm.h"
 #include "ir.h"
 using namespace std;
@@ -14,6 +15,9 @@ public:
 private:
     ptr<Program> program = nullptr;
     C_Program representation;
+
+    unordered_set<string> identities_used;
+    string create_identity(string identity);
 
     void convert_procedure(ptr<Procedure> procedure);
 };
