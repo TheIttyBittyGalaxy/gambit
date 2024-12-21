@@ -14,12 +14,15 @@ public:
 
 private:
     ptr<Program> program = nullptr;
-    C_Program representation;
+    C_Program ir;
 
     unordered_set<string> identities_used;
     string create_identity(string identity);
 
     void convert_procedure(ptr<Procedure> procedure);
+
+    size_t create_statement(C_Statement::Kind kind);
+    size_t convert_statement(Statement statement);
 };
 
 #endif

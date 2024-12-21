@@ -13,6 +13,8 @@ public:
 
 private:
     string source;
+    C_Program ir;
+
     void write(string token);
 
     void generate_program(C_Program program);

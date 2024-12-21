@@ -20,16 +20,47 @@ using namespace std;
 struct C_Program;
 struct C_Function;
 
+// Statements
+struct C_Statement;
+
 // PROGRAM
 
 struct C_Program
 {
     vector<C_Function> functions;
+    vector<C_Statement> statements;
 };
 
 struct C_Function
 {
     string identity;
+    size_t body;
+};
+
+// STATEMENTS
+
+struct C_Statement
+{
+    enum Kind
+    {
+        IF_STATEMENT,
+        FOR_LOOP,
+        WHILE_LOOP,
+        RETURN_STATEMENT,
+        VARIABLE_DECLARATION,
+
+        CODE_BLOCK,
+        EXPRESSION_STATEMENT
+    };
+
+    Kind kind;
+    union
+    {
+        struct
+        {
+            size_t statement_count;
+        };
+    };
 };
 
 #endif
