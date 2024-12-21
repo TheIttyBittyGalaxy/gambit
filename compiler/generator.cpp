@@ -1,3 +1,4 @@
+#include "json.h"
 #include "errors.h"
 #include "generator.h"
 
@@ -52,6 +53,7 @@ void Generator::generate_function_declaration(C_Function funct)
     size_t last_stmt = funct.body + block.statement_count;
 
     vector<size_t> close_block_after;
+    // FIXME: This will cause a segmentation fault if ever `last_stmt` is 0
     close_block_after.push_back(last_stmt);
 
     write("{");
@@ -60,10 +62,28 @@ void Generator::generate_function_declaration(C_Function funct)
         C_Statement stmt = ir.statements[i];
         switch (stmt.kind)
         {
+        case C_Statement::INVALID:
+            throw CompilerError("Attempt to generate Invalid C Statement");
+
         case C_Statement::IF_STATEMENT:
         {
-            // TODO: Implement
-            write("if ()");
+            write("if (");
+            generate_expression(stmt.expression);
+            write(")");
+            break;
+        }
+
+        case C_Statement::ELSE_IF_STATEMENT:
+        {
+            write("else if (");
+            generate_expression(stmt.expression);
+            write(")");
+            break;
+        }
+
+        case C_Statement::ELSE_STATEMENT:
+        {
+            write("else");
             break;
         }
 
@@ -76,15 +96,15 @@ void Generator::generate_function_declaration(C_Function funct)
 
         case C_Statement::WHILE_LOOP:
         {
-            // TODO: Implement
-            write("while ()");
+            write("while (true)");
             break;
         }
 
         case C_Statement::RETURN_STATEMENT:
         {
-            // TODO: Implement
-            write("return;");
+            write("return");
+            generate_expression(stmt.expression);
+            write(";");
             break;
         }
 
@@ -97,7 +117,7 @@ void Generator::generate_function_declaration(C_Function funct)
 
         case C_Statement::CODE_BLOCK:
         {
-            if (stmt.statement_count > 1)
+            if (stmt.statement_count != 1)
             {
                 write("{");
                 close_block_after.push_back(i + stmt.statement_count);
@@ -107,8 +127,8 @@ void Generator::generate_function_declaration(C_Function funct)
 
         case C_Statement::EXPRESSION_STATEMENT:
         {
-            // TODO: Implement
-            write("//epxr\n");
+            generate_expression(stmt.expression);
+            write(";");
             break;
         }
 
@@ -121,5 +141,95 @@ void Generator::generate_function_declaration(C_Function funct)
             close_block_after.pop_back();
             write("}");
         }
+    }
+}
+
+void Generator::generate_expression(size_t expression_index)
+{
+    auto &expr = ir.expressions.at(expression_index);
+
+    switch (expr.kind)
+    {
+
+    case C_Expression::INVALID:
+    {
+        // TODO: This should be an error
+        write("__NULL_EXPR__");
+        break;
+    }
+
+    case C_Expression::DOUBLE_LITERAL:
+    {
+        write(to_string(expr.double_value));
+        break;
+    }
+    case C_Expression::INT_LITERAL:
+    {
+        write(to_string(expr.int_value));
+        break;
+    }
+    case C_Expression::BOOL_LITERAL:
+    {
+        write(expr.bool_value ? "true" : "false");
+        break;
+    }
+    case C_Expression::STRING_LITERAL:
+    {
+        // TODO: Use a dedicated string serialisation function, rather than using the JSON one
+        write(to_json(expr.string_value));
+        break;
+    }
+    case C_Expression::BINARY_ADD:
+    {
+        generate_expression(expr.lhs);
+        write("+");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_SUB:
+    {
+        generate_expression(expr.lhs);
+        write("-");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_MUL:
+    {
+        generate_expression(expr.lhs);
+        write("*");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_DIV:
+    {
+        generate_expression(expr.lhs);
+        write("/");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_EQUAL:
+    {
+        generate_expression(expr.lhs);
+        write("==");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_AND:
+    {
+        generate_expression(expr.lhs);
+        write("&&");
+        generate_expression(expr.rhs);
+        break;
+    }
+    case C_Expression::BINARY_OR:
+    {
+        generate_expression(expr.lhs);
+        write("||");
+        generate_expression(expr.rhs);
+        break;
+    }
+
+    default:
+        throw CompilerError("Could not generate C_Expression " + to_string(expr.kind));
     }
 }

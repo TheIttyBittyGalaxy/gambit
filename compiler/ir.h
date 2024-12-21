@@ -23,12 +23,16 @@ struct C_Function;
 // Statements
 struct C_Statement;
 
+// Expressions
+struct C_Expression;
+
 // PROGRAM
 
 struct C_Program
 {
     vector<C_Function> functions;
     vector<C_Statement> statements;
+    vector<C_Expression> expressions;
 };
 
 struct C_Function
@@ -43,7 +47,11 @@ struct C_Statement
 {
     enum Kind
     {
+        INVALID,
+
         IF_STATEMENT,
+        ELSE_IF_STATEMENT,
+        ELSE_STATEMENT,
         FOR_LOOP,
         WHILE_LOOP,
         RETURN_STATEMENT,
@@ -60,7 +68,58 @@ struct C_Statement
         {
             size_t statement_count;
         };
+        struct
+        {
+            size_t expression;
+        };
     };
+};
+
+// EXPRESSIONS
+
+struct C_Expression
+{
+    enum Kind
+    {
+        INVALID,
+
+        DOUBLE_LITERAL,
+        INT_LITERAL,
+        BOOL_LITERAL,
+        STRING_LITERAL,
+
+        BINARY_ADD,
+        BINARY_SUB,
+        BINARY_MUL,
+        BINARY_DIV,
+        BINARY_EQUAL,
+        BINARY_AND,
+        BINARY_OR,
+    };
+
+    Kind kind;
+    union
+    {
+        struct
+        {
+            size_t lhs;
+            size_t rhs;
+        };
+        struct
+        {
+            double double_value;
+        };
+        struct
+        {
+            int int_value;
+        };
+        struct
+        {
+            bool bool_value;
+        };
+    };
+
+    string string_value; // TODO: Ideally this would go in the union, but that takes some effort to do!
 };
 
 #endif

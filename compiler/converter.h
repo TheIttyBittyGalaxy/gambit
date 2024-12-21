@@ -23,6 +23,7 @@ private:
 
     size_t create_statement(C_Statement::Kind kind);
     size_t convert_statement(Statement statement);
+    size_t convert_expression(Expression expression);
 };
 
 #endif

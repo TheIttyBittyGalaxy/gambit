@@ -47,109 +47,289 @@ void Converter::convert_procedure(ptr<Procedure> procedure)
 
 size_t Converter::create_statement(C_Statement::Kind kind)
 {
-    ir.statements.emplace_back();
-    ir.statements.back().kind = kind;
+    ir.statements.emplace_back().kind = kind;
     return ir.statements.size() - 1;
 }
 
-size_t Converter::convert_statement(Statement statement)
-{
-    if (IS_PTR(statement, IfStatement))
-    {
-        auto if_statement = AS_PTR(statement, IfStatement);
-        auto s = create_statement(C_Statement::IF_STATEMENT);
+#define STMT ir.statements.at(stmt)
 
-        // TODO: Implement correctly
-        for (auto &rule : if_statement->rules)
+size_t Converter::convert_statement(Statement apm)
+{
+    auto statement_index = ir.statements.size();
+
+    if (IS_PTR(apm, IfStatement))
+    {
+        auto if_statement = AS_PTR(apm, IfStatement);
+
+        for (size_t i = 0; i < if_statement->rules.size(); i++)
         {
+            auto &rule = if_statement->rules.at(i);
+            auto stmt = create_statement(
+                i == 0
+                    ? C_Statement::IF_STATEMENT
+                    : C_Statement::ELSE_IF_STATEMENT);
+            STMT.expression = convert_expression(rule.condition);
             convert_statement(rule.code_block);
         }
 
         if (if_statement->else_block.has_value())
         {
+            create_statement(C_Statement::IF_STATEMENT);
             convert_statement(if_statement->else_block.value());
         }
 
-        return s;
+        return statement_index;
     }
 
-    if (IS_PTR(statement, ForStatement))
+    if (IS_PTR(apm, ForStatement))
     {
-        auto for_statement = AS_PTR(statement, ForStatement);
-        auto s = create_statement(C_Statement::FOR_LOOP);
+        auto for_statement = AS_PTR(apm, ForStatement);
+        auto stmt = create_statement(C_Statement::FOR_LOOP);
+        // TODO: Convert the range/iterator of the loop
+        convert_statement(for_statement->body);
+        return statement_index;
+    }
+
+    if (IS_PTR(apm, LoopStatement))
+    {
+        auto loop_statement = AS_PTR(apm, LoopStatement);
+        auto stmt = create_statement(C_Statement::WHILE_LOOP);
+        convert_statement(loop_statement->body);
+        return statement_index;
+    }
+
+    if (IS_PTR(apm, ReturnStatement))
+    {
+        auto return_statement = AS_PTR(apm, ReturnStatement);
+        auto stmt = create_statement(C_Statement::RETURN_STATEMENT);
+        STMT.expression = convert_expression(return_statement->value);
+        return statement_index;
+    }
+
+    if (IS_PTR(apm, WinsStatement))
+    {
+        auto wins_statement = AS_PTR(apm, WinsStatement);
+        auto stmt = create_statement(C_Statement::EXPRESSION_STATEMENT);
         // TODO: Implement
-        return s;
+        return statement_index;
     }
 
-    if (IS_PTR(statement, LoopStatement))
+    if (IS_PTR(apm, DrawStatement))
     {
-        auto loop_statement = AS_PTR(statement, LoopStatement);
-        auto s = create_statement(C_Statement::WHILE_LOOP);
+        auto draw_statement = AS_PTR(apm, DrawStatement);
+        auto stmt = create_statement(C_Statement::EXPRESSION_STATEMENT);
         // TODO: Implement
-        return s;
+        return statement_index;
     }
 
-    if (IS_PTR(statement, ReturnStatement))
+    if (IS_PTR(apm, AssignmentStatement))
     {
-        auto return_statement = AS_PTR(statement, ReturnStatement);
-        auto s = create_statement(C_Statement::RETURN_STATEMENT);
+        auto assignment_statement = AS_PTR(apm, AssignmentStatement);
+        auto stmt = create_statement(C_Statement::EXPRESSION_STATEMENT);
         // TODO: Implement
-        return s;
+        return statement_index;
     }
 
-    if (IS_PTR(statement, WinsStatement))
+    if (IS_PTR(apm, VariableDeclaration))
     {
-        auto wins_statement = AS_PTR(statement, WinsStatement);
-        auto s = create_statement(C_Statement::EXPRESSION_STATEMENT);
+        auto variable_declaration = AS_PTR(apm, VariableDeclaration);
+        auto stmt = create_statement(C_Statement::VARIABLE_DECLARATION);
         // TODO: Implement
-        return s;
+        return statement_index;
     }
 
-    if (IS_PTR(statement, DrawStatement))
+    if (IS_PTR(apm, CodeBlock))
     {
-        auto draw_statement = AS_PTR(statement, DrawStatement);
-        auto s = create_statement(C_Statement::EXPRESSION_STATEMENT);
-        // TODO: Implement
-        return s;
-    }
-
-    if (IS_PTR(statement, AssignmentStatement))
-    {
-        auto assignment_statement = AS_PTR(statement, AssignmentStatement);
-        auto s = create_statement(C_Statement::EXPRESSION_STATEMENT);
-        // TODO: Implement
-        return s;
-    }
-
-    if (IS_PTR(statement, VariableDeclaration))
-    {
-        auto variable_declaration = AS_PTR(statement, VariableDeclaration);
-        auto s = create_statement(C_Statement::VARIABLE_DECLARATION);
-        // TODO: Implement
-        return s;
-    }
-
-    if (IS_PTR(statement, CodeBlock))
-    {
-        auto code_block = AS_PTR(statement, CodeBlock);
-        auto s = create_statement(C_Statement::CODE_BLOCK);
+        auto code_block = AS_PTR(apm, CodeBlock);
+        auto stmt = create_statement(C_Statement::CODE_BLOCK);
 
         for (auto stmt : code_block->statements)
         {
             convert_statement(stmt);
         }
 
-        ir.statements.at(s).statement_count = ir.statements.size() - (s + 1);
-        return s;
+        STMT.statement_count = ir.statements.size() - (statement_index + 1);
+        return statement_index;
     }
 
-    if (IS(statement, Expression))
+    if (IS(apm, Expression))
     {
-        auto expr = AS(statement, Expression);
-        auto s = create_statement(C_Statement::EXPRESSION_STATEMENT);
-        // TODO: Implement
-        return s;
+        auto expr = AS(apm, Expression);
+        auto stmt = create_statement(C_Statement::EXPRESSION_STATEMENT);
+        STMT.expression = convert_expression(expr);
+        return statement_index;
     }
 
     throw CompilerError("Could not convert APM Statement, variant not recognised.");
+}
+
+#undef STMT
+
+size_t Converter::convert_expression(Expression apm)
+{
+    // Literals
+    if (IS(apm, UnresolvedLiteral))
+    {
+        throw CompilerError("Attempt to convert APM UnresolvedLiteral");
+    }
+
+    if (IS_PTR(apm, ExpressionLiteral))
+    {
+        auto expression_literal = AS_PTR(apm, ExpressionLiteral);
+        return convert_expression(expression_literal->expr);
+    }
+
+    C_Expression expr;
+    expr.kind = C_Expression::INVALID;
+
+    // Values
+    if (IS_PTR(apm, PrimitiveValue))
+    {
+        auto primitive_value = AS_PTR(apm, PrimitiveValue);
+
+        if (IS(primitive_value->value, double))
+        {
+            expr.kind = C_Expression::DOUBLE_LITERAL;
+            expr.double_value = AS(primitive_value->value, double);
+        }
+        else if (IS(primitive_value->value, int))
+        {
+            expr.kind = C_Expression::INT_LITERAL;
+            expr.int_value = AS(primitive_value->value, int);
+        }
+        else if (IS(primitive_value->value, bool))
+        {
+            expr.kind = C_Expression::BOOL_LITERAL;
+            expr.bool_value = AS(primitive_value->value, bool);
+        }
+        else if (IS(primitive_value->value, string))
+        {
+            expr.kind = C_Expression::STRING_LITERAL;
+            expr.string_value = AS(primitive_value->value, string);
+        }
+        else
+        {
+            throw CompilerError("Could not convert APM PrimitiveValue.");
+        }
+    }
+
+    if (IS_PTR(apm, ListValue))
+    {
+        auto list_value = AS_PTR(apm, ListValue);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, EnumValue))
+    {
+        auto enum_value = AS_PTR(apm, EnumValue);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, Variable))
+    {
+        auto variable = AS_PTR(apm, Variable);
+        // TODO: Implement
+    }
+
+    // Operations
+    if (IS_PTR(apm, Unary))
+    {
+        auto unary = AS_PTR(apm, Unary);
+        if (false)
+            ;
+        else
+            throw CompilerError("Could not convert Unary " + unary->op);
+
+        expr.lhs = convert_expression(unary->value);
+    }
+
+    if (IS_PTR(apm, Binary))
+    {
+        auto binary = AS_PTR(apm, Binary);
+        if (binary->op == "+")
+            expr.kind = C_Expression::BINARY_ADD;
+        else if (binary->op == "-")
+            expr.kind = C_Expression::BINARY_SUB;
+        else if (binary->op == "*")
+            expr.kind = C_Expression::BINARY_MUL;
+        else if (binary->op == "/")
+            expr.kind = C_Expression::BINARY_DIV;
+        else if (binary->op == "==")
+            expr.kind = C_Expression::BINARY_EQUAL;
+        else if (binary->op == "and")
+            expr.kind = C_Expression::BINARY_AND;
+        else if (binary->op == "or")
+            expr.kind = C_Expression::BINARY_OR;
+        else
+            throw CompilerError("Could not convert Binary " + binary->op);
+
+        expr.lhs = convert_expression(binary->lhs);
+        expr.rhs = convert_expression(binary->rhs);
+    }
+
+    // Indexing
+    if (IS_PTR(apm, InstanceList))
+    {
+        auto instance_list = AS_PTR(apm, InstanceList);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, IndexWithExpression))
+    {
+        auto index_with_expression = AS_PTR(apm, IndexWithExpression);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, IndexWithIdentity))
+    {
+        auto index_with_identity = AS_PTR(apm, IndexWithIdentity);
+        // TODO: Implement
+    }
+
+    // Calls
+    if (IS_PTR(apm, Call))
+    {
+        auto call = AS_PTR(apm, Call);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, PropertyAccess))
+    {
+        auto property_access = AS_PTR(apm, PropertyAccess);
+        // TODO: Implement
+    }
+
+    // Keyword expressions
+    if (IS_PTR(apm, ChooseExpression))
+    {
+        auto choose_expression = AS_PTR(apm, ChooseExpression);
+        // TODO: Implement
+    }
+
+    // "Statement style" expressions
+    if (IS_PTR(apm, IfExpression))
+    {
+        auto if_expression = AS_PTR(apm, IfExpression);
+        // TODO: Implement
+    }
+
+    if (IS_PTR(apm, MatchExpression))
+    {
+        auto match_expression = AS_PTR(apm, MatchExpression);
+        // TODO: Implement
+    }
+
+    // Invalid expression
+    if (IS_PTR(apm, InvalidExpression))
+    {
+        throw CompilerError("Attempt to convert APM InvalidExpression");
+    }
+
+    // TODO: Should error here!
+    // if (e.kind == INVALID)
+    //     throw CompilerError("Could not convert APM Expression, variant not recognised.");
+
+    auto expression_index = ir.expressions.size();
+    ir.expressions.emplace_back(expr);
+    return expression_index;
 }

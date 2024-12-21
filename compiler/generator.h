@@ -20,6 +20,8 @@ private:
     void generate_program(C_Program program);
     void generate_function_signature(C_Function funct);
     void generate_function_declaration(C_Function funct);
+
+    void generate_expression(size_t expression_index);
 };
 
 #endif
